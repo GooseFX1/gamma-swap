@@ -15,7 +15,7 @@ describe("gamma", () => {
     // const tx = await program.methods.initialize().rpc();
     // console.log("Your transaction signature", tx);
     const idl = IDL as Gamma;
-    idl.address = "gaMmp8CxTCKFbtpoGrcxccDtJJSRyF7hzTkKcuPDbRG" as any;
+    idl.address = "GAMMA7meSFWaBXF25oSUgmGRwaW6sCMFLmBNiMSdbHVT" as any;
     const program = new Program<Gamma>(idl, anchor.getProvider());
     const amm = await program.account.ammConfig.all();
     console.log(`Program initialized ${JSON.stringify(amm)}`);

@@ -20,9 +20,9 @@ solana_security_txt::security_txt! {
 }
 
 #[cfg(feature = "devnet")]
-declare_id!("gaMmp8CxTCKFbtpoGrcxccDtJJSRyF7hzTkKcuPDbRG");
+declare_id!("GAMMA7meSFWaBXF25oSUgmGRwaW6sCMFLmBNiMSdbHVT");
 #[cfg(not(feature = "devnet"))]
-declare_id!("gaMmp8CxTCKFbtpoGrcxccDtJJSRyF7hzTkKcuPDbRG");
+declare_id!("GAMMA7meSFWaBXF25oSUgmGRwaW6sCMFLmBNiMSdbHVT");
 
 pub mod admin {
     use anchor_lang::prelude::declare_id;

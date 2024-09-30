@@ -7,7 +7,7 @@ resolution = true
 skip-lint = false
 
 [programs.devnet]
-gamma = "gaMmp8CxTCKFbtpoGrcxccDtJJSRyF7hzTkKcuPDbRG"
+gamma = "GAMMA7meSFWaBXF25oSUgmGRwaW6sCMFLmBNiMSdbHVT"
 
 [registry]
 url = "https://github.com/GooseFX1/gamma"
