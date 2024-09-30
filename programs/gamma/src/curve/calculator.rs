@@ -127,11 +127,6 @@ impl CurveCalculator {
             // trade_fee_rate is being used as base fee in dynamic fee calculation.
             trade_fee_rate,
         )?;
-        msg!(
-            "Dynamic Fee: {}, source_amount_to_be_swapped: {}",
-            dynamic_fee,
-            source_amount_to_be_swapped
-        );
 
         let protocol_fee = StaticFee::protocol_fee(dynamic_fee, protocol_fee_rate)?;
         let fund_fee = StaticFee::fund_fee(dynamic_fee, fund_fee_rate)?;

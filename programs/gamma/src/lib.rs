@@ -33,7 +33,7 @@ pub mod admin {
     declare_id!("CixMbUaUgLUg9REWvnwKDi1pqPMCT2oFfQ2SG4BMeBkZ");
     #[cfg(all(not(feature = "devnet"), not(feature = "test-sbf")))]
     //TODO: change this to the correct id
-    declare_id!("GAUT8jcHoYoiygCQV5MQHYceGCxc9NKMhQsDs4t9jJed");
+    declare_id!("9QcHinaHcJFdzSHeiF1yGchcuQk3qPFNV13q6dZJbAny");
 }
 
 pub mod create_pool_fee_reveiver {
@@ -41,7 +41,7 @@ pub mod create_pool_fee_reveiver {
     #[cfg(feature = "devnet")]
     declare_id!("2EGutuSu6BMjw2fKuU5q5fVTH1S5c4tsTgEwQZDn1N45");
     #[cfg(not(feature = "devnet"))]
-    declare_id!("2EGutuSu6BMjw2fKuU5q5fVTH1S5c4tsTgEwQZDn1N45");
+    declare_id!("8PhehuioLjhJ35A5eavazJSwoXcA4J7WwzgoWDBDFSuY");
 }
 
 pub const AUTH_SEED: &str = "vault_and_lp_mint_auth_seed";

@@ -23,7 +23,6 @@ const IMBALANCE_FACTOR: u64 = 20_000; // Adjust based on desired sensitivity
 
 pub enum FeeType {
     Volatility,
-    VolatilityV2,
     Rebalancing,
     Combined,
 }
@@ -46,7 +45,7 @@ impl DynamicFee {
     ///
     /// # Returns
     /// A fee rate as a u64, where 10000 represents 1%
-    pub fn calculate_volatile_fee_v2(
+    pub fn calculate_volatile_fee(
         block_timestamp: u64,
         observation_state: &ObservationState,
         vault_0: u64,
@@ -62,20 +61,10 @@ impl DynamicFee {
         // Calculate recent price volatility
         let (min_price, max_price, avg_price) =
             Self::get_price_range(observation_state, block_timestamp, VOLATILITY_WINDOW);
-        msg!("min_price: {}", min_price);
-        msg!("max_price: {}", max_price);
         // Handle case where no valid observations were found
         if min_price == 0 && max_price == 0 && avg_price == 0 {
-            msg!("No valid price observations found. Returning base_fees.");
             return Ok(base_fees);
         }
-
-        msg!(
-            "min_price: {}, max_price: {}, avg_price: {}",
-            min_price,
-            max_price,
-            avg_price
-        );
 
         let recent_price_volatility = if avg_price > 0 {
             max_price
@@ -86,18 +75,16 @@ impl DynamicFee {
         } else {
             0
         };
-        msg!("recent_price_volatility: {}", recent_price_volatility);
+        
         // Calculate volatility component
         let volatility_component = std::cmp::min(
             VOLATILITY_FACTOR.saturating_mul(recent_price_volatility as u64)
                 / FEE_RATE_DENOMINATOR_VALUE,
             MAX_FEE.saturating_sub(base_fees),
         );
-        msg!("volatility_component: {}", volatility_component);
-
+        
         // Calculate liquidity imbalance component
         let total_liquidity = vault_0 as u128 + vault_1 as u128;
-        msg!("total_liquidity: {}", total_liquidity);
         let current_ratio = if total_liquidity > 0 {
             (vault_0 as u128)
                 .checked_mul(FEE_RATE_DENOMINATOR_VALUE as u128)
@@ -107,29 +94,23 @@ impl DynamicFee {
             0
         };
 
-        msg!("current_ratio: {}", current_ratio);
         let ideal_ratio = FEE_RATE_DENOMINATOR_VALUE as u128 / 2;
-        msg!("ideal_ratio: {}", ideal_ratio);
-
+        
         let imbalance = if current_ratio > ideal_ratio {
             current_ratio.saturating_sub(ideal_ratio)
         } else {
             ideal_ratio.saturating_sub(current_ratio)
         };
-        msg!("imbalance: {}", imbalance);
 
         let liquidity_imbalance_component = IMBALANCE_FACTOR
             .saturating_mul(imbalance as u64)
             .checked_div(FEE_RATE_DENOMINATOR_VALUE)
             .unwrap_or(0);
-        msg!(
-            "liquidity_imbalance_component: {}",
-            liquidity_imbalance_component
-        );
         // Calculate final dynamic fee
         let dynamic_fee = base_fees
             .saturating_add(volatility_component)
             .saturating_add(liquidity_imbalance_component);
+        #[cfg(feature = "enable-log")]
         msg!("dynamic_fee: {}", dynamic_fee);
         Ok(std::cmp::min(dynamic_fee, MAX_FEE))
     }
@@ -155,12 +136,7 @@ impl DynamicFee {
         base_fees: u64,
     ) -> u64 {
         match fee_type {
-            FeeType::Volatility => {
-                Self::calculate_volatility_fee(block_timestamp, observation_state, base_fees)
-                    .unwrap()
-            }
-            FeeType::Rebalancing => Self::calculate_rebalancing_fee(pool_state, vault_0, vault_1),
-            FeeType::VolatilityV2 => Self::calculate_volatile_fee_v2(
+            FeeType::Volatility => Self::calculate_volatile_fee_v2(
                 block_timestamp,
                 observation_state,
                 vault_0,
@@ -168,10 +144,10 @@ impl DynamicFee {
                 base_fees,
             )
             .unwrap(),
+            FeeType::Rebalancing => Self::calculate_rebalancing_fee(pool_state, vault_0, vault_1),
             FeeType::Combined => {
-                // let volatility_fee = Self::calculate_volatility_fee(observation_state).unwrap();
                 let rebalancing_fee = Self::calculate_rebalancing_fee(pool_state, vault_0, vault_1);
-                let volatility_fee_v2 = Self::calculate_volatile_fee_v2(
+                let volatility_fee = Self::calculate_volatile_fee(
                     block_timestamp,
                     observation_state,
                     vault_0,
@@ -179,10 +155,7 @@ impl DynamicFee {
                     base_fees,
                 )
                 .unwrap();
-                msg!("volatility_fee_v2: {}", volatility_fee_v2);
-                msg!("rebalancing_fee: {}", rebalancing_fee);
-                // std::cmp::max(volatility_fee, std::cmp::max(rebalancing_fee, volatility_fee_v2))
-                std::cmp::max(rebalancing_fee, volatility_fee_v2)
+                std::cmp::max(rebalancing_fee, volatility_fee)
             }
         }
     }
@@ -205,8 +178,6 @@ impl DynamicFee {
 
         let (price_a, price_b, _) =
             Self::get_price_range(observation_state, block_timestamp, VOLATILITY_WINDOW);
-        msg!("price_a: {}", price_a);
-        msg!("price_b: {}", price_b);
         let volatility = if price_b > price_a {
             (price_b - price_a)
                 .checked_div(price_a)
@@ -214,15 +185,6 @@ impl DynamicFee {
                 .checked_mul(FEE_RATE_DENOMINATOR_VALUE as u128)
                 .unwrap()
         } else {
-            msg!("price_a - price_b: {}", price_a - price_b);
-            msg!(
-                "(price_a - price_b)/price_b: {}",
-                (price_a - price_b) / price_b
-            );
-            msg!(
-                "(price_a - price_b).checked_div(price_b): {}",
-                (price_a - price_b).checked_div(price_b).unwrap()
-            );
             (price_a - price_b)
                 .checked_div(price_b)
                 .unwrap()
@@ -256,9 +218,6 @@ impl DynamicFee {
         let mut max_price = 0u128;
         let mut total_price = 0u128;
 
-        msg!("current_time: {}", current_time);
-        msg!("window: {}", window);
-
         let mut descending_order_observations = observation_state
             .observations
             .iter()
@@ -273,10 +232,6 @@ impl DynamicFee {
                 observation: *observation,
             })
             .collect::<Vec<_>>();
-        msg!(
-            "descending_order_observations: {}",
-            descending_order_observations.len()
-        );
 
         descending_order_observations.sort_by(|a, b| {
             { b.observation.block_timestamp }.cmp(&{ a.observation.block_timestamp })
@@ -376,10 +331,6 @@ impl DynamicFee {
         assert!(utilization < u64::MAX as u128);
         let utilization = utilization as u64;
 
-        msg!("max_token: {}", max_token);
-        msg!("total_liquidity: {}", total_liquidity);
-        msg!("utilization: {}", utilization);
-
         // Calculate price deviation
         let complete_swap = ConstantProductCurve::swap_base_input_without_fees(
             token_1_amount as u128,
@@ -393,14 +344,8 @@ impl DynamicFee {
             .checked_div(token_1_amount as u128)
             .unwrap();
 
-        msg!("price_0: {}", price_0);
-        msg!("ideal_price: {}", ideal_price);
-
         let price_deviation_numerator = price_0.abs_diff(ideal_price);
 
-        msg!("utilization: {}", utilization);
-        msg!("ideal_price: {}", ideal_price);
-        msg!("price_deviation: {}", price_deviation_numerator);
         // Calculate fee based on utilization and price deviation
         let fee = if utilization <= 500_000 {
             // 50%
@@ -422,7 +367,6 @@ impl DynamicFee {
             .unwrap();
         let adjusted_fee = fee as u128 + additional_fee;
 
-        msg!("adjusted_fee: {}", adjusted_fee);
         assert!(adjusted_fee < u64::MAX as u128);
         let adjusted_fee = adjusted_fee as u64;
 
