@@ -23,8 +23,6 @@ const IMBALANCE_FACTOR: u64 = 20_000; // Adjust based on desired sensitivity
 
 pub enum FeeType {
     Volatility,
-    Rebalancing,
-    Combined,
 }
 
 struct ObservationWithIndex {
@@ -136,7 +134,7 @@ impl DynamicFee {
         base_fees: u64,
     ) -> u64 {
         match fee_type {
-            FeeType::Volatility => Self::calculate_volatile_fee_v2(
+            FeeType::Volatility => Self::calculate_volatile_fee(
                 block_timestamp,
                 observation_state,
                 vault_0,
@@ -144,19 +142,6 @@ impl DynamicFee {
                 base_fees,
             )
             .unwrap(),
-            FeeType::Rebalancing => Self::calculate_rebalancing_fee(pool_state, vault_0, vault_1),
-            FeeType::Combined => {
-                let rebalancing_fee = Self::calculate_rebalancing_fee(pool_state, vault_0, vault_1);
-                let volatility_fee = Self::calculate_volatile_fee(
-                    block_timestamp,
-                    observation_state,
-                    vault_0,
-                    vault_1,
-                    base_fees,
-                )
-                .unwrap();
-                std::cmp::max(rebalancing_fee, volatility_fee)
-            }
         }
     }
 

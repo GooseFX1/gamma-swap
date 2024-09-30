@@ -123,7 +123,7 @@ impl CurveCalculator {
             &observation_state,
             vault0 as u64,
             vault1 as u64,
-            FeeType::VolatilityV2,
+            FeeType::Volatility,
             // trade_fee_rate is being used as base fee in dynamic fee calculation.
             trade_fee_rate,
         )?;
@@ -186,7 +186,7 @@ impl CurveCalculator {
             observation_state,
             vault0,
             vault1,
-            FeeType::VolatilityV2,
+            FeeType::Volatility,
             trade_fee_rate,
         )?;
 
