@@ -1,0 +1,32 @@
+[package]
+name = "gamma-cli"
+version = "0.2.0"
+rust-version = "1.75.0"
+edition = "2021"
+
+[dependencies]
+anchor-client = { workspace = true }
+anchor-lang = { workspace = true }
+anyhow = { workspace = true }
+arrayref = { workspace = true }
+bincode = { workspace = true }
+bs58 = { workspace = true }
+clap = { workspace = true }
+colorful = { workspace = true }
+configparser = { workspace = true }
+dotenv = { workspace = true }
+gamma = { workspace = true }
+hex = { workspace = true }
+rand = { workspace = true }
+regex = { workspace = true }
+serde_json = { workspace = true }
+serde = { workspace = true }
+solana-sdk = { workspace = true }
+solana-client = { workspace = true }
+solana-account-decoder = { workspace = true }
+solana-transaction-status = { workspace = true }
+spl-token = { workspace = true }
+spl-token-client = { workspace = true }
+spl-memo = { workspace = true }
+spl-associated-token-account = { workspace = true }
+spl-token-2022 = { workspace = true }

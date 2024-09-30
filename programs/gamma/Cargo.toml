@@ -1,0 +1,52 @@
+[package]
+name = "gamma"
+version = "0.1.0"
+description = "Created with Anchor"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "gamma"
+
+[features]
+no-entrypoint = []
+no-idl = []
+no-log-ix-name = []
+cpi = ["no-entrypoint"]
+default = ["test-sbf"]
+enable-log = []
+devnet = []
+client = []
+jupiter-cpi = ["no-entrypoint"]
+test-sbf=[]
+idl-build = ["anchor-lang/idl-build", "anchor-spl/idl-build"]
+
+[dependencies]
+anchor-lang = { workspace = true }
+anchor-spl = { workspace = true }
+solana-security-txt = { workspace = true }
+spl-math = { workspace = true }
+spl-memo = { workspace = true }
+spl-token = { workspace = true }
+uint = { workspace = true }
+
+[dev-dependencies]
+proptest = { workspace = true }
+quickcheck = { workspace = true }
+rand = { workspace = true }
+solana-sdk = {workspace=true}
+solana-program-test= {workspace=true}
+solana-program-runtime={workspace=true}
+static_init = "1.0.3"
+
+
+[profile.release]
+lto = "fat"
+codegen-units = 1
+panic = "abort"
+overflow-checks = true
+[profile.release.build-override]
+opt-level = 3
+incremental = false
+codegen-units = 1
+
