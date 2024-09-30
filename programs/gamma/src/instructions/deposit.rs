@@ -141,8 +141,6 @@ pub fn deposit(
             transfer_fee,
         )
     };
-    msg!("transfer_token_0_amount:{}", transfer_token_0_amount);
-    msg!("transfer_token_1_amount:{}", transfer_token_1_amount);
     #[cfg(feature = "enable-log")]
     msg!(
         "results.token_0_amount;{}, results.token_1_amount:{},transfer_token_0_amount:{},transfer_token_0_fee:{},

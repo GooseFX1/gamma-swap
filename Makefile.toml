@@ -23,9 +23,7 @@ dependencies = ["build_program", "build_client"]
 
 [tasks.deploy_program]
 script = """
-cp .keys/gaMmp8CxTCKFbtpoGrcxccDtJJSRyF7hzTkKcuPDbRG.json target/deploy/gamma-keypair.json
 anchor deploy
-anchor idl upgrade -f target/idl/gamma.json gaMmp8CxTCKFbtpoGrcxccDtJJSRyF7hzTkKcuPDbRG
 """
 dependencies = ["build_program"]
 

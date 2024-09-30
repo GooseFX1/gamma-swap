@@ -223,17 +223,7 @@ pub fn swap_base_input(ctx: Context<Swap>, amount_in: u64, minimum_amount_out: u
     let fund_fees_token_0 = pool_state.fund_fees_token_0;
     let protocol_fees_token_1 = pool_state.protocol_fees_token_1;
     let fund_fees_token_1 = pool_state.fund_fees_token_1;
-    msg!(
-        "pool_state.protocol_fees_token_0 : {}",
-        protocol_fees_token_0
-    );
-    msg!("pool_state.fund_fees_token_0: {}", fund_fees_token_0);
-    msg!(
-        "pool_state.protocol_fees_token_1: {}",
-        protocol_fees_token_1
-    );
-    msg!("pool_state.fund_fees_token_1: {}", fund_fees_token_1);
-
+    
     emit!(SwapEvent {
         pool_id,
         input_vault_before: total_input_token_amount,
@@ -244,8 +234,6 @@ pub fn swap_base_input(ctx: Context<Swap>, amount_in: u64, minimum_amount_out: u
         output_transfer_fee,
         base_input: true
     });
-    msg!("input_transfer_amount: {}", input_transfer_amount);
-    msg!("output_transfer_amount: {}", output_transfer_amount);
     transfer_from_user_to_pool_vault(
         ctx.accounts.payer.to_account_info(),
         ctx.accounts.input_token_account.to_account_info(),
@@ -255,7 +243,6 @@ pub fn swap_base_input(ctx: Context<Swap>, amount_in: u64, minimum_amount_out: u
         input_transfer_amount,
         ctx.accounts.input_token_mint.decimals,
     )?;
-    msg!("first transfer success");
     transfer_from_pool_vault_to_user(
         ctx.accounts.authority.to_account_info(),
         ctx.accounts.output_vault.to_account_info(),
@@ -266,16 +253,13 @@ pub fn swap_base_input(ctx: Context<Swap>, amount_in: u64, minimum_amount_out: u
         ctx.accounts.output_token_mint.decimals,
         &[&[crate::AUTH_SEED.as_bytes(), &[pool_state.auth_bump]]],
     )?;
-    msg!("second transfer success");
 
     ctx.accounts.input_vault.reload()?;
     ctx.accounts.output_vault.reload()?;
-    msg!(" vault reload success");
     let (token_0_price_x64, token_1_price_x64) = if ctx.accounts.input_vault.key()
         == pool_state.token_0_vault
         && ctx.accounts.output_vault.key() == pool_state.token_1_vault
     {
-        msg!("token_0_price_x32");
         pool_state.token_price_x32(
             ctx.accounts.input_vault.amount,
             ctx.accounts.output_vault.amount,
@@ -283,7 +267,6 @@ pub fn swap_base_input(ctx: Context<Swap>, amount_in: u64, minimum_amount_out: u
     } else if ctx.accounts.input_vault.key() == pool_state.token_1_vault
         && ctx.accounts.output_vault.key() == pool_state.token_0_vault
     {
-        msg!("token_1_price_x32");
         pool_state.token_price_x32(
             ctx.accounts.output_vault.amount,
             ctx.accounts.input_vault.amount,
@@ -291,19 +274,14 @@ pub fn swap_base_input(ctx: Context<Swap>, amount_in: u64, minimum_amount_out: u
     } else {
         return err!(GammaError::InvalidVault);
     };
-    msg!("token_0_price_x64: {}", token_0_price_x64);
-    msg!("token_1_price_x64: {}", token_1_price_x64);
     {
-        msg!("observation_state update start");
         observation_state.update(
             oracle::block_timestamp(),
             token_0_price_x64,
             token_1_price_x64,
         );
-        msg!("observation_state update success");
     }
     pool_state.recent_epoch = Clock::get()?.epoch;
-    msg!("recent_epoch update success");
 
     Ok(())
 }

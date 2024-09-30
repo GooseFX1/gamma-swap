@@ -272,6 +272,7 @@ pub fn initialize(
         .as_u64();
 
     let lock_lp_amount = 100;
+    #[cfg(feature = "enable-log")]
     msg!(
         "liquidity: {}, lock_lp_amount: {}, vault_0_amount: {}, vault_1_amount: {}",
         liquidity,
