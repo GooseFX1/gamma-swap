@@ -1,15 +1,24 @@
-# Gamma
+# GAMMA
 
-Gamma is a decentralized exchange (DEX) protocol built on Solana. It provides automated market making (AMM) functionality with customizable fee structures and liquidity pool management.
+Goose Automated Market Making Algorithm (GAMMA) is a decentralized exchange (DEX) protocol built on Solana. It provides dynamic fee AMM functionality with customizable fee structures and liquidity pool management.
 
-## Features
+## Key Features
+- Dynamic fees based on volatility and pool rebalancing mechanisms, up to 10% of swap amount
+- Permissionless pool creation with low fees (less than 0.1 SOL)
+- Migration tool for to transfer LP position from other AMMs
+- Referral program and open source code
+- Token2022 support
+- Highly CU optimized for faster swaps
+- $GOFX revenue share and burn mechanism (see docs.goosefx.io for more info)
+
+## Developer Features
 
 - Create and manage AMM configurations
 - Initialize liquidity pools
 - Deposit and withdraw liquidity
 - Swap tokens with base input or base output
 - Oracle price feed integration
-- Transfer fee handling for SPL tokens(Token22 support)
+- Transfer fee handling for SPL tokens (Token22 support)
 
 ## Project Structure
 
