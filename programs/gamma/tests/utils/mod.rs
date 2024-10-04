@@ -7,7 +7,7 @@ use anchor_spl::token_interface::spl_token_metadata_interface::borsh::BorshDeser
 use anchor_spl::token_interface::spl_token_metadata_interface::state::TokenMetadata;
 use gamma::curve::TradeDirection;
 use gamma::states::{
-    Observation, ObservationState, AMM_CONFIG_SEED, OBSERVATION_NUM, OBSERVATION_SEED,
+    ObservationState, AMM_CONFIG_SEED, OBSERVATION_NUM, OBSERVATION_SEED,
     POOL_LP_MINT_SEED, POOL_SEED, POOL_VAULT_SEED, USER_POOL_LIQUIDITY_SEED,
 };
 use gamma::AUTH_SEED;
@@ -653,7 +653,7 @@ impl TestEnv {
             &gamma::ID,
         );
 
-        let (pool_account_key, __bump) = Pubkey::find_program_address(
+        let pool_account_key = Pubkey::find_program_address(
             &[
                 POOL_SEED.as_bytes(),
                 amm_config_key.to_bytes().as_ref(),
@@ -661,7 +661,7 @@ impl TestEnv {
                 self.token_1_mint.to_bytes().as_ref(),
             ],
             &gamma::ID,
-        );
+        ).0;
         let (authority, __bump) = Pubkey::find_program_address(&[AUTH_SEED.as_bytes()], &gamma::ID);
         let (token_0_vault, __bump) = Pubkey::find_program_address(
             &[
@@ -700,21 +700,26 @@ impl TestEnv {
         let user_token_1_account = self
             .get_or_create_associated_token_account(user.pubkey(), self.token_1_mint.clone(), &user)
             .await;
+        let user_pool_liquidity = Pubkey::find_program_address(
+            &[
+                USER_POOL_LIQUIDITY_SEED.as_bytes(),
+                pool_account_key.to_bytes().as_ref(),
+                user.pubkey().to_bytes().as_ref(),
+            ],
+            &gamma::ID,
+        )
+        .0;
 
         let accounts = gamma::accounts::Initialize {
             creator: user.pubkey(),
             amm_config: amm_config_key,
             authority,
             pool_state: pool_account_key,
+            user_pool_liquidity,
             token_0_mint: self.token_0_mint,
             token_1_mint: self.token_1_mint,
-            // lp_mint: lp_mint_key,
             creator_token_0: user_token_0_account,
             creator_token_1: user_token_1_account,
-            // creator_lp_token: spl_associated_token_account::get_associated_token_address(
-            //     &program.payer(),
-            //     &lp_mint_key,
-            // ),
             token_0_vault,
             token_1_vault,
             create_pool_fee: create_pool_fee,
@@ -751,7 +756,6 @@ impl TestEnv {
         user: &Keypair,
         pool_id: Pubkey,
         amm_config_index: u16,
-        // user_token_lp_account: Pubkey,
         lp_token_amount: u64,
         maximum_token_0_amount: u64,
         maximum_token_1_amount: u64,
@@ -847,7 +851,6 @@ impl TestEnv {
         user: &Keypair,
         pool_id: Pubkey,
         amm_config_index: u16,
-        // user_token_lp_account: Pubkey,
         lp_token_amount: u64,
         minimum_token_0_amount: u64,
         minimum_token_1_amount: u64,
@@ -908,7 +911,6 @@ impl TestEnv {
             authority,
             pool_state: pool_id,
             user_pool_liquidity,
-            // owner_lp_token: user_token_lp_account,
             token_0_account: user_token_0_account,
             token_1_account: user_token_1_account,
             token_0_vault,
@@ -917,7 +919,6 @@ impl TestEnv {
             token_program_2022: spl_token_2022::id(),
             vault_0_mint: self.token_0_mint,
             vault_1_mint: self.token_1_mint,
-            // lp_mint: token_lp_mint,
             memo_program: spl_memo::id(),
         };
 

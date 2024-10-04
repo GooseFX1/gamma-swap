@@ -219,11 +219,6 @@ pub fn swap_base_input(ctx: Context<Swap>, amount_in: u64, minimum_amount_out: u
         }
     };
 
-    let protocol_fees_token_0 = pool_state.protocol_fees_token_0;
-    let fund_fees_token_0 = pool_state.fund_fees_token_0;
-    let protocol_fees_token_1 = pool_state.protocol_fees_token_1;
-    let fund_fees_token_1 = pool_state.fund_fees_token_1;
-    
     emit!(SwapEvent {
         pool_id,
         input_vault_before: total_input_token_amount,

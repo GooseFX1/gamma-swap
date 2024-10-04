@@ -4,8 +4,9 @@ use crate::{
     curve::CurveCalculator,
     error::GammaError,
     states::{
-        AmmConfig, ObservationState, PoolState, OBSERVATION_SEED, POOL_SEED,
-        POOL_VAULT_SEED,
+        AmmConfig, ObservationState, PoolState, UserPoolLiquidity, 
+        OBSERVATION_SEED, POOL_SEED, POOL_VAULT_SEED, 
+        USER_POOL_LIQUIDITY_SEED,
     },
     utils::{
         create_token_account, is_supported_mint, transfer_from_user_to_pool_vault, U128,
@@ -58,6 +59,19 @@ pub struct Initialize<'info> {
     )]
     pub pool_state: AccountLoader<'info, PoolState>,
 
+    #[account(
+        init,
+        seeds = [
+            USER_POOL_LIQUIDITY_SEED.as_bytes(),
+            pool_state.key().as_ref(),
+            creator.key().as_ref(), 
+        ],
+        bump,
+        payer = creator,
+        space = UserPoolLiquidity::LEN,
+    )]
+    pub user_pool_liquidity: Account<'info, UserPoolLiquidity>,
+
     /// Token_0 mint, the key must smaller than token_1 mint.
     #[account(
         constraint = token_0_mint.key() < token_1_mint.key(),
@@ -71,19 +85,6 @@ pub struct Initialize<'info> {
     )]
     pub token_1_mint: Box<InterfaceAccount<'info, Mint>>,
 
-    // #[account(
-    //     init,
-    //     seeds = [
-    //         POOL_LP_MINT_SEED.as_bytes(),
-    //         pool_state.key().as_ref(),
-    //     ],
-    //     bump,
-    //     mint::decimals = 9,
-    //     mint::authority = authority,
-    //     payer = creator,
-    //     mint::token_program = token_program,
-    // )]
-    // pub lp_mint: Box<InterfaceAccount<'info, Mint>>,
     /// creator token 0 account
     #[account(
         mut,
@@ -99,16 +100,6 @@ pub struct Initialize<'info> {
         token::authority = creator,
     )]
     pub creator_token_1: Box<InterfaceAccount<'info, TokenAccount>>,
-
-    /// creator lp token account
-    // #[account(
-    //     init,
-    //     associated_token::mint = lp_mint,
-    //     associated_token::authority = creator,
-    //     payer = creator,
-    //     token::token_program = token_program,
-    // )]
-    // pub creator_lp_token: Box<InterfaceAccount<'info, TokenAccount>>,
 
     /// CHECK: token 0 vault for the pool
     #[account(
@@ -271,25 +262,13 @@ pub fn initialize(
         .integer_sqrt()
         .as_u64();
 
-    let lock_lp_amount = 100;
     #[cfg(feature = "enable-log")]
     msg!(
-        "liquidity: {}, lock_lp_amount: {}, vault_0_amount: {}, vault_1_amount: {}",
+        "liquidity: {}, vault_0_amount: {}, vault_1_amount: {}",
         liquidity,
-        lock_lp_amount,
         token_0_vault.amount,
         token_1_vault.amount,
     );
-    // token::token_mint_to(
-    //     ctx.accounts.authority.to_account_info(),
-    //     ctx.accounts.token_program.to_account_info(),
-    //     ctx.accounts.lp_mint.to_account_info(),
-    //     ctx.accounts.creator_lp_token.to_account_info(),
-    //     liquidity
-    //     .checked_sub(lock_lp_amount)
-    //     .ok_or(GammaError::InitLpAmountTooLess)?,
-    //     &[&[crate::AUTH_SEED.as_bytes(), &[ctx.bumps.authority]]],
-    // )?;
 
     // Charge the fee to create a pool
     if ctx.accounts.amm_config.create_pool_fee != 0 {
@@ -327,9 +306,13 @@ pub fn initialize(
         ctx.accounts.token_1_vault.key(),
         &ctx.accounts.token_0_mint,
         &ctx.accounts.token_1_mint,
-        // &ctx.accounts.lp_mint,
         ctx.accounts.observation_state.key(),
     );
 
+    let user_pool_liquidity = &mut ctx.accounts.user_pool_liquidity;
+    user_pool_liquidity.token_0_deposited = u128::from(init_amount_0);
+    user_pool_liquidity.token_1_deposited = u128::from(init_amount_1);
+    user_pool_liquidity.lp_tokens_owned = u128::from(liquidity);
+    
     Ok(())
 }

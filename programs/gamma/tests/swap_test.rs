@@ -45,8 +45,6 @@ async fn test_withdraw_deposit() {
         )
         .await;
 
-    test_env.init_user_pool_liquidity(&user, pool_id).await;
-
     test_env
         .deposit(&user, pool_id, amm_index, 1, 999999, 99999)
         .await;
