@@ -41,9 +41,6 @@ pub struct Deposit<'info> {
     )]
     pub user_pool_liquidity: Account<'info, UserPoolLiquidity>,
 
-    // /// Owner's lp token account to deposit from
-    // #[account(mut,  token::authority = owner)]
-    // pub owner_lp_token: Box<InterfaceAccount<'info, TokenAccount>>,
     /// The payer's token account to deposit token_0
     #[account(
         mut,
@@ -90,12 +87,6 @@ pub struct Deposit<'info> {
         address = token_1_vault.mint
     )]
     pub vault_1_mint: Box<InterfaceAccount<'info, Mint>>,
-    // Lp token mint
-    // #[account(
-    //     mut,
-    //     address = pool_state.load()?.lp_mint @ GammaError::IncorrectLpMint)
-    // ]
-    // pub lp_mint: Box<InterfaceAccount<'info, Mint>>,
 }
 
 pub fn deposit(
@@ -213,14 +204,7 @@ pub fn deposit(
         .lp_tokens_owned
         .checked_add(u128::from(lp_token_amount))
         .unwrap();
-    // token_mint_to(
-    //     ctx.accounts.authority.to_account_info(),
-    //     ctx.accounts.token_program.to_account_info(),
-    //     ctx.accounts.lp_mint.to_account_info(),
-    //     ctx.accounts.owner_lp_token.to_account_info(),
-    //     lp_token_amount,
-    //     &[&[crate::AUTH_SEED.as_bytes(), &[pool_state.auth_bump]]],
-    // )?;
+    
     pool_state.recent_epoch = Clock::get()?.epoch;
 
     Ok(())

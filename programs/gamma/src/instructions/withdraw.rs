@@ -27,13 +27,6 @@ pub struct Withdraw<'info> {
     #[account(mut)]
     pub pool_state: AccountLoader<'info, PoolState>,
 
-    /// Owner lp token account
-    // #[account(
-    //     mut,
-    //     token::authority = owner
-    // )]
-    // pub owner_lp_token: Box<InterfaceAccount<'info, TokenAccount>>,
-
     /// User pool liquidity account
     #[account(
         mut,
@@ -93,13 +86,6 @@ pub struct Withdraw<'info> {
         address = token_1_vault.mint
     )]
     pub vault_1_mint: Box<InterfaceAccount<'info, Mint>>,
-
-    /// Pool lp token mint
-    // #[account(
-    //     mut,
-    //     address = pool_state.load()?.lp_mint @ GammaError::IncorrectLpMint)
-    // ]
-    // pub lp_mint: Box<InterfaceAccount<'info, Mint>>,
 
     /// memo program
     /// CHECK:
@@ -199,15 +185,7 @@ pub fn withdraw(
         .token_1_withdrawn
         .checked_add(u128::from(receive_token_1_amount))
         .unwrap();
-    // token_burn(
-    //     ctx.accounts.owner.to_account_info(),
-    //     ctx.accounts.token_program.to_account_info(),
-    //     ctx.accounts.lp_mint.to_account_info(),
-    //     ctx.accounts.owner_lp_token.to_account_info(),
-    //     lp_token_amount,
-    //     &[&[crate::AUTH_SEED.as_bytes(), &[pool_state.auth_bump]]],
-    // )?;
-
+    
     transfer_from_pool_vault_to_user(
         ctx.accounts.authority.to_account_info(),
         ctx.accounts.token_0_vault.to_account_info(),

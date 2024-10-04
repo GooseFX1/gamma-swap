@@ -65,6 +65,7 @@ pub fn initialize_pool_instr(
     open_time: u64,
 ) -> Result<Vec<Instruction>> {
     let payer = read_keypair_file(&config.payer_path)?;
+    let user_pubkey = payer.pubkey();
     let url = Cluster::Custom(config.http_url.clone(), config.ws_url.clone());
     // Client.
     let client = Client::new(url, Rc::new(payer));
@@ -117,6 +118,15 @@ pub fn initialize_pool_instr(
         &program.id(),
     );
 
+    let user_pool_liquidity = Pubkey::find_program_address(
+        &[
+            USER_POOL_LIQUIDITY_SEED.as_bytes(),
+            pool_account_key.to_bytes().as_ref(),
+            user_pubkey.to_bytes().as_ref(),
+        ],
+        &program.id(),
+    ).0;
+
     let instructions = program
         .request()
         .accounts(gamma_accounts::Initialize {
@@ -124,9 +134,9 @@ pub fn initialize_pool_instr(
             amm_config: amm_config_key,
             authority,
             pool_state: pool_account_key,
+            user_pool_liquidity,
             token_0_mint,
             token_1_mint,
-            // lp_mint: lp_mint_key,
             creator_token_0: user_token_0_account,
             creator_token_1: user_token_1_account,
             // creator_lp_token: spl_associated_token_account::get_associated_token_address(
