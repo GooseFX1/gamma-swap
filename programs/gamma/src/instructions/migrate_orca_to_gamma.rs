@@ -102,22 +102,28 @@ pub fn migrate(ctx: Context<MigrateOrcaToGamma>, liquidity: u64) -> Result<()> {
     )
     .ok_or(GammaError::ZeroTradingTokens)?;
 
-    let token_0_amount = u64::try_from(results.token_0_amount).unwrap();
+    let token_0_amount = match u64::try_from(results.token_0_amount) {
+        Ok(value) => value,
+        Err(_) => return err!(GammaError::MathOverflow),
+    };
     let (transfer_token_0_amount, transfer_token_0_fee) = {
         let transfer_fee =
             get_transfer_inverse_fee(&ctx.accounts.vault_0_mint.to_account_info(), token_0_amount)?;
         (
-            token_0_amount.checked_add(transfer_fee).unwrap(),
+            token_0_amount.checked_add(transfer_fee).ok_or(GammaError::MathOverflow)?,
             transfer_fee,
         )
     };
 
-    let token_1_amount = u64::try_from(results.token_1_amount).unwrap();
+    let token_1_amount = match u64::try_from(results.token_1_amount) {
+        Ok(value) => value,
+        Err(_) => return err!(GammaError::MathOverflow),
+    };
     let (transfer_token_1_amount, transfer_token_1_fee) = {
         let transfer_fee =
             get_transfer_inverse_fee(&ctx.accounts.vault_1_mint.to_account_info(), token_1_amount)?;
         (
-            token_1_amount.checked_add(transfer_fee).unwrap(),
+            token_1_amount.checked_add(transfer_fee).ok_or(GammaError::MathOverflow)?,
             transfer_fee,
         )
     };
@@ -180,20 +186,20 @@ pub fn migrate(ctx: Context<MigrateOrcaToGamma>, liquidity: u64) -> Result<()> {
         ctx.accounts.vault_1_mint.decimals,
     )?;
 
-    pool_state.lp_supply = pool_state.lp_supply.checked_add(lp_token_amount).unwrap();
+    pool_state.lp_supply = pool_state.lp_supply.checked_add(lp_token_amount).ok_or(GammaError::MathOverflow)?;
     let user_pool_liquidity = &mut ctx.accounts.user_pool_liquidity;
     user_pool_liquidity.token_0_deposited = user_pool_liquidity
         .token_0_deposited
         .checked_add(u128::from(transfer_token_0_amount))
-        .unwrap();
+        .ok_or(GammaError::MathOverflow)?;
     user_pool_liquidity.token_1_deposited = user_pool_liquidity
         .token_1_deposited
         .checked_add(u128::from(transfer_token_1_amount))
-        .unwrap();
+        .ok_or(GammaError::MathOverflow)?;
     user_pool_liquidity.lp_tokens_owned = user_pool_liquidity
         .lp_tokens_owned
         .checked_add(u128::from(lp_token_amount))
-        .unwrap();
+        .ok_or(GammaError::MathOverflow)?;
     pool_state.recent_epoch = Clock::get()?.epoch;
 
     Ok(())

@@ -20,11 +20,17 @@ pub fn update_amm_config(ctx: Context<UpdateAmmConfig>, param: u8, value: u64) -
         1 => update_protocol_fee_rate(amm_config, value),
         2 => update_fund_fee_rate(amm_config, value),
         3 => {
-            let new_protocol_owner = *ctx.remaining_accounts.iter().next().unwrap().key;
+            let new_protocol_owner = match ctx.remaining_accounts.iter().next() {
+                Some(account) => account.key(),
+                None => return err!(GammaError::InvalidInput),
+            };
             set_new_protocol_owner(amm_config, new_protocol_owner)?;
         }
         4 => {
-            let new_fund_owner = *ctx.remaining_accounts.iter().next().unwrap().key;
+            let new_fund_owner = match ctx.remaining_accounts.iter().next() {
+                Some(account) => account.key(),
+                None => return err!(GammaError::InvalidInput),
+            };
             set_new_fund_owner(amm_config, new_fund_owner)?;
         }
         5 => amm_config.create_pool_fee = value,

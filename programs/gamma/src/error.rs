@@ -34,4 +34,10 @@ pub enum GammaError {
     MathError,
     #[msg("Invalid calculation, dynamic fee is negative")]
     DynamicFeeIsNegative,
+    #[msg("Math overflow")]
+    MathOverflow,
+    #[msg("Clock error")]
+    ClockError,
+    #[msg("Invalid fee")]
+    InvalidFee,
 }

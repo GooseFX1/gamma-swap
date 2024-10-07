@@ -148,7 +148,7 @@ pub fn get_transfer_inverse_fee(mint_info: &AccountInfo, post_fee_amount: u64) -
         } else {
             transfer_fee_config
                 .calculate_inverse_epoch_fee(epoch, post_fee_amount)
-                .unwrap()
+                .ok_or(GammaError::MathOverflow)?
         }
     } else {
         0
@@ -167,7 +167,7 @@ pub fn get_transfer_fee(mint_info: &AccountInfo, pre_fee_amount: u64) -> Result<
     let fee = if let Ok(transfer_fee_config) = mint.get_extension::<TransferFeeConfig>() {
         transfer_fee_config
             .calculate_epoch_fee(Clock::get()?.epoch, pre_fee_amount)
-            .unwrap()
+            .ok_or(GammaError::MathOverflow)?
     } else {
         0
     };

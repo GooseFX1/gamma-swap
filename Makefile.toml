@@ -17,7 +17,8 @@ dependencies = ["build_program", "build_client"]
 
 [tasks.install_client]
 script = """
-cargo install --path client
+cd client
+cargo install --path ./
 """
 dependencies = ["build_program", "build_client"]
 
