@@ -1,6 +1,8 @@
 use super::{ceil_div, FEE_RATE_DENOMINATOR_VALUE};
-use crate::error::GammaError;
-use crate::states::{Observation, ObservationState, OBSERVATION_NUM};
+use crate::{
+    error::GammaError, 
+    states::{Observation, ObservationState, OBSERVATION_NUM},
+};
 use anchor_lang::prelude::*;
 //pub const FEE_RATE_DENOMINATOR_VALUE: u64 = 1_000_000;
 
@@ -70,27 +72,20 @@ impl DynamicFee {
         } else {
             0
         };
-
+        
         let volatility_component_calculated = VOLATILITY_FACTOR
             .saturating_mul(recent_price_volatility as u64)
-            .checked_div(FEE_RATE_DENOMINATOR_VALUE);
-
-        if volatility_component_calculated.is_none() {
-            return err!(GammaError::MathError);
-        }
+            .checked_div(FEE_RATE_DENOMINATOR_VALUE)
+            .ok_or(GammaError::MathOverflow)?;
 
         // Calculate volatility component
         let volatility_component = std::cmp::min(
-            volatility_component_calculated.unwrap(),
-            MAX_FEE.saturating_sub(base_fees),
+            volatility_component_calculated,
+            MAX_FEE.checked_sub(base_fees).ok_or(GammaError::MathOverflow)?,
         );
 
         // Calculate liquidity imbalance component
-        let total_liquidity = vault_0.checked_add(vault_1);
-        if total_liquidity.is_none() {
-            return err!(GammaError::MathError);
-        }
-        let total_liquidity = vault_0.checked_add(vault_1).unwrap() as u128;
+        let total_liquidity = vault_0.checked_add(vault_1).ok_or(GammaError::MathOverflow)? as u128;
 
         let current_ratio = if total_liquidity > 0 {
             (vault_0 as u128)
@@ -101,11 +96,7 @@ impl DynamicFee {
             0
         };
 
-        let ideal_ratio = FEE_RATE_DENOMINATOR_VALUE.checked_div(2);
-        if ideal_ratio.is_none() {
-            return err!(GammaError::MathError);
-        }
-        let ideal_ratio = ideal_ratio.unwrap() as u128;
+        let ideal_ratio = FEE_RATE_DENOMINATOR_VALUE.checked_div(2).ok_or(GammaError::MathOverflow)? as u128;
 
         let imbalance = if current_ratio > ideal_ratio {
             current_ratio.saturating_sub(ideal_ratio)
@@ -119,8 +110,8 @@ impl DynamicFee {
             .unwrap_or(0);
         // Calculate final dynamic fee
         let dynamic_fee = base_fees
-            .saturating_add(volatility_component)
-            .saturating_add(liquidity_imbalance_component);
+            .checked_add(volatility_component).ok_or(GammaError::MathOverflow)?
+            .checked_add(liquidity_imbalance_component).ok_or(GammaError::MathOverflow)?;
         #[cfg(feature = "enable-log")]
         msg!("dynamic_fee: {}", dynamic_fee);
         Ok(std::cmp::min(dynamic_fee, MAX_FEE))
@@ -144,7 +135,7 @@ impl DynamicFee {
         vault_1: u64,
         fee_type: FeeType,
         base_fees: u64,
-    ) -> u64 {
+    ) -> Result<u64> {
         match fee_type {
             FeeType::Volatility => Self::calculate_volatile_fee(
                 block_timestamp,
@@ -153,7 +144,6 @@ impl DynamicFee {
                 vault_1,
                 base_fees,
             )
-            .unwrap(),
         }
     }
 
@@ -176,53 +166,26 @@ impl DynamicFee {
         let (price_a, price_b, _) =
             Self::get_price_range(observation_state, block_timestamp, VOLATILITY_WINDOW)?;
         let volatility = if price_b > price_a {
-            let price_diff = price_b.checked_sub(price_a);
-            if price_diff.is_none() {
-                return err!(GammaError::MathError);
-            }
-
-            let price_diff_ratio = price_diff.unwrap().checked_div(price_a);
-            if price_diff_ratio.is_none() {
-                return err!(GammaError::MathError);
-            }
-
-            price_diff_ratio
-                .unwrap()
+            price_b.checked_sub(price_a)
+                .ok_or(GammaError::MathOverflow)?
+                .checked_div(price_a)
+                .ok_or(GammaError::MathOverflow)?
                 .checked_mul(FEE_RATE_DENOMINATOR_VALUE as u128)
+                .ok_or(GammaError::MathOverflow)?
         } else {
-            let price_diff = price_a.checked_sub(price_b);
-            if price_diff.is_none() {
-                return err!(GammaError::MathError);
-            }
-
-            let price_diff_ratio = price_diff.unwrap().checked_div(price_b);
-            if price_diff_ratio.is_none() {
-                return err!(GammaError::MathError);
-            }
-
-            price_diff_ratio
-                .unwrap()
+            price_a.checked_sub(price_b)
+                .ok_or(GammaError::MathOverflow)?
+                .checked_div(price_b)
+                .ok_or(GammaError::MathOverflow)?
                 .checked_mul(FEE_RATE_DENOMINATOR_VALUE as u128)
+                .ok_or(GammaError::MathOverflow)?
         };
-        if volatility.is_none() {
-            return err!(GammaError::MathError);
-        }
-        let volatility = volatility.unwrap();
 
-        let volatility_divide_by_100 = volatility.checked_div(100);
-        if volatility_divide_by_100.is_none() {
-            return err!(GammaError::MathError);
-        }
-
-        let dynamic_fee = volatility_divide_by_100
-            .unwrap()
-            .checked_add(base_fees as u128); // Increase fee by 1 bp for each 1% of volatility
-
-        if dynamic_fee.is_none() {
-            return err!(GammaError::MathError);
-        }
-        let dynamic_fee = dynamic_fee.unwrap();
-
+        let dynamic_fee = volatility
+            .checked_div(100)
+            .ok_or(GammaError::MathOverflow)?
+            .checked_add(base_fees as u128)
+            .ok_or(GammaError::MathOverflow)?; // Increase fee by 1 bp for each 1% of volatility
         Ok(dynamic_fee.min(MAX_FEE_VOLATILITY as u128) as u64)
     }
 
@@ -253,9 +216,11 @@ impl DynamicFee {
                     && x.cumulative_token_1_price_x32 != 0
             })
             .enumerate()
-            .map(|(index, observation)| ObservationWithIndex {
-                index: index.try_into().unwrap(),
-                observation: *observation,
+            .filter_map(|(index, observation)| {
+                index.try_into().ok().map(|index| ObservationWithIndex {
+                    index,
+                    observation: *observation,
+                })
             })
             .collect::<Vec<_>>();
 
@@ -299,35 +264,28 @@ impl DynamicFee {
 
             let price = cumulative_token_0_price
                 .checked_sub(last_cumulative_token_0_price)
-                .unwrap()
+                .ok_or(GammaError::MathOverflow)?
                 .checked_div(time_delta)
-                .unwrap();
+                .ok_or(GammaError::MathOverflow)?;
 
             // change cumulative
             min_price = min_price.min(price);
             max_price = max_price.max(price);
             count += 1;
 
-            let total_price_option = total_price.checked_add(price);
-            if total_price_option.is_none() {
-                return err!(GammaError::MathError);
-            }
-            total_price = total_price_option.unwrap();
+            total_price = total_price.checked_add(price).ok_or(GammaError::MathOverflow)?;
         }
 
         if count == 0 {
             // If no valid observations found, return a default range
+            // This could be (0, 0, 0) or another appropriate default
             return Ok((0, 0, 0));
         }
 
         // We are dividing  u128 by u128, we will lose precision here
         // This can be optimized.
-        let price_avg = total_price.checked_add(count);
-        if price_avg.is_none() {
-            return err!(GammaError::MathError);
-        }
-
-        Ok((min_price, max_price, price_avg.unwrap()))
+        let price_avg = total_price.checked_div(count as u128).ok_or(GammaError::MathOverflow)?;
+        Ok((min_price, max_price, price_avg))
     }
 
     /// Calculates the fee amount for a given input amount
@@ -351,7 +309,7 @@ impl DynamicFee {
         vault_1: u64,
         fee_type: FeeType,
         base_fees: u64,
-    ) -> Option<u128> {
+    ) -> Result<u128> {
         let dynamic_fee_rate = Self::calculate_dynamic_fee(
             block_timestamp,
             observation_state,
@@ -359,13 +317,13 @@ impl DynamicFee {
             vault_1,
             fee_type,
             base_fees,
-        );
+        )?;
 
-        ceil_div(
+        Ok(ceil_div(
             amount,
             u128::from(dynamic_fee_rate),
             u128::from(FEE_RATE_DENOMINATOR_VALUE),
-        )
+        ).ok_or(GammaError::MathOverflow)?)
     }
 
     /// Calculates the pre-fee amount given a post-fee amount
@@ -388,7 +346,7 @@ impl DynamicFee {
         vault_1: u64,
         fee_type: FeeType,
         base_fees: u64,
-    ) -> Option<u128> {
+    ) -> Result<u128> {
         // x = pre_fee_amount (has to be calculated)
         // y = post_fee_amount
         // r = trade_fee_rate
@@ -411,18 +369,26 @@ impl DynamicFee {
             vault_1,
             fee_type,
             base_fees,
-        );
+        )?;
         if dynamic_fee_rate == 0 {
-            Some(post_fee_amount)
+            Ok(post_fee_amount)
         } else {
-            let numerator = post_fee_amount.checked_mul(u128::from(FEE_RATE_DENOMINATOR_VALUE))?;
-            let denominator =
-                u128::from(FEE_RATE_DENOMINATOR_VALUE).checked_sub(u128::from(dynamic_fee_rate))?;
+            let numerator = post_fee_amount
+                .checked_mul(u128::from(FEE_RATE_DENOMINATOR_VALUE))
+                .ok_or(GammaError::MathOverflow)?;
+            let denominator = u128::from(FEE_RATE_DENOMINATOR_VALUE)
+                .checked_sub(u128::from(dynamic_fee_rate))
+                .ok_or(GammaError::MathOverflow)?;
 
-            numerator
-                .checked_add(denominator)?
-                .checked_sub(1)?
+            let result = numerator
+                .checked_add(denominator)
+                .ok_or(GammaError::MathOverflow)?
+                .checked_sub(1)
+                .ok_or(GammaError::MathOverflow)?
                 .checked_div(denominator)
+                .ok_or(GammaError::MathOverflow)?;
+
+            Ok(result)
         }
     }
 }

@@ -1,9 +1,9 @@
 //! The Uniswap invariantConstantProductCurve::
 
 use crate::{
-    curve::calculator::{RoundDirection, TradingTokenResult},
-    utils::CheckedCeilDiv,
+    curve::calculator::{RoundDirection, TradingTokenResult}, error::GammaError,
 };
+use anchor_lang::prelude::*;
 
 /// ConstantProductCurve struct implementing CurveCalculator
 #[derive(Clone, Debug, Default, PartialEq)]
@@ -20,34 +20,38 @@ impl ConstantProductCurve {
         source_amount_to_be_swapped: u128,
         swap_source_amount: u128,
         swap_destination_amount: u128,
-    ) -> u128 {
+    ) -> Result<u128> {
         // (x + delta_x) * (y - delta_y) = x * y
         // delta_y = (delta_x * y) / (x + delta_x)
         let numerator = source_amount_to_be_swapped
             .checked_mul(swap_destination_amount)
-            .unwrap();
+            .ok_or(GammaError::MathOverflow)?;
         let denominator = swap_source_amount
             .checked_add(source_amount_to_be_swapped)
-            .unwrap();
-        let destination_amount_swapped = numerator.checked_div(denominator).unwrap();
-        destination_amount_swapped
+            .ok_or(GammaError::MathOverflow)?;
+        let destination_amount_swapped = numerator
+            .checked_div(denominator)
+            .ok_or(GammaError::MathOverflow)?;
+        Ok(destination_amount_swapped)
     }
 
     pub fn swap_base_output_without_fees(
         destination_amount_to_be_swapped: u128,
         swap_source_amount: u128,
         swap_destination_amount: u128,
-    ) -> u128 {
+    ) -> Result<u128> {
         // (x + delta_x) * (y - delta_y) = x * y
         // delta_x = (x * delta_y) / (y - delta_y)
         let numerator = swap_source_amount
             .checked_mul(destination_amount_to_be_swapped)
-            .unwrap();
+            .ok_or(GammaError::MathOverflow)?;
         let denominator = swap_destination_amount
             .checked_sub(destination_amount_to_be_swapped)
-            .unwrap();
-        let (source_amount_swapped, _) = numerator.checked_ceil_div(denominator).unwrap();
-        source_amount_swapped
+            .ok_or(GammaError::MathOverflow)?;
+        let source_amount_swapped = numerator
+            .checked_div(denominator)
+            .ok_or(GammaError::MathOverflow)?;
+        Ok(source_amount_swapped)
     }
 
     /// Get the amount of trading tokens(token_0 and token_1) for a given amount of pool tokens(lp_tokens)

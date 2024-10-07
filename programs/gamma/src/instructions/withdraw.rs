@@ -110,7 +110,7 @@ pub fn withdraw(
     let (total_token_0_amount, total_token_1_amount) = pool_state.vault_amount_without_fee(
         ctx.accounts.token_0_vault.amount,
         ctx.accounts.token_1_vault.amount,
-    );
+    )?;
     let results = CurveCalculator::lp_tokens_to_trading_tokens(
         u128::from(lp_token_amount),
         u128::from(pool_state.lp_supply),
@@ -120,24 +120,30 @@ pub fn withdraw(
     )
     .ok_or(GammaError::ZeroTradingTokens)?;
 
-    let token_0_amount = u64::try_from(results.token_0_amount).unwrap();
+    let token_0_amount = match u64::try_from(results.token_0_amount) {
+        Ok(value) => value,
+        Err(_) => return err!(GammaError::MathOverflow),
+    };
     let token_0_amount = std::cmp::min(total_token_0_amount, token_0_amount);
     let (receive_token_0_amount, token_0_transfer_fee) = {
         let transfer_fee =
             get_transfer_fee(&ctx.accounts.vault_0_mint.to_account_info(), token_0_amount)?;
         (
-            token_0_amount.checked_sub(transfer_fee).unwrap(),
+            token_0_amount.checked_sub(transfer_fee).ok_or(GammaError::MathOverflow)?,
             transfer_fee,
         )
     };
 
-    let token_1_amount = u64::try_from(results.token_1_amount).unwrap();
+    let token_1_amount = match u64::try_from(results.token_1_amount) {
+        Ok(value) => value,
+        Err(_) => return err!(GammaError::MathOverflow),
+    };
     let token_1_amount = std::cmp::min(total_token_1_amount, token_1_amount);
     let (receive_token_1_amount, token_1_transfer_fee) = {
         let transfer_fee =
             get_transfer_fee(&ctx.accounts.vault_1_mint.to_account_info(), token_1_amount)?;
         (
-            token_1_amount.checked_sub(transfer_fee).unwrap(),
+            token_1_amount.checked_sub(transfer_fee).ok_or(GammaError::MathOverflow)?,
             transfer_fee,
         )
     };
@@ -171,21 +177,21 @@ pub fn withdraw(
         return Err(GammaError::ExceededSlippage.into());
     }
 
-    pool_state.lp_supply = pool_state.lp_supply.checked_sub(lp_token_amount).unwrap();
+    pool_state.lp_supply = pool_state.lp_supply.checked_sub(lp_token_amount).ok_or(GammaError::MathOverflow)?;
     let user_pool_liquidity = &mut ctx.accounts.user_pool_liquidity;
     user_pool_liquidity.lp_tokens_owned = user_pool_liquidity
         .lp_tokens_owned
         .checked_sub(u128::from(lp_token_amount))
-        .unwrap();
+        .ok_or(GammaError::MathOverflow)?;
     user_pool_liquidity.token_0_withdrawn = user_pool_liquidity
         .token_0_withdrawn
         .checked_add(u128::from(receive_token_0_amount))
-        .unwrap();
+        .ok_or(GammaError::MathOverflow)?;
     user_pool_liquidity.token_1_withdrawn = user_pool_liquidity
         .token_1_withdrawn
         .checked_add(u128::from(receive_token_1_amount))
-        .unwrap();
-    
+        .ok_or(GammaError::MathOverflow)?;
+
     transfer_from_pool_vault_to_user(
         ctx.accounts.authority.to_account_info(),
         ctx.accounts.token_0_vault.to_account_info(),

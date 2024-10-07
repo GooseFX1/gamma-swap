@@ -294,7 +294,7 @@ fn main() -> Result<()> {
             let (total_token_0_amount, total_token_1_amount) = pool_state.vault_amount_without_fee(
                 token_0_vault_info.base.amount,
                 token_1_vault_info.base.amount,
-            );
+            )?;
             // calculate amount
             let results = gamma::curve::CurveCalculator::lp_tokens_to_trading_tokens(
                 u128::from(lp_token_amount),
@@ -402,7 +402,7 @@ fn main() -> Result<()> {
             let (total_token_0_amount, total_token_1_amount) = pool_state.vault_amount_without_fee(
                 token_0_vault_info.base.amount,
                 token_1_vault_info.base.amount,
-            );
+            )?;
             // calculate amount
             let results = gamma::curve::CurveCalculator::lp_tokens_to_trading_tokens(
                 u128::from(lp_token_amount),
@@ -532,7 +532,7 @@ fn main() -> Result<()> {
             let (total_token_0_amount, total_token_1_amount) = pool_state.vault_amount_without_fee(
                 token_0_vault_info.base.amount,
                 token_1_vault_info.base.amount,
-            );
+            )?;
 
             let (
                 trade_direction,
@@ -604,12 +604,9 @@ fn main() -> Result<()> {
                 amm_config_state.protocol_fee_rate,
                 amm_config_state.fund_fee_rate,
                 current_unix_timestamp,
-                &pool_state,
                 &observation,
                 trade_direction,
-            )
-            .ok_or(gamma::error::GammaError::ZeroTradingTokens)
-            .unwrap();
+            )?;
 
             let amount_out = u64::try_from(result.destination_amount_swapped).unwrap();
             let transfer_fee = match trade_direction {
@@ -701,7 +698,7 @@ fn main() -> Result<()> {
             let (total_token_0_amount, total_token_1_amount) = pool_state.vault_amount_without_fee(
                 token_0_vault_info.base.amount,
                 token_1_vault_info.base.amount,
-            );
+            )?;
 
             let (
                 trade_direction,
@@ -771,12 +768,9 @@ fn main() -> Result<()> {
                 amm_config_state.protocol_fee_rate,
                 amm_config_state.fund_fee_rate,
                 current_unix_timestamp,
-                &pool_state,
                 &observation,
                 trade_direction,
-            )
-            .ok_or(gamma::error::GammaError::ZeroTradingTokens)
-            .unwrap();
+            )?;
 
             let source_amount_swapped = u64::try_from(result.source_amount_swapped).unwrap();
             let amount_in_transfer_fee = match trade_direction {

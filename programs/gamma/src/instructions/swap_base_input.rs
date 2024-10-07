@@ -103,7 +103,7 @@ pub fn swap_base_input(ctx: Context<Swap>, amount_in: u64, minimum_amount_out: u
                 .vault_amount_without_fee(
                     ctx.accounts.input_vault.amount,
                     ctx.accounts.output_vault.amount,
-                );
+                )?;
 
             (
                 TradeDirection::ZeroForOne,
@@ -117,7 +117,7 @@ pub fn swap_base_input(ctx: Context<Swap>, amount_in: u64, minimum_amount_out: u
                 .vault_amount_without_fee(
                     ctx.accounts.output_vault.amount,
                     ctx.accounts.input_vault.amount,
-                );
+                )?;
 
             (
                 TradeDirection::OneForZero,
@@ -129,11 +129,11 @@ pub fn swap_base_input(ctx: Context<Swap>, amount_in: u64, minimum_amount_out: u
         };
     let constant_before = u128::from(total_input_token_amount)
         .checked_mul(u128::from(total_output_token_amount))
-        .unwrap();
+        .ok_or(GammaError::MathOverflow)?;
 
     let mut observation_state = ctx.accounts.observation_state.load_mut()?;
 
-    let result = CurveCalculator::swap_base_input(
+    let result = match CurveCalculator::swap_base_input(
         u128::from(actual_amount_in),
         u128::from(total_input_token_amount),
         u128::from(total_output_token_amount),
@@ -141,15 +141,16 @@ pub fn swap_base_input(ctx: Context<Swap>, amount_in: u64, minimum_amount_out: u
         ctx.accounts.amm_config.protocol_fee_rate,
         ctx.accounts.amm_config.fund_fee_rate,
         block_timestamp,
-        &pool_state,
         &observation_state,
         trade_direction,
-    )
-    .ok_or(GammaError::ZeroTradingTokens)?;
+    ) {
+        Ok(value) => value,
+        Err(_) => return err!(GammaError::ZeroTradingTokens),
+    };
 
     let constant_after = u128::from(result.new_swap_source_amount)
         .checked_mul(u128::from(result.new_swap_destination_amount))
-        .unwrap();
+        .ok_or(GammaError::MathOverflow)?;
     #[cfg(feature = "enable-log")]
     msg!(
         "source_amount_swapped:{}, destination_amount_swapped:{},constant_before:{},constant_after:{}",
@@ -159,18 +160,25 @@ pub fn swap_base_input(ctx: Context<Swap>, amount_in: u64, minimum_amount_out: u
         constant_after
     );
     require_gte!(constant_after, constant_before);
+    let source_amount_swapped = match u64::try_from(result.source_amount_swapped) {
+        Ok(value) => value,
+        Err(_) => return err!(GammaError::MathOverflow),
+    };
     require_eq!(
-        u64::try_from(result.source_amount_swapped).unwrap(),
+        source_amount_swapped,
         actual_amount_in
     );
     let (input_transfer_amount, input_transfer_fee) = (amount_in, transfer_fee);
     let (output_transfer_amount, output_transfer_fee) = {
-        let amount_out = u64::try_from(result.destination_amount_swapped).unwrap();
+        let amount_out = match u64::try_from(result.destination_amount_swapped) {
+            Ok(value) => value,
+            Err(_) => return err!(GammaError::MathOverflow),
+        };
         let transfer_fee = get_transfer_fee(
             &ctx.accounts.output_token_mint.to_account_info(),
             amount_out,
         )?;
-        let amount_received = amount_out.checked_sub(transfer_fee).unwrap();
+        let amount_received = amount_out.checked_sub(transfer_fee).ok_or(GammaError::MathOverflow)?;
         require_gt!(amount_received, 0);
         require_gte!(
             amount_received,
@@ -180,42 +188,55 @@ pub fn swap_base_input(ctx: Context<Swap>, amount_in: u64, minimum_amount_out: u
         (amount_out, transfer_fee)
     };
 
-    let protocol_fee = u64::try_from(result.protocol_fee).unwrap();
-    let fund_fee = u64::try_from(result.fund_fee).unwrap();
-    let dynamic_fee = u64::try_from(result.dynamic_fee).unwrap();
+    let protocol_fee = match u64::try_from(result.protocol_fee) {
+        Ok(value) => value,
+        Err(_) => return err!(GammaError::MathOverflow),
+    };
+    let fund_fee = match u64::try_from(result.fund_fee) {
+        Ok(value) => value,
+        Err(_) => return err!(GammaError::MathOverflow),
+    };
+    let dynamic_fee = match u64::try_from(result.dynamic_fee) {
+        Ok(value) => value,
+        Err(_) => return err!(GammaError::MathOverflow),
+    };
 
     match trade_direction {
         TradeDirection::ZeroForOne => {
             pool_state.protocol_fees_token_0 = pool_state
                 .protocol_fees_token_0
                 .checked_add(protocol_fee)
-                .unwrap();
-            pool_state.fund_fees_token_0 =
-                pool_state.fund_fees_token_0.checked_add(fund_fee).unwrap();
+                .ok_or(GammaError::MathOverflow)?;
+            pool_state.fund_fees_token_0 = pool_state
+                .fund_fees_token_0
+                .checked_add(fund_fee)
+                .ok_or(GammaError::MathOverflow)?;
             pool_state.cumulative_trade_fees_token_0 = pool_state
                 .cumulative_trade_fees_token_0
                 .checked_add((dynamic_fee) as u128)
-                .unwrap();
+                .ok_or(GammaError::MathOverflow)?;
             pool_state.cumulative_volume_token_0 = pool_state
                 .cumulative_volume_token_0
                 .checked_add(actual_amount_in as u128)
-                .unwrap();
+                .ok_or(GammaError::MathOverflow)?;
         }
         TradeDirection::OneForZero => {
             pool_state.protocol_fees_token_1 = pool_state
                 .protocol_fees_token_1
                 .checked_add(protocol_fee)
-                .unwrap();
-            pool_state.fund_fees_token_1 =
-                pool_state.fund_fees_token_1.checked_add(fund_fee).unwrap();
+                .ok_or(GammaError::MathOverflow)?;
+            pool_state.fund_fees_token_1 = pool_state
+                .fund_fees_token_1
+                .checked_add(fund_fee)
+                .ok_or(GammaError::MathOverflow)?;
             pool_state.cumulative_trade_fees_token_1 = pool_state
                 .cumulative_trade_fees_token_1
                 .checked_add((dynamic_fee) as u128)
-                .unwrap();
+                .ok_or(GammaError::MathOverflow)?;
             pool_state.cumulative_volume_token_1 = pool_state
                 .cumulative_volume_token_1
                 .checked_add(actual_amount_in as u128)
-                .unwrap();
+                .ok_or(GammaError::MathOverflow)?;
         }
     };
 
@@ -223,8 +244,14 @@ pub fn swap_base_input(ctx: Context<Swap>, amount_in: u64, minimum_amount_out: u
         pool_id,
         input_vault_before: total_input_token_amount,
         output_vault_before: total_output_token_amount,
-        input_amount: u64::try_from(result.source_amount_swapped).unwrap(),
-        output_amount: u64::try_from(result.destination_amount_swapped).unwrap(),
+        input_amount: match u64::try_from(result.source_amount_swapped) {
+            Ok(value) => value,
+            Err(_) => return err!(GammaError::MathOverflow),
+        },
+        output_amount: match u64::try_from(result.destination_amount_swapped) {
+            Ok(value) => value,
+            Err(_) => return err!(GammaError::MathOverflow),
+        },
         input_transfer_fee,
         output_transfer_fee,
         base_input: true
@@ -258,24 +285,22 @@ pub fn swap_base_input(ctx: Context<Swap>, amount_in: u64, minimum_amount_out: u
         pool_state.token_price_x32(
             ctx.accounts.input_vault.amount,
             ctx.accounts.output_vault.amount,
-        )
+        )?
     } else if ctx.accounts.input_vault.key() == pool_state.token_1_vault
         && ctx.accounts.output_vault.key() == pool_state.token_0_vault
     {
         pool_state.token_price_x32(
             ctx.accounts.output_vault.amount,
             ctx.accounts.input_vault.amount,
-        )
+        )?
     } else {
         return err!(GammaError::InvalidVault);
     };
-    {
-        observation_state.update(
-            oracle::block_timestamp(),
-            token_0_price_x64,
-            token_1_price_x64,
-        );
-    }
+    observation_state.update(
+        oracle::block_timestamp()?,
+        token_0_price_x64,
+        token_1_price_x64,
+    )?;
     pool_state.recent_epoch = Clock::get()?.epoch;
 
     Ok(())

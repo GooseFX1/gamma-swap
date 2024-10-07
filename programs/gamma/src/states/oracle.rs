@@ -1,6 +1,7 @@
 /// Oracle provides price data useful for a wide variety of system designs
 ///
 use anchor_lang::prelude::*;
+use crate::error::GammaError;
 /// Seed to derive account address and signature
 pub const OBSERVATION_SEED: &str = "observation";
 // Number of ObservationState element
@@ -70,21 +71,22 @@ impl ObservationState {
         block_timestamp: u64,
         token_0_price_x32: u128,
         token_1_price_x32: u128,
-    ) {
+    ) -> Result<()> {
         let observation_index = self.observation_index;
         if !self.initialized {
             self.initialized = true;
             self.observations[observation_index as usize].block_timestamp = block_timestamp;
             self.observations[observation_index as usize].cumulative_token_0_price_x32 = 0;
             self.observations[observation_index as usize].cumulative_token_1_price_x32 = 0;
+            Ok(())
         } else {
             let last_observation = self.observations[observation_index as usize];
             let delta_time = block_timestamp.saturating_sub(last_observation.block_timestamp);
             if delta_time == 0 {
-                return;
+                return Ok(());
             }
-            let delta_token_0_price_x32 = token_0_price_x32.checked_mul(delta_time.into()).unwrap();
-            let delta_token_1_price_x32 = token_1_price_x32.checked_mul(delta_time.into()).unwrap();
+            let delta_token_0_price_x32 = token_0_price_x32.checked_mul(delta_time.into()).ok_or(GammaError::MathOverflow)?;
+            let delta_token_1_price_x32 = token_1_price_x32.checked_mul(delta_time.into()).ok_or(GammaError::MathOverflow)?;
             let next_observation_index = if observation_index as usize == OBSERVATION_NUM - 1 {
                 0
             } else {
@@ -101,12 +103,17 @@ impl ObservationState {
                     .cumulative_token_1_price_x32
                     .wrapping_add(delta_token_1_price_x32);
             self.observation_index = next_observation_index;
+            Ok(())
         }
     }
 }
 
 /// Returns the block timestamp truncated to 32 bits, i.e. mod 2**32
 ///
-pub fn block_timestamp() -> u64 {
-    Clock::get().unwrap().unix_timestamp as u64 // truncation is desired
+pub fn block_timestamp() -> Result<u64> {
+    let clock = match Clock::get() {
+        Ok(clock) => clock,
+        Err(_) => return err!(GammaError::ClockError),
+    };
+    Ok(clock.unix_timestamp as u64)
 }

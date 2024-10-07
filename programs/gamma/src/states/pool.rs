@@ -1,6 +1,7 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token_interface::Mint;
 use std::ops::{BitAnd, BitOr, BitXor};
+use crate::error::GammaError;
 
 // Seed to derive account address and signature
 pub const POOL_SEED: &str = "pool";
@@ -106,7 +107,6 @@ pub struct PoolState {
 }
 
 impl PoolState {
-    // pub const LEN: usize = 8 + 10 * 32 + 5 * 1 + 7 * 8 + 31 * 8;
     pub const LEN: usize = 8 + 10 * 32 + 5 * 1 + 7 * 8 + 16 * 4 + 23 * 8;
 
     pub fn initialize(
@@ -120,21 +120,18 @@ impl PoolState {
         token_1_vault: Pubkey,
         token_0_mint: &InterfaceAccount<Mint>,
         token_1_mint: &InterfaceAccount<Mint>,
-        // lp_mint: &InterfaceAccount<Mint>,
         observation_key: Pubkey,
-    ) {
+    ) -> Result<()> {
         self.amm_config = amm_config.key();
         self.pool_creator = pool_creator.key();
         self.token_0_vault = token_0_vault;
         self.token_1_vault = token_1_vault;
-        // self.lp_mint = lp_mint.key();
         self.token_0_mint = token_0_mint.key();
         self.token_1_mint = token_1_mint.key();
         self.token_0_program = *token_0_mint.to_account_info().owner;
         self.token_1_program = *token_1_mint.to_account_info().owner;
         self.observation_key = observation_key;
         self.auth_bump = auth_bump;
-        // self.lp_mint_decimals = lp_mint.decimals;
         self.mint_0_decimals = token_0_mint.decimals;
         self.mint_1_decimals = token_1_mint.decimals;
         self.lp_supply = lp_supply;
@@ -143,7 +140,11 @@ impl PoolState {
         self.fund_fees_token_0 = 0;
         self.fund_fees_token_1 = 0;
         self.open_time = open_time;
-        self.recent_epoch = Clock::get().unwrap().epoch;
+        let clock = match Clock::get() {
+            Ok(clock) => clock,
+            Err(_) => return err!(GammaError::ClockError),
+        };
+        self.recent_epoch = clock.epoch;
         self.cumulative_trade_fees_token_0 = 0;
         self.cumulative_trade_fees_token_1 = 0;
         self.cumulative_volume_token_0 = 0;
@@ -157,6 +158,7 @@ impl PoolState {
         self.volatility_v2_volatility_factor = 0;
         self.volatility_v2_imbalance_factor = 0;
         self.padding = [0u64; 17];
+        Ok(())
     }
 
     pub fn set_status(&mut self, status: u8) {
@@ -179,23 +181,23 @@ impl PoolState {
         self.status.bitand(status) == 0
     }
 
-    pub fn vault_amount_without_fee(&self, vault_0: u64, vault_1: u64) -> (u64, u64) {
-        (
+    pub fn vault_amount_without_fee(&self, vault_0: u64, vault_1: u64) -> Result<(u64, u64)> {
+        Ok((
             vault_0
                 .checked_sub(self.protocol_fees_token_0 + self.fund_fees_token_0)
-                .unwrap(),
+                .ok_or(GammaError::MathOverflow)?,
             vault_1
                 .checked_sub(self.protocol_fees_token_1 + self.fund_fees_token_1)
-                .unwrap(),
-        )
+                .ok_or(GammaError::MathOverflow)?,
+        ))
     }
 
-    pub fn token_price_x32(&self, vault_0: u64, vault_1: u64) -> (u128, u128) {
-        let (token_0_amount, token_1_amount) = self.vault_amount_without_fee(vault_0, vault_1);
-        (
+    pub fn token_price_x32(&self, vault_0: u64, vault_1: u64) -> Result<(u128, u128)> {
+        let (token_0_amount, token_1_amount) = self.vault_amount_without_fee(vault_0, vault_1)?;
+        Ok((
             token_1_amount as u128 * Q32 as u128 / token_0_amount as u128,
             token_0_amount as u128 * Q32 as u128 / token_1_amount as u128,
-        )
+        ))
     }
 
     #[inline(always)]

@@ -258,7 +258,7 @@ pub fn initialize(
 
     let liquidity = U128::from(token_0_vault.amount)
         .checked_mul(token_1_vault.amount.into())
-        .unwrap()
+        .ok_or(GammaError::MathOverflow)?
         .integer_sqrt()
         .as_u64();
 
@@ -307,7 +307,7 @@ pub fn initialize(
         &ctx.accounts.token_0_mint,
         &ctx.accounts.token_1_mint,
         ctx.accounts.observation_state.key(),
-    );
+    )?;
 
     let user_pool_liquidity = &mut ctx.accounts.user_pool_liquidity;
     user_pool_liquidity.token_0_deposited = u128::from(init_amount_0);
