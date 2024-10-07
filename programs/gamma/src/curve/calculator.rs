@@ -119,7 +119,6 @@ impl CurveCalculator {
         let dynamic_fee = DynamicFee::dynamic_fee(
             source_amount_to_be_swapped,
             block_timestamp,
-            &pool_state,
             &observation_state,
             vault0 as u64,
             vault1 as u64,
@@ -182,7 +181,6 @@ impl CurveCalculator {
         let source_amount = DynamicFee::calculate_pre_fee_amount(
             block_timestamp,
             source_amount_swapped,
-            pool_state,
             observation_state,
             vault0,
             vault1,
@@ -190,7 +188,13 @@ impl CurveCalculator {
             trade_fee_rate,
         )?;
 
-        let dynamic_fee = source_amount - source_amount_swapped;
+        let dynamic_fee = source_amount.checked_sub(source_amount_swapped);
+        if dynamic_fee.is_none() {
+            // we return None here and the caller should throw error.
+            return None;
+        }
+        
+        let dynamic_fee = dynamic_fee.unwrap();
         let protocol_fee = StaticFee::protocol_fee(dynamic_fee, protocol_fee_rate)?;
         let fund_fee = StaticFee::fund_fee(dynamic_fee, fund_fee_rate)?;
         Some(SwapResult {
