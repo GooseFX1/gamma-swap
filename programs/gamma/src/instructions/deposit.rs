@@ -113,10 +113,8 @@ pub fn deposit(
     )
     .ok_or(GammaError::ZeroTradingTokens)?;
 
-    let token_0_amount = match u64::try_from(results.token_0_amount) {
-        Ok(value) => value,
-        Err(_) => return err!(GammaError::MathOverflow),
-    };
+    let token_0_amount = u64::try_from(results.token_0_amount)
+        .map_err(|_| GammaError::MathOverflow)?;
     let (transfer_token_0_amount, transfer_token_0_fee) = {
         let transfer_fee =
             get_transfer_inverse_fee(&ctx.accounts.vault_0_mint.to_account_info(), token_0_amount)?;
@@ -126,10 +124,8 @@ pub fn deposit(
         )
     };
 
-    let token_1_amount = match u64::try_from(results.token_1_amount) {
-        Ok(value) => value,
-        Err(_) => return err!(GammaError::MathOverflow),
-    };
+    let token_1_amount = u64::try_from(results.token_1_amount)
+        .map_err(|_| GammaError::MathOverflow)?;
     let (transfer_token_1_amount, transfer_token_1_fee) = {
         let transfer_fee =
             get_transfer_inverse_fee(&ctx.accounts.vault_1_mint.to_account_info(), token_1_amount)?;
@@ -196,7 +192,10 @@ pub fn deposit(
         ctx.accounts.vault_1_mint.decimals,
     )?;
 
-    pool_state.lp_supply = pool_state.lp_supply.checked_add(lp_token_amount).ok_or(GammaError::MathOverflow)?;
+    pool_state.lp_supply = pool_state
+        .lp_supply
+        .checked_add(lp_token_amount)
+        .ok_or(GammaError::MathOverflow)?;
     let user_pool_liquidity = &mut ctx.accounts.user_pool_liquidity;
     user_pool_liquidity.token_0_deposited = user_pool_liquidity
         .token_0_deposited

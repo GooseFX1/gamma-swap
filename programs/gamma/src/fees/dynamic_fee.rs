@@ -4,7 +4,6 @@ use crate::{
     states::{Observation, ObservationState, OBSERVATION_NUM},
 };
 use anchor_lang::prelude::*;
-
 //pub const FEE_RATE_DENOMINATOR_VALUE: u64 = 1_000_000;
 
 // Volatility-based fee constants
@@ -74,15 +73,20 @@ impl DynamicFee {
             0
         };
         
+        let volatility_component_calculated = VOLATILITY_FACTOR
+            .saturating_mul(recent_price_volatility as u64)
+            .checked_div(FEE_RATE_DENOMINATOR_VALUE)
+            .ok_or(GammaError::MathOverflow)?;
+
         // Calculate volatility component
         let volatility_component = std::cmp::min(
-            VOLATILITY_FACTOR.saturating_mul(recent_price_volatility as u64)
-                / FEE_RATE_DENOMINATOR_VALUE,
-            MAX_FEE.saturating_sub(base_fees),
+            volatility_component_calculated,
+            MAX_FEE.checked_sub(base_fees).ok_or(GammaError::MathOverflow)?,
         );
-        
+
         // Calculate liquidity imbalance component
-        let total_liquidity = vault_0 as u128 + vault_1 as u128;
+        let total_liquidity = vault_0.checked_add(vault_1).ok_or(GammaError::MathOverflow)? as u128;
+
         let current_ratio = if total_liquidity > 0 {
             (vault_0 as u128)
                 .checked_mul(FEE_RATE_DENOMINATOR_VALUE as u128)
@@ -92,8 +96,8 @@ impl DynamicFee {
             0
         };
 
-        let ideal_ratio = FEE_RATE_DENOMINATOR_VALUE as u128 / 2;
-        
+        let ideal_ratio = FEE_RATE_DENOMINATOR_VALUE.checked_div(2).ok_or(GammaError::MathOverflow)? as u128;
+
         let imbalance = if current_ratio > ideal_ratio {
             current_ratio.saturating_sub(ideal_ratio)
         } else {
@@ -106,8 +110,8 @@ impl DynamicFee {
             .unwrap_or(0);
         // Calculate final dynamic fee
         let dynamic_fee = base_fees
-            .saturating_add(volatility_component)
-            .saturating_add(liquidity_imbalance_component);
+            .checked_add(volatility_component).ok_or(GammaError::MathOverflow)?
+            .checked_add(liquidity_imbalance_component).ok_or(GammaError::MathOverflow)?;
         #[cfg(feature = "enable-log")]
         msg!("dynamic_fee: {}", dynamic_fee);
         Ok(std::cmp::min(dynamic_fee, MAX_FEE))
@@ -162,13 +166,15 @@ impl DynamicFee {
         let (price_a, price_b, _) =
             Self::get_price_range(observation_state, block_timestamp, VOLATILITY_WINDOW)?;
         let volatility = if price_b > price_a {
-            (price_b - price_a)
+            price_b.checked_sub(price_a)
+                .ok_or(GammaError::MathOverflow)?
                 .checked_div(price_a)
                 .ok_or(GammaError::MathOverflow)?
                 .checked_mul(FEE_RATE_DENOMINATOR_VALUE as u128)
                 .ok_or(GammaError::MathOverflow)?
         } else {
-            (price_a - price_b)
+            price_a.checked_sub(price_b)
+                .ok_or(GammaError::MathOverflow)?
                 .checked_div(price_b)
                 .ok_or(GammaError::MathOverflow)?
                 .checked_mul(FEE_RATE_DENOMINATOR_VALUE as u128)
@@ -266,8 +272,8 @@ impl DynamicFee {
             min_price = min_price.min(price);
             max_price = max_price.max(price);
             count += 1;
-            // checked add?
-            total_price += price;
+
+            total_price = total_price.checked_add(price).ok_or(GammaError::MathOverflow)?;
         }
 
         if count == 0 {
@@ -278,7 +284,8 @@ impl DynamicFee {
 
         // We are dividing  u128 by u128, we will lose precision here
         // This can be optimized.
-        Ok((min_price, max_price, total_price / count as u128))
+        let price_avg = total_price.checked_div(count as u128).ok_or(GammaError::MathOverflow)?;
+        Ok((min_price, max_price, price_avg))
     }
 
     /// Calculates the fee amount for a given input amount
