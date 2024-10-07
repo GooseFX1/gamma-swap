@@ -1,10 +1,7 @@
 use super::{ceil_div, FEE_RATE_DENOMINATOR_VALUE};
-use crate::{
-    curve::ConstantProductCurve,
-    states::{Observation, ObservationState, PoolState, OBSERVATION_NUM, Q32},
-};
+use crate::error::GammaError;
+use crate::states::{Observation, ObservationState, OBSERVATION_NUM};
 use anchor_lang::prelude::*;
-
 //pub const FEE_RATE_DENOMINATOR_VALUE: u64 = 1_000_000;
 
 // Volatility-based fee constants
@@ -58,7 +55,7 @@ impl DynamicFee {
 
         // Calculate recent price volatility
         let (min_price, max_price, avg_price) =
-            Self::get_price_range(observation_state, block_timestamp, VOLATILITY_WINDOW);
+            Self::get_price_range(observation_state, block_timestamp, VOLATILITY_WINDOW)?;
         // Handle case where no valid observations were found
         if min_price == 0 && max_price == 0 && avg_price == 0 {
             return Ok(base_fees);
@@ -73,16 +70,28 @@ impl DynamicFee {
         } else {
             0
         };
-        
+
+        let volatility_component_calculated = VOLATILITY_FACTOR
+            .saturating_mul(recent_price_volatility as u64)
+            .checked_div(FEE_RATE_DENOMINATOR_VALUE);
+
+        if volatility_component_calculated.is_none() {
+            return err!(GammaError::MathError);
+        }
+
         // Calculate volatility component
         let volatility_component = std::cmp::min(
-            VOLATILITY_FACTOR.saturating_mul(recent_price_volatility as u64)
-                / FEE_RATE_DENOMINATOR_VALUE,
+            volatility_component_calculated.unwrap(),
             MAX_FEE.saturating_sub(base_fees),
         );
-        
+
         // Calculate liquidity imbalance component
-        let total_liquidity = vault_0 as u128 + vault_1 as u128;
+        let total_liquidity = vault_0.checked_add(vault_1);
+        if total_liquidity.is_none() {
+            return err!(GammaError::MathError);
+        }
+        let total_liquidity = vault_0.checked_add(vault_1).unwrap() as u128;
+
         let current_ratio = if total_liquidity > 0 {
             (vault_0 as u128)
                 .checked_mul(FEE_RATE_DENOMINATOR_VALUE as u128)
@@ -92,8 +101,12 @@ impl DynamicFee {
             0
         };
 
-        let ideal_ratio = FEE_RATE_DENOMINATOR_VALUE as u128 / 2;
-        
+        let ideal_ratio = FEE_RATE_DENOMINATOR_VALUE.checked_div(2);
+        if ideal_ratio.is_none() {
+            return err!(GammaError::MathError);
+        }
+        let ideal_ratio = ideal_ratio.unwrap() as u128;
+
         let imbalance = if current_ratio > ideal_ratio {
             current_ratio.saturating_sub(ideal_ratio)
         } else {
@@ -126,7 +139,6 @@ impl DynamicFee {
     /// A fee rate as a u64, where 10000 represents 1%
     pub fn calculate_dynamic_fee(
         block_timestamp: u64,
-        pool_state: &PoolState,
         observation_state: &ObservationState,
         vault_0: u64,
         vault_1: u64,
@@ -162,26 +174,55 @@ impl DynamicFee {
         // 3. Dynamic fee = min(volatility / 100 + BASE_FEE_VOLATILITY, MAX_FEE_VOLATILITY)
 
         let (price_a, price_b, _) =
-            Self::get_price_range(observation_state, block_timestamp, VOLATILITY_WINDOW);
+            Self::get_price_range(observation_state, block_timestamp, VOLATILITY_WINDOW)?;
         let volatility = if price_b > price_a {
-            (price_b - price_a)
-                .checked_div(price_a)
-                .unwrap()
-                .checked_mul(FEE_RATE_DENOMINATOR_VALUE as u128)
-                .unwrap()
-        } else {
-            (price_a - price_b)
-                .checked_div(price_b)
-                .unwrap()
-                .checked_mul(FEE_RATE_DENOMINATOR_VALUE as u128)
-                .unwrap()
-        };
+            let price_diff = price_b.checked_sub(price_a);
+            if price_diff.is_none() {
+                return err!(GammaError::MathError);
+            }
 
-        let dynamic_fee = volatility
-            .checked_div(100)
+            let price_diff_ratio = price_diff.unwrap().checked_div(price_a);
+            if price_diff_ratio.is_none() {
+                return err!(GammaError::MathError);
+            }
+
+            price_diff_ratio
+                .unwrap()
+                .checked_mul(FEE_RATE_DENOMINATOR_VALUE as u128)
+        } else {
+            let price_diff = price_a.checked_sub(price_b);
+            if price_diff.is_none() {
+                return err!(GammaError::MathError);
+            }
+
+            let price_diff_ratio = price_diff.unwrap().checked_div(price_b);
+            if price_diff_ratio.is_none() {
+                return err!(GammaError::MathError);
+            }
+
+            price_diff_ratio
+                .unwrap()
+                .checked_mul(FEE_RATE_DENOMINATOR_VALUE as u128)
+        };
+        if volatility.is_none() {
+            return err!(GammaError::MathError);
+        }
+        let volatility = volatility.unwrap();
+
+        let volatility_divide_by_100 = volatility.checked_div(100);
+        if volatility_divide_by_100.is_none() {
+            return err!(GammaError::MathError);
+        }
+
+        let dynamic_fee = volatility_divide_by_100
             .unwrap()
-            .checked_add(base_fees as u128)
-            .unwrap(); // Increase fee by 1 bp for each 1% of volatility
+            .checked_add(base_fees as u128); // Increase fee by 1 bp for each 1% of volatility
+
+        if dynamic_fee.is_none() {
+            return err!(GammaError::MathError);
+        }
+        let dynamic_fee = dynamic_fee.unwrap();
+
         Ok(dynamic_fee.min(MAX_FEE_VOLATILITY as u128) as u64)
     }
 
@@ -198,7 +239,7 @@ impl DynamicFee {
         observation_state: &ObservationState,
         current_time: u64,
         window: u64,
-    ) -> (u128, u128, u128) {
+    ) -> Result<(u128, u128, u128)> {
         let mut min_price = u128::MAX;
         let mut max_price = 0u128;
         let mut total_price = 0u128;
@@ -266,96 +307,27 @@ impl DynamicFee {
             min_price = min_price.min(price);
             max_price = max_price.max(price);
             count += 1;
-            // checked add?
-            total_price += price;
+
+            let total_price_option = total_price.checked_add(price);
+            if total_price_option.is_none() {
+                return err!(GammaError::MathError);
+            }
+            total_price = total_price_option.unwrap();
         }
 
         if count == 0 {
             // If no valid observations found, return a default range
-            // This could be (0, 0, 0) or another appropriate default
-            return (0, 0, 0);
+            return Ok((0, 0, 0));
         }
 
         // We are dividing  u128 by u128, we will lose precision here
         // This can be optimized.
-        (min_price, max_price, total_price / count as u128)
-    }
+        let price_avg = total_price.checked_add(count);
+        if price_avg.is_none() {
+            return err!(GammaError::MathError);
+        }
 
-    /// Calculates a fee based on pool utilization and price deviation
-    ///
-    /// # Arguments
-    /// * `pool_state` - The current state of the pool
-    /// * `vault_0` - Amount of token 0 in the vault
-    /// * `vault_1` - Amount of token 1 in the vault
-    ///
-    /// # Returns
-    /// A fee rate as a u64, where 10_000_000 represents 10%
-    fn calculate_rebalancing_fee(pool_state: &PoolState, vault_0: u64, vault_1: u64) -> u64 {
-        let (token_0_amount, token_1_amount) =
-            pool_state.vault_amount_without_fee(vault_0, vault_1);
-        let (price_0, _price_1) = pool_state.token_price_x32(token_0_amount, token_1_amount);
-
-        // 1. Utilization = max(token_0, token_1) / total_liquidity * FEE_RATE_DENOMINATOR_VALUE
-        // 2. Price deviation = |current_price - ideal_price| / ideal_price * FEE_RATE_DENOMINATOR_VALUE
-        // 3. Base fee calculation:
-        //    - If utilization <= 50%: linear interpolation between MIN_FEE and MID_FEE
-        //    - If 50% < utilization <= 85%: linear interpolation between MID_FEE and OUT_FEE
-        //    - If utilization > 85%: linear interpolation between OUT_FEE and MAX_FEE
-        // 4. Adjusted fee = base_fee + (price_deviation * base_fee / FEE_RATE_DENOMINATOR_VALUE)
-
-        // Calculate utilization
-        let total_liquidity = token_0_amount.checked_add(token_1_amount).unwrap() as u128;
-        let max_token = token_0_amount.max(token_1_amount) as u128;
-
-        let utilization = max_token
-            .checked_mul(FEE_RATE_DENOMINATOR_VALUE as u128)
-            .unwrap()
-            .checked_div(total_liquidity)
-            .unwrap();
-
-        assert!(utilization < u64::MAX as u128);
-        let utilization = utilization as u64;
-
-        // Calculate price deviation
-        let complete_swap = ConstantProductCurve::swap_base_input_without_fees(
-            token_1_amount as u128,
-            token_1_amount as u128,
-            token_0_amount as u128,
-        );
-        // we multiply by Q32 to make sure all both the prices have decimal bits.
-        let ideal_price = complete_swap
-            .checked_mul(Q32)
-            .unwrap()
-            .checked_div(token_1_amount as u128)
-            .unwrap();
-
-        let price_deviation_numerator = price_0.abs_diff(ideal_price);
-
-        // Calculate fee based on utilization and price deviation
-        let fee = if utilization <= 500_000 {
-            // 50%
-            MIN_FEE_REBALANCE + (MID_FEE_REBALANCE - MIN_FEE_REBALANCE) * utilization / 500_000
-        } else if utilization <= 850_000 {
-            // 85%
-            MID_FEE_REBALANCE
-                + (OUT_FEE_REBALANCE - MID_FEE_REBALANCE) * (utilization - 500_000) / 350_000
-        } else {
-            OUT_FEE_REBALANCE
-                + (MAX_FEE_REBALANCE - OUT_FEE_REBALANCE) * (utilization - 850_000) / 150_000
-        } as u128;
-
-        // Adjust fee based on price deviation
-        let additional_fee = price_deviation_numerator
-            .checked_mul(fee)
-            .unwrap()
-            .checked_div(ideal_price)
-            .unwrap();
-        let adjusted_fee = fee as u128 + additional_fee;
-
-        assert!(adjusted_fee < u64::MAX as u128);
-        let adjusted_fee = adjusted_fee as u64;
-
-        adjusted_fee.min(MAX_FEE_REBALANCE)
+        Ok((min_price, max_price, price_avg.unwrap()))
     }
 
     /// Calculates the fee amount for a given input amount
@@ -374,7 +346,6 @@ impl DynamicFee {
     pub fn dynamic_fee(
         amount: u128,
         block_timestamp: u64,
-        pool_state: &PoolState,
         observation_state: &ObservationState,
         vault_0: u64,
         vault_1: u64,
@@ -383,7 +354,6 @@ impl DynamicFee {
     ) -> Option<u128> {
         let dynamic_fee_rate = Self::calculate_dynamic_fee(
             block_timestamp,
-            pool_state,
             observation_state,
             vault_0,
             vault_1,
@@ -413,7 +383,6 @@ impl DynamicFee {
     pub fn calculate_pre_fee_amount(
         block_timestamp: u64,
         post_fee_amount: u128,
-        pool_state: &PoolState,
         observation_state: &ObservationState,
         vault_0: u64,
         vault_1: u64,
@@ -437,7 +406,6 @@ impl DynamicFee {
 
         let dynamic_fee_rate = Self::calculate_dynamic_fee(
             block_timestamp,
-            pool_state,
             observation_state,
             vault_0,
             vault_1,
