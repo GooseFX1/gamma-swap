@@ -1,76 +1,31 @@
-# GAMMA
+# raydium-cp-swap
 
-Goose Automated Market Making Algorithm (GAMMA) is a decentralized exchange (DEX) protocol built on Solana. It provides dynamic fee AMM functionality with customizable fee structures and liquidity pool management.
+A revamped constant product AMM program optimized for straightforward pool deployment along with additional features and integrations:
+- No Openbook market ID is required for pool creation
+- Token22 is supported
+- Built-in price oracle
+- Optimized in Anchor
 
-## Key Features
-- Dynamic fees based on volatility and pool rebalancing mechanisms, up to 10% of swap amount
-- Permissionless pool creation with low fees (less than 0.1 SOL)
-- Migration tool for to transfer LP position from other AMMs
-- Referral program and open source code
-- Token2022 support
-- Highly CU optimized for faster swaps
-- $GOFX revenue share and burn mechanism (see docs.goosefx.io for more info)
+The program has been audited by [MadShield](https://www.madshield.xyz/). The report can be found [here](https://github.com/raydium-io/raydium-docs/tree/master/audit/MadShield%20Q1%202024).
 
-## Developer Features
+The program assets are in-scope for Raydium’s [Immunefi bug bounty program](https://immunefi.com/bug-bounty/raydium/).
 
-- Create and manage AMM configurations
-- Initialize liquidity pools
-- Deposit and withdraw liquidity
-- Swap tokens with base input or base output
-- Oracle price feed integration
-- Transfer fee handling for SPL tokens (Token22 support)
+## Environment Setup
 
-## Project Structure
+1. Install Rust.
+2. Install Solana and then run solana-keygen new to create a keypair at the default location.
+3. Install Anchor.
 
-- `programs/gamma`: Solana program (smart contract) code
-- `client`: Rust client for interacting with the Gamma program
+## Quickstart
 
-## Getting Started
+Clone the repository and test the program.
 
-### Prerequisites
+```shell
 
-- Rust and Cargo
-- Solana CLI tools
-- Anchor framework
-
-### Building
-
-To build the project:
-```bash
-cargo make build_all
+git clone https://github.com/raydium-io/raydium-cp-swap
+cd raydium-cp-swap && anchor test
 ```
 
-### Deploying
+## License
 
-To deploy the program:
-```bash
-cargo make deploy_program
-```
-
-### Running the Client
-
-The client provides a command-line interface for interacting with the Gamma program. Use the following command to see available options:
-```bash
-cargo install --path client
-```
-
-## Commands
-```bash
-gamma-cli --help
-```
-
-- `create-config`: Create a new AMM configuration
-- `initialize-pool`: Initialize a new liquidity pool
-- `init-user-pool-liquidity`: Initialize user pool liquidity account
-- `deposit`: Deposit liquidity into a pool
-- `withdraw`: Withdraw liquidity from a pool
-- `swap-base-in`: Perform a token swap with a specified input amount
-- `swap-base-out`: Perform a token swap with a specified output amount
-
-
-### Testing
-
-To run the test suite:
-```bash
-cargo test-sbf
-```
+Raydium constant product swap is licensed under the Apache License, Version 2.0.

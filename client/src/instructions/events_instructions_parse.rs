@@ -3,8 +3,8 @@ use anchor_lang::Discriminator;
 use anyhow::Result;
 use colorful::Color;
 use colorful::Colorful;
-use gamma::instruction;
-use gamma::states::*;
+use raydium_cp_swap::instruction;
+use raydium_cp_swap::states::*;
 use regex::Regex;
 use solana_transaction_status::{
     option_serializer::OptionSerializer, EncodedTransaction, UiTransactionStatusMeta,

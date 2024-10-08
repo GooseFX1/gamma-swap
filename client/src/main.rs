@@ -2,20 +2,18 @@
 use anchor_client::{Client, Cluster};
 use anyhow::{format_err, Result};
 use arrayref::array_ref;
-use clap::{Parser, Subcommand};
-use dotenv::dotenv;
+use clap::Parser;
+use configparser::ini::Ini;
 use solana_client::{rpc_client::RpcClient, rpc_config::RpcTransactionConfig};
-use solana_sdk::pubkey::Pubkey;
 use solana_sdk::{
     commitment_config::CommitmentConfig,
+    pubkey::Pubkey,
     signature::{Keypair, Signature, Signer},
     transaction::Transaction,
 };
 use solana_transaction_status::UiTransactionEncoding;
-use std::env;
 use std::rc::Rc;
 use std::str::FromStr;
-use std::time::SystemTime;
 
 mod instructions;
 use instructions::amm_instructions::*;
@@ -28,58 +26,49 @@ use spl_token_2022::{
     state::{Account, Mint},
 };
 
-mod test_swaps;
-use test_swaps::run_swap_test;
-
 #[derive(Clone, Debug, PartialEq)]
 pub struct ClientConfig {
     http_url: String,
     ws_url: String,
     payer_path: String,
     admin_path: String,
-    gamma_program: Pubkey,
+    raydium_cp_program: Pubkey,
     slippage: f64,
 }
 
-fn load_cfg(opts: &Opts) -> Result<ClientConfig, Box<dyn std::error::Error>> {
-    dotenv().ok();
+fn load_cfg(client_config: &String) -> Result<ClientConfig> {
+    let mut config = Ini::new();
+    let _map = config.load(client_config).unwrap();
+    let http_url = config.get("Global", "http_url").unwrap();
+    if http_url.is_empty() {
+        panic!("http_url must not be empty");
+    }
+    let ws_url = config.get("Global", "ws_url").unwrap();
+    if ws_url.is_empty() {
+        panic!("ws_url must not be empty");
+    }
+    let payer_path = config.get("Global", "payer_path").unwrap();
+    if payer_path.is_empty() {
+        panic!("payer_path must not be empty");
+    }
+    let admin_path = config.get("Global", "admin_path").unwrap();
+    if admin_path.is_empty() {
+        panic!("admin_path must not be empty");
+    }
 
-    let http_url = opts
-        .http_url
-        .clone()
-        .unwrap_or_else(|| env::var("HTTP_URL").expect("HTTP_URL must be set"));
-    let ws_url = opts
-        .ws_url
-        .clone()
-        .unwrap_or_else(|| env::var("WS_URL").expect("WS_URL must be set"));
-    let payer_path = opts
-        .payer_path
-        .clone()
-        .unwrap_or_else(|| env::var("PAYER_PATH").expect("PAYER_PATH must be set"));
-    let admin_path = opts
-        .admin_path
-        .clone()
-        .unwrap_or_else(|| env::var("ADMIN_PATH").expect("ADMIN_PATH must be set"));
-    let gamma_program_str = opts
-        .gamma_program
-        .clone()
-        .unwrap_or_else(|| env::var("GAMMA_PROGRAM").expect("GAMMA_PROGRAM must be set"));
-    let slippage = opts.slippage.unwrap_or_else(|| {
-        env::var("SLIPPAGE")
-            .expect("SLIPPAGE must be set")
-            .parse::<f64>()
-            .expect("SLIPPAGE must be a valid float")
-    });
-
-    let gamma_program =
-        Pubkey::from_str(&gamma_program_str).map_err(|_| "Invalid GAMMA_PROGRAM pubkey")?;
+    let raydium_cp_program_str = config.get("Global", "raydium_cp_program").unwrap();
+    if raydium_cp_program_str.is_empty() {
+        panic!("raydium_cp_program must not be empty");
+    }
+    let raydium_cp_program = Pubkey::from_str(&raydium_cp_program_str).unwrap();
+    let slippage = config.getfloat("Global", "slippage").unwrap().unwrap();
 
     Ok(ClientConfig {
         http_url,
         ws_url,
         payer_path,
         admin_path,
-        gamma_program,
+        raydium_cp_program,
         slippage,
     })
 }
@@ -88,62 +77,32 @@ fn read_keypair_file(s: &str) -> Result<Keypair> {
     solana_sdk::signature::read_keypair_file(s)
         .map_err(|_| format_err!("failed to read keypair from {}", s))
 }
-#[derive(Parser, Debug)]
-#[clap(name = "gamma-cli")]
+
+#[derive(Debug, Parser)]
 pub struct Opts {
-    #[clap(long, env = "HTTP_URL")]
-    http_url: Option<String>,
-
-    #[clap(long, env = "WS_URL")]
-    ws_url: Option<String>,
-
-    #[clap(long, env = "PAYER_PATH")]
-    payer_path: Option<String>,
-
-    #[clap(long, env = "ADMIN_PATH")]
-    admin_path: Option<String>,
-
-    #[clap(long, env = "GAMMA_PROGRAM")]
-    gamma_program: Option<String>,
-
-    #[clap(long, env = "SLIPPAGE")]
-    slippage: Option<f64>,
-
     #[clap(subcommand)]
-    command: GammaCommands,
+    pub command: RaydiumCpCommands,
 }
 
-#[derive(Debug, Subcommand, Clone)]
-pub enum GammaCommands {
-    CreateConfig {
-        #[clap(short, long)]
-        amm_index: u16,
-        #[clap(short, long)]
-        trade_fee_rate: u64,
-        #[clap(short, long)]
-        protocol_fee_rate: u64,
-        #[clap(short, long)]
-        fund_fee_rate: u64,
-        #[clap(short, long)]
-        create_pool_fee: u64,
-    },
+#[derive(Debug, Parser)]
+pub enum RaydiumCpCommands {
     InitializePool {
         mint0: Pubkey,
         mint1: Pubkey,
         init_amount_0: u64,
         init_amount_1: u64,
-        #[clap(short, long, default_value_t = 0)]
+        #[arg(short, long, default_value_t = 0)]
         open_time: u64,
-    },
-    InitUserPoolLiquidity {
-        pool_id: Pubkey,
     },
     Deposit {
         pool_id: Pubkey,
+        user_token_0: Pubkey,
+        user_token_1: Pubkey,
         lp_token_amount: u64,
     },
     Withdraw {
         pool_id: Pubkey,
+        user_lp_token: Pubkey,
         lp_token_amount: u64,
     },
     SwapBaseIn {
@@ -165,14 +124,11 @@ pub enum GammaCommands {
     DecodeTxLog {
         tx_id: String,
     },
-    TestSwaps {
-        user_keypair: String,
-    },
 }
 
 fn main() -> Result<()> {
-    let opts = Opts::parse();
-    let pool_config = load_cfg(&opts).unwrap();
+    let client_config = "client_config.ini";
+    let pool_config = load_cfg(&client_config.to_string()).unwrap();
     // cluster params.
     let payer = read_keypair_file(&pool_config.payer_path)?;
     // solana rpc client
@@ -183,40 +139,11 @@ fn main() -> Result<()> {
     let url = Cluster::Custom(anchor_config.http_url, anchor_config.ws_url);
     let wallet = read_keypair_file(&pool_config.payer_path)?;
     let anchor_client = Client::new(url, Rc::new(wallet));
-    let program = anchor_client.program(pool_config.gamma_program)?;
+    let program = anchor_client.program(pool_config.raydium_cp_program)?;
 
     let opts = Opts::parse();
     match opts.command {
-        GammaCommands::CreateConfig {
-            amm_index,
-            trade_fee_rate,
-            protocol_fee_rate,
-            fund_fee_rate,
-            create_pool_fee,
-        } => {
-            let mut instructions = Vec::new();
-
-            let create_config_instr = create_config_instr(
-                &pool_config,
-                amm_index,
-                trade_fee_rate,
-                protocol_fee_rate,
-                fund_fee_rate,
-                create_pool_fee,
-            )?;
-            instructions.extend(create_config_instr);
-            let signers = vec![&payer];
-            let recent_hash = rpc_client.get_latest_blockhash()?;
-            let txn = Transaction::new_signed_with_payer(
-                &instructions,
-                Some(&payer.pubkey()),
-                &signers,
-                recent_hash,
-            );
-            let signature = send_txn(&rpc_client, &txn, true)?;
-            println!("{}", signature);
-        }
-        GammaCommands::InitializePool {
+        RaydiumCpCommands::InitializePool {
             mint0,
             mint1,
             init_amount_0,
@@ -241,7 +168,7 @@ fn main() -> Result<()> {
                 token_1_program,
                 spl_associated_token_account::get_associated_token_address(&payer.pubkey(), &mint0),
                 spl_associated_token_account::get_associated_token_address(&payer.pubkey(), &mint1),
-                gamma::create_pool_fee_reveiver::id(),
+                raydium_cp_swap::create_pool_fee_reveiver::id(),
                 init_amount_0,
                 init_amount_1,
                 open_time,
@@ -258,27 +185,13 @@ fn main() -> Result<()> {
             let signature = send_txn(&rpc_client, &txn, true)?;
             println!("{}", signature);
         }
-        GammaCommands::InitUserPoolLiquidity { pool_id } => {
-            let init_user_pool_liquidity_instr =
-                init_user_pool_liquidity_instr(&pool_config, pool_id)?;
-            let signers = vec![&payer];
-            let recent_hash = rpc_client.get_latest_blockhash()?;
-            let mut instructions = Vec::new();
-            instructions.extend(init_user_pool_liquidity_instr);
-            let txn = Transaction::new_signed_with_payer(
-                &instructions,
-                Some(&payer.pubkey()),
-                &signers,
-                recent_hash,
-            );
-            let signature = send_txn(&rpc_client, &txn, true)?;
-            println!("{}", signature);
-        }
-        GammaCommands::Deposit {
+        RaydiumCpCommands::Deposit {
             pool_id,
+            user_token_0,
+            user_token_1,
             lp_token_amount,
         } => {
-            let pool_state: gamma::states::PoolState = program.account(pool_id)?;
+            let pool_state: raydium_cp_swap::states::PoolState = program.account(pool_id)?;
             // load account
             let load_pubkeys = vec![pool_state.token_0_vault, pool_state.token_1_vault];
             let rsps = rpc_client.get_multiple_accounts(&load_pubkeys)?;
@@ -294,16 +207,16 @@ fn main() -> Result<()> {
             let (total_token_0_amount, total_token_1_amount) = pool_state.vault_amount_without_fee(
                 token_0_vault_info.base.amount,
                 token_1_vault_info.base.amount,
-            )?;
+            );
             // calculate amount
-            let results = gamma::curve::CurveCalculator::lp_tokens_to_trading_tokens(
+            let results = raydium_cp_swap::curve::CurveCalculator::lp_tokens_to_trading_tokens(
                 u128::from(lp_token_amount),
                 u128::from(pool_state.lp_supply),
                 u128::from(total_token_0_amount),
                 u128::from(total_token_1_amount),
-                gamma::curve::RoundDirection::Ceiling,
+                raydium_cp_swap::curve::RoundDirection::Ceiling,
             )
-            .ok_or(gamma::error::GammaError::ZeroTradingTokens)
+            .ok_or(raydium_cp_swap::error::ErrorCode::ZeroTradingTokens)
             .unwrap();
             println!(
                 "amount_0:{}, amount_1:{}, lp_token_amount:{}",
@@ -337,35 +250,27 @@ fn main() -> Result<()> {
                 amount_0_max, amount_1_max
             );
             let mut instructions = Vec::new();
-            // let create_user_lp_token_instr = create_ata_token_account_instr(
-            //     &pool_config,
-            //     spl_token::id(),
-            //     &pool_state.lp_mint,
-            //     &payer.pubkey(),
-            // )?;
-            // instructions.extend(create_user_lp_token_instr);
-            let user_token_0_ata = spl_associated_token_account::get_associated_token_address(
+            let create_user_lp_token_instr = create_ata_token_account_instr(
+                &pool_config,
+                spl_token::id(),
+                &pool_state.lp_mint,
                 &payer.pubkey(),
-                &pool_state.token_0_mint,
-            );
-            let user_token_1_ata = spl_associated_token_account::get_associated_token_address(
-                &payer.pubkey(),
-                &pool_state.token_1_mint,
-            );
+            )?;
+            instructions.extend(create_user_lp_token_instr);
             let deposit_instr = deposit_instr(
                 &pool_config,
                 pool_id,
                 pool_state.token_0_mint,
                 pool_state.token_1_mint,
-                // pool_state.lp_mint,
+                pool_state.lp_mint,
                 pool_state.token_0_vault,
                 pool_state.token_1_vault,
-                user_token_0_ata,
-                user_token_1_ata,
-                // spl_associated_token_account::get_associated_token_address(
-                //     &payer.pubkey(),
-                //     &pool_state.lp_mint,
-                // ),
+                user_token_0,
+                user_token_1,
+                spl_associated_token_account::get_associated_token_address(
+                    &payer.pubkey(),
+                    &pool_state.lp_mint,
+                ),
                 lp_token_amount,
                 amount_0_max,
                 amount_1_max,
@@ -382,11 +287,12 @@ fn main() -> Result<()> {
             let signature = send_txn(&rpc_client, &txn, true)?;
             println!("{}", signature);
         }
-        GammaCommands::Withdraw {
+        RaydiumCpCommands::Withdraw {
             pool_id,
+            user_lp_token,
             lp_token_amount,
         } => {
-            let pool_state: gamma::states::PoolState = program.account(pool_id)?;
+            let pool_state: raydium_cp_swap::states::PoolState = program.account(pool_id)?;
             // load account
             let load_pubkeys = vec![pool_state.token_0_vault, pool_state.token_1_vault];
             let rsps = rpc_client.get_multiple_accounts(&load_pubkeys)?;
@@ -402,16 +308,16 @@ fn main() -> Result<()> {
             let (total_token_0_amount, total_token_1_amount) = pool_state.vault_amount_without_fee(
                 token_0_vault_info.base.amount,
                 token_1_vault_info.base.amount,
-            )?;
+            );
             // calculate amount
-            let results = gamma::curve::CurveCalculator::lp_tokens_to_trading_tokens(
+            let results = raydium_cp_swap::curve::CurveCalculator::lp_tokens_to_trading_tokens(
                 u128::from(lp_token_amount),
                 u128::from(pool_state.lp_supply),
                 u128::from(total_token_0_amount),
                 u128::from(total_token_1_amount),
-                gamma::curve::RoundDirection::Ceiling,
+                raydium_cp_swap::curve::RoundDirection::Ceiling,
             )
-            .ok_or(gamma::error::GammaError::ZeroTradingTokens)
+            .ok_or(raydium_cp_swap::error::ErrorCode::ZeroTradingTokens)
             .unwrap();
             println!(
                 "amount_0:{}, amount_1:{}, lp_token_amount:{}",
@@ -465,7 +371,7 @@ fn main() -> Result<()> {
                 pool_id,
                 pool_state.token_0_mint,
                 pool_state.token_1_mint,
-                // pool_state.lp_mint,
+                pool_state.lp_mint,
                 pool_state.token_0_vault,
                 pool_state.token_1_vault,
                 spl_associated_token_account::get_associated_token_address(
@@ -476,6 +382,7 @@ fn main() -> Result<()> {
                     &payer.pubkey(),
                     &pool_state.token_1_mint,
                 ),
+                user_lp_token,
                 lp_token_amount,
                 amount_0_min,
                 amount_1_min,
@@ -492,12 +399,12 @@ fn main() -> Result<()> {
             let signature = send_txn(&rpc_client, &txn, true)?;
             println!("{}", signature);
         }
-        GammaCommands::SwapBaseIn {
+        RaydiumCpCommands::SwapBaseIn {
             pool_id,
             user_input_token,
             user_input_amount,
         } => {
-            let pool_state: gamma::states::PoolState = program.account(pool_id)?;
+            let pool_state: raydium_cp_swap::states::PoolState = program.account(pool_id)?;
             // load account
             let load_pubkeys = vec![
                 pool_state.amm_config,
@@ -517,7 +424,7 @@ fn main() -> Result<()> {
             let mut token_0_mint_data = token_0_mint_account.clone().unwrap().data;
             let mut token_1_mint_data = token_1_mint_account.clone().unwrap().data;
             let mut user_input_token_data = user_input_token_account.clone().unwrap().data;
-            let amm_config_state = deserialize_anchor_account::<gamma::states::AmmConfig>(
+            let amm_config_state = deserialize_anchor_account::<raydium_cp_swap::states::AmmConfig>(
                 amm_config_account.as_ref().unwrap(),
             )?;
             let token_0_vault_info =
@@ -532,7 +439,7 @@ fn main() -> Result<()> {
             let (total_token_0_amount, total_token_1_amount) = pool_state.vault_amount_without_fee(
                 token_0_vault_info.base.amount,
                 token_1_vault_info.base.amount,
-            )?;
+            );
 
             let (
                 trade_direction,
@@ -549,7 +456,7 @@ fn main() -> Result<()> {
                 transfer_fee,
             ) = if user_input_token_info.base.mint == token_0_vault_info.base.mint {
                 (
-                    gamma::curve::TradeDirection::ZeroForOne,
+                    raydium_cp_swap::curve::TradeDirection::ZeroForOne,
                     total_token_0_amount,
                     total_token_1_amount,
                     user_input_token,
@@ -567,7 +474,7 @@ fn main() -> Result<()> {
                 )
             } else {
                 (
-                    gamma::curve::TradeDirection::OneForZero,
+                    raydium_cp_swap::curve::TradeDirection::OneForZero,
                     total_token_1_amount,
                     total_token_0_amount,
                     user_input_token,
@@ -586,34 +493,22 @@ fn main() -> Result<()> {
             };
             // Take transfer fees into account for actual amount transferred in
             let actual_amount_in = user_input_amount.saturating_sub(transfer_fee);
-
-            let current_unix_timestamp = SystemTime::now()
-                .duration_since(SystemTime::UNIX_EPOCH)
-                .unwrap()
-                .as_secs();
-
-            // here we make a RPC call again, we can optimize this later by making it part of `get_multiple_accounts` call.
-            let observation: gamma::states::ObservationState =
-                program.account(pool_state.observation_key)?;
-
-            let result = gamma::curve::CurveCalculator::swap_base_input(
+            let result = raydium_cp_swap::curve::CurveCalculator::swap_base_input(
                 u128::from(actual_amount_in),
                 u128::from(total_input_token_amount),
                 u128::from(total_output_token_amount),
                 amm_config_state.trade_fee_rate,
                 amm_config_state.protocol_fee_rate,
                 amm_config_state.fund_fee_rate,
-                current_unix_timestamp,
-                &observation,
-                trade_direction,
-            )?;
-
+            )
+            .ok_or(raydium_cp_swap::error::ErrorCode::ZeroTradingTokens)
+            .unwrap();
             let amount_out = u64::try_from(result.destination_amount_swapped).unwrap();
             let transfer_fee = match trade_direction {
-                gamma::curve::TradeDirection::ZeroForOne => {
+                raydium_cp_swap::curve::TradeDirection::ZeroForOne => {
                     get_transfer_fee(&token_1_mint_info, epoch, amount_out)
                 }
-                gamma::curve::TradeDirection::OneForZero => {
+                raydium_cp_swap::curve::TradeDirection::OneForZero => {
                     get_transfer_fee(&token_0_mint_info, epoch, amount_out)
                 }
             };
@@ -658,12 +553,12 @@ fn main() -> Result<()> {
             let signature = send_txn(&rpc_client, &txn, true)?;
             println!("{}", signature);
         }
-        GammaCommands::SwapBaseOut {
+        RaydiumCpCommands::SwapBaseOut {
             pool_id,
             user_input_token,
             amount_out_less_fee,
         } => {
-            let pool_state: gamma::states::PoolState = program.account(pool_id)?;
+            let pool_state: raydium_cp_swap::states::PoolState = program.account(pool_id)?;
             // load account
             let load_pubkeys = vec![
                 pool_state.amm_config,
@@ -677,13 +572,13 @@ fn main() -> Result<()> {
             let epoch = rpc_client.get_epoch_info().unwrap().epoch;
             let [amm_config_account, token_0_vault_account, token_1_vault_account, token_0_mint_account, token_1_mint_account, user_input_token_account] =
                 array_ref![rsps, 0, 6];
-            // decode account
+            // docode account
             let mut token_0_vault_data = token_0_vault_account.clone().unwrap().data;
             let mut token_1_vault_data = token_1_vault_account.clone().unwrap().data;
             let mut token_0_mint_data = token_0_mint_account.clone().unwrap().data;
             let mut token_1_mint_data = token_1_mint_account.clone().unwrap().data;
             let mut user_input_token_data = user_input_token_account.clone().unwrap().data;
-            let amm_config_state = deserialize_anchor_account::<gamma::states::AmmConfig>(
+            let amm_config_state = deserialize_anchor_account::<raydium_cp_swap::states::AmmConfig>(
                 amm_config_account.as_ref().unwrap(),
             )?;
             let token_0_vault_info =
@@ -698,7 +593,7 @@ fn main() -> Result<()> {
             let (total_token_0_amount, total_token_1_amount) = pool_state.vault_amount_without_fee(
                 token_0_vault_info.base.amount,
                 token_1_vault_info.base.amount,
-            )?;
+            );
 
             let (
                 trade_direction,
@@ -715,7 +610,7 @@ fn main() -> Result<()> {
                 out_transfer_fee,
             ) = if user_input_token_info.base.mint == token_0_vault_info.base.mint {
                 (
-                    gamma::curve::TradeDirection::ZeroForOne,
+                    raydium_cp_swap::curve::TradeDirection::ZeroForOne,
                     total_token_0_amount,
                     total_token_1_amount,
                     user_input_token,
@@ -733,7 +628,7 @@ fn main() -> Result<()> {
                 )
             } else {
                 (
-                    gamma::curve::TradeDirection::OneForZero,
+                    raydium_cp_swap::curve::TradeDirection::OneForZero,
                     total_token_1_amount,
                     total_token_0_amount,
                     user_input_token,
@@ -751,33 +646,24 @@ fn main() -> Result<()> {
                 )
             };
             let actual_amount_out = amount_out_less_fee.checked_add(out_transfer_fee).unwrap();
-            let current_unix_timestamp = SystemTime::now()
-                .duration_since(SystemTime::UNIX_EPOCH)
-                .unwrap()
-                .as_secs();
 
-            // here we make a RPC call again, we can optimize this later by making it part of `get_multiple_accounts` call.
-            let observation: gamma::states::ObservationState =
-                program.account(pool_state.observation_key)?;
-
-            let result = gamma::curve::CurveCalculator::swap_base_output(
+            let result = raydium_cp_swap::curve::CurveCalculator::swap_base_output(
                 u128::from(actual_amount_out),
                 u128::from(total_input_token_amount),
                 u128::from(total_output_token_amount),
                 amm_config_state.trade_fee_rate,
                 amm_config_state.protocol_fee_rate,
                 amm_config_state.fund_fee_rate,
-                current_unix_timestamp,
-                &observation,
-                trade_direction,
-            )?;
+            )
+            .ok_or(raydium_cp_swap::error::ErrorCode::ZeroTradingTokens)
+            .unwrap();
 
             let source_amount_swapped = u64::try_from(result.source_amount_swapped).unwrap();
             let amount_in_transfer_fee = match trade_direction {
-                gamma::curve::TradeDirection::ZeroForOne => {
+                raydium_cp_swap::curve::TradeDirection::ZeroForOne => {
                     get_transfer_inverse_fee(&token_0_mint_info, epoch, source_amount_swapped)
                 }
-                gamma::curve::TradeDirection::OneForZero => {
+                raydium_cp_swap::curve::TradeDirection::OneForZero => {
                     get_transfer_inverse_fee(&token_1_mint_info, epoch, source_amount_swapped)
                 }
             };
@@ -824,13 +710,17 @@ fn main() -> Result<()> {
             let signature = send_txn(&rpc_client, &txn, true)?;
             println!("{}", signature);
         }
-        GammaCommands::DecodeInstruction { instr_hex_data } => {
+        RaydiumCpCommands::DecodeInstruction { instr_hex_data } => {
             handle_program_instruction(&instr_hex_data, InstructionDecodeType::BaseHex)?;
         }
-        GammaCommands::DecodeEvent { log_event } => {
-            handle_program_log(&pool_config.gamma_program.to_string(), &log_event, false)?;
+        RaydiumCpCommands::DecodeEvent { log_event } => {
+            handle_program_log(
+                &pool_config.raydium_cp_program.to_string(),
+                &log_event,
+                false,
+            )?;
         }
-        GammaCommands::DecodeTxLog { tx_id } => {
+        RaydiumCpCommands::DecodeTxLog { tx_id } => {
             let signature = Signature::from_str(&tx_id)?;
             let tx = rpc_client.get_transaction_with_config(
                 &signature,
@@ -851,15 +741,12 @@ fn main() -> Result<()> {
             let encoded_transaction = transaction.transaction;
             // decode instruction data
             parse_program_instruction(
-                &pool_config.gamma_program.to_string(),
+                &pool_config.raydium_cp_program.to_string(),
                 encoded_transaction,
                 meta.clone(),
             )?;
             // decode logs
-            parse_program_event(&pool_config.gamma_program.to_string(), meta.clone())?;
-        }
-        GammaCommands::TestSwaps { user_keypair } => {
-            run_swap_test(&pool_config, user_keypair)?;
+            parse_program_event(&pool_config.raydium_cp_program.to_string(), meta.clone())?;
         }
     }
     Ok(())

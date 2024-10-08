@@ -5,6 +5,7 @@ target
 **/*.rs.bk
 node_modules
 test-ledger
+.vscode
 .yarn
-.keys
-.env
+Makefile
+
