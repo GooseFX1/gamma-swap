@@ -2,15 +2,20 @@ use super::swap_base_input::Swap;
 use crate::curve::{calculator::CurveCalculator, TradeDirection};
 use crate::error::GammaError;
 use crate::states::{oracle, PoolStatusBitIndex, SwapEvent};
-use crate::utils::token::*;
+use crate::utils::{swap_referral::*, token::*};
 use anchor_lang::prelude::*;
 use anchor_lang::solana_program;
 
-pub fn swap_base_output(
-    ctx: Context<Swap>,
+pub fn swap_base_output<'c, 'info>(
+    ctx: Context<'_, '_, 'c, 'info, Swap<'info>>,
     max_amount_in: u64,
     amount_out_less_fee: u64,
 ) -> Result<()> {
+    let referral_info = extract_referral_info(
+        ctx.accounts.input_token_mint.key(),
+        ctx.accounts.amm_config.referral_project,
+        &ctx.remaining_accounts,
+    )?;
     let block_timestamp = solana_program::clock::Clock::get()?.unix_timestamp as u64;
     let pool_id = ctx.accounts.pool_state.key();
     let pool_state = &mut ctx.accounts.pool_state.load_mut()?;
@@ -23,7 +28,9 @@ pub fn swap_base_output(
         &ctx.accounts.output_token_mint.to_account_info(),
         amount_out_less_fee,
     )?;
-    let actual_amount_out = amount_out_less_fee.checked_add(out_transfer_fee).ok_or(GammaError::MathOverflow)?;
+    let actual_amount_out = amount_out_less_fee
+        .checked_add(out_transfer_fee)
+        .ok_or(GammaError::MathOverflow)?;
 
     // Calculate the trade amounts
     let (trade_direction, total_input_token_amount, total_output_token_amount) =
@@ -94,7 +101,7 @@ pub fn swap_base_output(
     require_gte!(constant_after, constant_before);
 
     // Re-calculate the source amount swapped based on what the curve says
-    let (input_transfer_amount, input_transfer_fee) = {
+    let (mut input_transfer_amount, input_transfer_fee) = {
         let source_amount_swapped = match u64::try_from(result.source_amount_swapped) {
             Ok(value) => value,
             Err(_) => return err!(GammaError::MathOverflow),
@@ -104,7 +111,9 @@ pub fn swap_base_output(
             &ctx.accounts.input_token_mint.to_account_info(),
             source_amount_swapped,
         )?;
-        let input_transfer_amount = source_amount_swapped.checked_add(transfer_fee).ok_or(GammaError::MathOverflow)?;
+        let input_transfer_amount = source_amount_swapped
+            .checked_add(transfer_fee)
+            .ok_or(GammaError::MathOverflow)?;
         require_gte!(
             max_amount_in,
             input_transfer_amount,
@@ -116,10 +125,7 @@ pub fn swap_base_output(
         Ok(value) => value,
         Err(_) => return err!(GammaError::MathOverflow),
     };
-    require_eq!(
-        destination_amount_swapped,
-        actual_amount_out
-    );
+    require_eq!(destination_amount_swapped, actual_amount_out);
     let (output_transfer_amount, output_transfer_fee) = (actual_amount_out, out_transfer_fee);
 
     let protocol_fee = match u64::try_from(result.protocol_fee) {
@@ -130,7 +136,7 @@ pub fn swap_base_output(
         Ok(value) => value,
         Err(_) => return err!(GammaError::MathOverflow),
     };
-    let dynamic_fee = match u64::try_from(result.dynamic_fee) {
+    let mut dynamic_fee = match u64::try_from(result.dynamic_fee) {
         Ok(value) => value,
         Err(_) => return err!(GammaError::MathOverflow),
     };
@@ -139,14 +145,46 @@ pub fn swap_base_output(
         Err(_) => return err!(GammaError::MathOverflow),
     };
 
+    if let Some(info) = referral_info {
+        let referral_amount = dynamic_fee
+            .checked_mul(info.share_bps as u64)
+            .ok_or(GammaError::MathOverflow)?
+            .checked_div(10_000)
+            .unwrap_or(0);
+
+        if referral_amount != 0 {
+            // subtract referral amount from dynamic fee and transfer amount
+            dynamic_fee = dynamic_fee
+                .checked_sub(referral_amount)
+                .ok_or(GammaError::MathError)?;
+            input_transfer_amount = input_transfer_amount
+                .checked_sub(referral_amount)
+                .ok_or(GammaError::MathError)?;
+            
+            anchor_spl::token_2022::transfer_checked(
+                CpiContext::new(
+                    ctx.accounts.input_token_program.to_account_info(),
+                    anchor_spl::token_2022::TransferChecked {
+                        from: ctx.accounts.input_token_account.to_account_info(),
+                        to: info.referral_token_account.to_account_info(),
+                        authority: ctx.accounts.payer.to_account_info(),
+                        mint: ctx.accounts.input_token_mint.to_account_info(),
+                    },
+                ),
+                referral_amount,
+                ctx.accounts.input_token_mint.decimals,
+            )?;
+        }
+    }
+
     match trade_direction {
         TradeDirection::ZeroForOne => {
             pool_state.protocol_fees_token_0 = pool_state
                 .protocol_fees_token_0
                 .checked_add(protocol_fee)
                 .ok_or(GammaError::MathOverflow)?;
-            pool_state.fund_fees_token_0 =
-                pool_state.fund_fees_token_0
+            pool_state.fund_fees_token_0 = pool_state
+                .fund_fees_token_0
                 .checked_add(fund_fee)
                 .ok_or(GammaError::MathOverflow)?;
             pool_state.cumulative_trade_fees_token_0 = pool_state
@@ -163,8 +201,7 @@ pub fn swap_base_output(
                 .protocol_fees_token_1
                 .checked_add(protocol_fee)
                 .ok_or(GammaError::MathOverflow)?;
-            pool_state.fund_fees_token_1 =
-                pool_state
+            pool_state.fund_fees_token_1 = pool_state
                 .fund_fees_token_1
                 .checked_add(fund_fee)
                 .ok_or(GammaError::MathOverflow)?;
