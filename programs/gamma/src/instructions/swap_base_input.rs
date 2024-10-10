@@ -7,7 +7,7 @@ use crate::states::ObservationState;
 use crate::states::PoolState;
 use crate::states::PoolStatusBitIndex;
 use crate::states::SwapEvent;
-use crate::utils::token::*;
+use crate::utils::{swap_referral::*, token::*};
 use anchor_lang::prelude::*;
 use anchor_lang::solana_program;
 use anchor_spl::token_interface::{Mint, TokenAccount, TokenInterface};
@@ -78,7 +78,16 @@ pub struct Swap<'info> {
     pub observation_state: AccountLoader<'info, ObservationState>,
 }
 
-pub fn swap_base_input(ctx: Context<Swap>, amount_in: u64, minimum_amount_out: u64) -> Result<()> {
+pub fn swap_base_input<'c, 'info>(
+    ctx: Context<'_, '_, 'c, 'info, Swap<'info>>,
+    amount_in: u64,
+    minimum_amount_out: u64,
+) -> Result<()> {
+    let referral_info = extract_referral_info(
+        ctx.accounts.input_token_mint.key(),
+        ctx.accounts.amm_config.referral_project,
+        &ctx.remaining_accounts,
+    )?;
     let block_timestamp = solana_program::clock::Clock::get()?.unix_timestamp as u64;
     let pool_id = ctx.accounts.pool_state.key();
     let pool_state = &mut ctx.accounts.pool_state.load_mut()?;
@@ -164,11 +173,8 @@ pub fn swap_base_input(ctx: Context<Swap>, amount_in: u64, minimum_amount_out: u
         Ok(value) => value,
         Err(_) => return err!(GammaError::MathOverflow),
     };
-    require_eq!(
-        source_amount_swapped,
-        actual_amount_in
-    );
-    let (input_transfer_amount, input_transfer_fee) = (amount_in, transfer_fee);
+    require_eq!(source_amount_swapped, actual_amount_in);
+    let (mut input_transfer_amount, input_transfer_fee) = (amount_in, transfer_fee);
     let (output_transfer_amount, output_transfer_fee) = {
         let amount_out = match u64::try_from(result.destination_amount_swapped) {
             Ok(value) => value,
@@ -178,7 +184,9 @@ pub fn swap_base_input(ctx: Context<Swap>, amount_in: u64, minimum_amount_out: u
             &ctx.accounts.output_token_mint.to_account_info(),
             amount_out,
         )?;
-        let amount_received = amount_out.checked_sub(transfer_fee).ok_or(GammaError::MathOverflow)?;
+        let amount_received = amount_out
+            .checked_sub(transfer_fee)
+            .ok_or(GammaError::MathOverflow)?;
         require_gt!(amount_received, 0);
         require_gte!(
             amount_received,
@@ -196,10 +204,42 @@ pub fn swap_base_input(ctx: Context<Swap>, amount_in: u64, minimum_amount_out: u
         Ok(value) => value,
         Err(_) => return err!(GammaError::MathOverflow),
     };
-    let dynamic_fee = match u64::try_from(result.dynamic_fee) {
+    let mut dynamic_fee = match u64::try_from(result.dynamic_fee) {
         Ok(value) => value,
         Err(_) => return err!(GammaError::MathOverflow),
     };
+
+    if let Some(info) = referral_info {
+        let referral_amount = dynamic_fee
+            .checked_mul(info.share_bps as u64)
+            .ok_or(GammaError::MathOverflow)?
+            .checked_div(10_000)
+            .unwrap_or(0);
+
+        if referral_amount != 0 {
+            // subtract referral amount from dynamic fee and transfer amount
+            dynamic_fee = dynamic_fee
+                .checked_sub(referral_amount)
+                .ok_or(GammaError::MathError)?;
+            input_transfer_amount = input_transfer_amount
+                .checked_sub(referral_amount)
+                .ok_or(GammaError::MathError)?;
+
+            anchor_spl::token_2022::transfer_checked(
+                CpiContext::new(
+                    ctx.accounts.input_token_program.to_account_info(),
+                    anchor_spl::token_2022::TransferChecked {
+                        from: ctx.accounts.input_token_account.to_account_info(),
+                        to: info.referral_token_account.to_account_info(),
+                        authority: ctx.accounts.payer.to_account_info(),
+                        mint: ctx.accounts.input_token_mint.to_account_info(),
+                    },
+                ),
+                referral_amount,
+                ctx.accounts.input_token_mint.decimals,
+            )?;
+        }
+    }
 
     match trade_direction {
         TradeDirection::ZeroForOne => {

@@ -37,6 +37,7 @@ peace-lock = "0.1"
 proptest = "1.0"
 quickcheck = "0.9"
 rand = "0.8.5"
+referral = { git = "https://github.com/GooseFX1/referral.git", branch = "patch", features = ["cpi"] }
 regex = "1"
 rust_decimal = { version = "1", features = ["maths", "c-repr"] }
 serde = { version = "1", features = ["derive"] }
