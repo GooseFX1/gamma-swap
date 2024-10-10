@@ -211,6 +211,8 @@ pub fn swap_base_input<'c, 'info>(
 
     if let Some(info) = referral_info {
         let referral_amount = dynamic_fee
+            .saturating_sub(protocol_fee)
+            .saturating_sub(fund_fee)
             .checked_mul(info.share_bps as u64)
             .ok_or(GammaError::MathOverflow)?
             .checked_div(10_000)

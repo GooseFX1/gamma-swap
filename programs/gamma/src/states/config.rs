@@ -26,8 +26,8 @@ pub struct AmmConfig {
     pub fund_owner: Pubkey,
     /// Address of the referral project
     pub referral_project: Pubkey,
-    pub padding_1: u32,
-    pub padding_2: [u64; 15],
+    /// padding
+    pub padding: [u64; 12],
 }
 
 impl AmmConfig {
