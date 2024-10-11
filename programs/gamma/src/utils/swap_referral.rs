@@ -10,24 +10,20 @@ pub struct ReferralDetails<'c, 'info> {
 
 pub fn extract_referral_info<'c, 'info>(
     input_token_mint: Pubkey,
-    check_referral_project_key: Pubkey,
+    project_key: Pubkey,
     remaining_accounts: &'c [AccountInfo<'info>],
 ) -> Result<Option<ReferralDetails<'c, 'info>>> {
-    // We take exactly three accounts:
-    // 1. The project account
-    // 2. The referral account
-    // 3. The referral token-account
-    let [project_account, referral_account, referral_token_account] = &remaining_accounts[..]
+    // We take exactly two accounts:
+    // 1. The referral account
+    // 2. The referral token-account
+    let [referral_account, referral_token_account] = &remaining_accounts[..]
     else {
         return Ok(None);
     };
 
-    // check: Project account is valid for config
-    require_keys_eq!(project_account.key(), check_referral_project_key);
-
     // check: Referral account belongs to project
     let referral = ReferralAccount::try_deserialize(&mut &referral_account.data.borrow()[..])?;
-    require_keys_eq!(project_account.key(), referral.project);
+    require_keys_eq!(project_key, referral.project);
 
     // check: Referral token account has the expected seeds
     let expect_token_account_key = Pubkey::find_program_address(
@@ -53,7 +49,7 @@ pub fn extract_referral_info<'c, 'info>(
             .ok_or(anchor_lang::error::Error::from(
                 ProgramError::InvalidAccountData,
             ))?;
-    require_keys_eq!(project_account.key(), *token_account_owner);
+    require_keys_eq!(project_key, *token_account_owner);
 
     Ok(Some(ReferralDetails {
         share_bps: referral.share_bps, // the referral program guarantees that this is < 10_000
