@@ -21,7 +21,8 @@ pub fn extract_referral_info<'c, 'info>(
         return Ok(None);
     };
 
-    // check: Referral account belongs to project
+    // check: Referral account belongs to referral program and is for project 
+    require_keys_eq!(*referral_account.owner, referral::ID);
     let referral = ReferralAccount::try_deserialize(&mut &referral_account.data.borrow()[..])?;
     require_keys_eq!(project_key, referral.project);
 
