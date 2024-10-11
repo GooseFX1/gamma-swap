@@ -20,7 +20,7 @@ solana_security_txt::security_txt! {
 }
 
 #[cfg(feature = "devnet")]
-declare_id!("GAMMA7meSFWaBXF25oSUgmGRwaW6sCMFLmBNiMSdbHVT");
+declare_id!("DGmWUbYXnyN6YU4a4jy1CJYoPqAnNmZw7DYv32NJB3mX");
 #[cfg(not(feature = "devnet"))]
 declare_id!("GAMMA7meSFWaBXF25oSUgmGRwaW6sCMFLmBNiMSdbHVT");
 
@@ -52,7 +52,7 @@ pub mod gamma {
 
     use super::*;
 
-    // The configuation of AMM protocol, include trade fee and protocol fee
+    /// The configuation of AMM protocol, include trade fee and protocol fee
     /// # Arguments
     ///
     /// * `ctx`- The accounts needed by instruction.
@@ -81,6 +81,20 @@ pub mod gamma {
             fund_fee_rate,
             create_pool_fee,
         )
+    }
+
+    /// Initialize swap referrals for an existing AMM config
+    /// # Arguments
+    /// 
+    /// * `ctx` - The accounts needed by the instruction, including those used by cpi to the referral program
+    /// * `name` - The project name, passed to the referral program. Must be less than 50 chars in length
+    /// * `default_share_bps` - Percentage share of fees to referrers. Must be less than 10_000
+    pub fn create_swap_referral(
+        ctx: Context<CreateReferralProject>,
+        name: String,
+        default_share_bps: u16,
+    ) -> Result<()> {
+        instructions::create_referral_project(ctx, name, default_share_bps)
     }
 
     /// Updates the owner of the amm config
@@ -219,8 +233,8 @@ pub mod gamma {
     /// * `amount_in` -  input amount to transfer, output to DESTINATION is based on the exchange rate
     /// * `minimum_amount_out` -  Minimum amount of output token, prevents excessive slippage
     ///
-    pub fn swap_base_input(
-        ctx: Context<Swap>,
+    pub fn swap_base_input<'c, 'info>(
+        ctx: Context<'_, '_, 'c, 'info, Swap<'info>>,
         amount_in: u64,
         minimum_amount_out: u64,
     ) -> Result<()> {
@@ -235,7 +249,11 @@ pub mod gamma {
     /// * `max_amount_in` -  input amount prevents excessive slippage
     /// * `amount_out` -  amount of output token
     ///
-    pub fn swap_base_output(ctx: Context<Swap>, max_amount_in: u64, amount_out: u64) -> Result<()> {
+    pub fn swap_base_output<'c, 'info>(
+        ctx: Context<'_, '_, 'c, 'info, Swap<'info>>,
+        max_amount_in: u64, 
+        amount_out: u64
+    ) -> Result<()> {
         instructions::swap_base_output(ctx, max_amount_in, amount_out)
     }
 }

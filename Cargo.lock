@@ -762,7 +762,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "115e54d64eb62cdebad391c19efc9dce4981c690c85a33a12199d99bb9546fee"
 dependencies = [
  "borsh-derive 0.10.4",
- "hashbrown 0.13.2",
+ "hashbrown 0.12.3",
 ]
 
 [[package]]
@@ -1828,6 +1828,7 @@ dependencies = [
  "proptest",
  "quickcheck",
  "rand 0.8.5",
+ "referral",
  "solana-program-runtime",
  "solana-program-test",
  "solana-sdk",
@@ -3441,6 +3442,15 @@ dependencies = [
  "getrandom 0.2.15",
  "libredox",
  "thiserror",
+]
+
+[[package]]
+name = "referral"
+version = "0.1.0"
+source = "git+https://github.com/GooseFX1/referral.git?branch=patch#597d38768dddb0c5de4e586b1e2ff151e92bb72e"
+dependencies = [
+ "anchor-lang",
+ "anchor-spl",
 ]
 
 [[package]]
@@ -6616,7 +6626,7 @@ version = "0.1.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cf221c93e13a30d793f7645a0e7762c55d169dbb0a49671918a2319d289b10bb"
 dependencies = [
- "windows-sys 0.59.0",
+ "windows-sys 0.48.0",
 ]
 
 [[package]]
