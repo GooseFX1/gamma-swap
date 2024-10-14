@@ -127,6 +127,12 @@ pub enum GammaCommands {
         #[clap(short, long)]
         create_pool_fee: u64,
     },
+    CreateReferralProject {
+        amm_config: Pubkey,
+        referral_program: Pubkey,
+        name: String,
+        default_share_bps: u16,
+    },
     InitializePool {
         mint0: Pubkey,
         mint1: Pubkey,
@@ -211,6 +217,26 @@ fn main() -> Result<()> {
                 &instructions,
                 Some(&payer.pubkey()),
                 &signers,
+                recent_hash,
+            );
+            let signature = send_txn(&rpc_client, &txn, true)?;
+            println!("{}", signature);
+        }
+        GammaCommands::CreateReferralProject { name, default_share_bps, referral_program, amm_config } => {
+            let instruction = create_referral_project_instr(
+                &pool_config,
+                payer.pubkey(),
+                amm_config,
+                name,
+                default_share_bps,
+                referral_program
+            );
+
+            let recent_hash = rpc_client.get_latest_blockhash()?;
+            let txn = Transaction::new_signed_with_payer(
+                &[instruction],
+                Some(&payer.pubkey()),
+                &vec![&payer],
                 recent_hash,
             );
             let signature = send_txn(&rpc_client, &txn, true)?;

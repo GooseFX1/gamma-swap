@@ -163,6 +163,31 @@ pub fn initialize_pool_instr(
     Ok(instructions)
 }
 
+pub fn create_referral_project_instr(
+    config: &ClientConfig,
+    signer: Pubkey,
+    amm_config: Pubkey,
+    name: String,
+    default_share_bps: u16,
+    referral_program: Pubkey,
+) -> Instruction {
+    let project = Pubkey::find_program_address(&[b"project", amm_config.as_ref()], &referral_program).0;
+    let data = anchor_lang::InstructionData::data(&gamma_instructions::CreateSwapReferral {
+        name,
+        default_share_bps
+    });
+    let accounts = anchor_lang::ToAccountMetas::to_account_metas(&gamma_accounts::CreateReferralProject {
+        owner: signer,
+        payer: signer,
+        amm_config,
+        project,
+        system_program: system_program::ID,
+        referral_program
+    }, None);
+
+    Instruction::new_with_bytes(config.gamma_program, &data, accounts)
+}
+
 pub fn deposit_instr(
     config: &ClientConfig,
     pool_id: Pubkey,
