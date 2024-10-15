@@ -5,8 +5,8 @@ use crate::{
 use anchor_lang::prelude::*;
 use referral::cpi::accounts::InitializeProject;
 use referral::cpi::initialize_project;
-use referral::program::Referral;
 use referral::InitializeProjectParams;
+use referral::program::Referral;
 
 #[derive(Accounts)]
 #[instruction(index: u16)]

@@ -16,12 +16,11 @@ pub fn extract_referral_info<'c, 'info>(
     // We take exactly two accounts:
     // 1. The referral account
     // 2. The referral token-account
-    let [referral_account, referral_token_account] = &remaining_accounts[..]
-    else {
+    let [referral_account, referral_token_account] = &remaining_accounts[..] else {
         return Ok(None);
     };
 
-    // check: Referral account belongs to referral program and is for project 
+    // check: Referral account belongs to referral program and is for project
     require_keys_eq!(*referral_account.owner, referral::ID);
     let referral = ReferralAccount::try_deserialize(&mut &referral_account.data.borrow()[..])?;
     require_keys_eq!(project_key, referral.project);
@@ -40,7 +39,7 @@ pub fn extract_referral_info<'c, 'info>(
 
     // Referral token-account might not exist for this mint. Don't return an error in this case
     if **referral_token_account.try_borrow_lamports()? == 0 {
-        return Ok(None)
+        return Ok(None);
     }
 
     // check: Referral token account is owned by the project

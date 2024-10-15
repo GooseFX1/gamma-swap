@@ -1,14 +1,12 @@
 #![allow(dead_code)]
 
-use anchor_spl::associated_token::{get_associated_token_address, spl_associated_token_account};
+use anchor_spl::associated_token::get_associated_token_address;
 use anchor_spl::token::TokenAccount;
 use anchor_spl::token_2022::spl_token_2022;
-use anchor_spl::token_interface::spl_token_metadata_interface::borsh::BorshDeserialize;
-use anchor_spl::token_interface::spl_token_metadata_interface::state::TokenMetadata;
 use gamma::curve::TradeDirection;
 use gamma::states::{
-    ObservationState, AMM_CONFIG_SEED, OBSERVATION_NUM, OBSERVATION_SEED,
-    POOL_LP_MINT_SEED, POOL_SEED, POOL_VAULT_SEED, USER_POOL_LIQUIDITY_SEED,
+    ObservationState, AMM_CONFIG_SEED, OBSERVATION_NUM, OBSERVATION_SEED, POOL_LP_MINT_SEED,
+    POOL_SEED, POOL_VAULT_SEED, USER_POOL_LIQUIDITY_SEED,
 };
 use gamma::AUTH_SEED;
 use solana_program_runtime::invoke_context::BuiltinFunctionWithContext;
@@ -23,7 +21,6 @@ use solana_program_test::{
     ProgramTestContext,
 };
 use solana_sdk::account::Account;
-use solana_sdk::account::ReadableAccount;
 use solana_sdk::signature::Keypair;
 use solana_sdk::signer::Signer;
 use solana_sdk::transaction::Transaction;
@@ -497,18 +494,6 @@ impl TestEnv {
             .map_err(|_| BanksClientError::ClientError("Failed to deserialize account"))
     }
 
-    pub async fn fetch_meta_token(&mut self, address: Pubkey) -> TokenMetadata {
-        let account = self
-            .get_account_info(address)
-            .await
-            .expect("unable to fetch account")
-            .expect("unable to unwrap the account");
-
-        let m = TokenMetadata::deserialize(&mut &account.data()[(32 + 32 + 1)..])
-            .expect("unable to deserialize into Metadata");
-        m
-    }
-
     pub async fn mint_base_tokens(
         &mut self,
         token_account: Pubkey,
@@ -661,7 +646,8 @@ impl TestEnv {
                 self.token_1_mint.to_bytes().as_ref(),
             ],
             &gamma::ID,
-        ).0;
+        )
+        .0;
         let (authority, __bump) = Pubkey::find_program_address(&[AUTH_SEED.as_bytes()], &gamma::ID);
         let (token_0_vault, __bump) = Pubkey::find_program_address(
             &[
