@@ -2,6 +2,7 @@ pub mod curve;
 pub mod error;
 pub mod fees;
 pub mod instructions;
+pub mod migration;
 pub mod states;
 pub mod utils;
 
