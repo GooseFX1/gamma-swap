@@ -30,7 +30,6 @@ spl-math = { workspace = true }
 spl-memo = { workspace = true }
 spl-token = { workspace = true }
 uint = { workspace = true }
-spl-associated-token-account= {workspace=true}
 
 [dev-dependencies]
 proptest = { workspace = true }
@@ -40,6 +39,7 @@ solana-sdk = {workspace=true}
 solana-program-test= {workspace=true}
 solana-program-runtime={workspace=true}
 static_init = "1.0.3"
+spl-associated-token-account= {workspace=true}
 
 
 [profile.release]
