@@ -2,7 +2,6 @@ use anchor_lang::prelude::*;
 
 /// Emitted when deposit or withdraw
 #[event]
-#[cfg_attr(feature = "client", derive(Debug))]
 #[derive(Clone, Debug)]
 pub struct LpChangeEvent {
     #[index]
@@ -26,7 +25,6 @@ pub struct LpChangeEvent {
 
 // Emitted when swap
 #[event]
-#[cfg_attr(feature = "client", derive(Debug))]
 #[derive(Clone, Debug)]
 pub struct SwapEvent {
     #[index]
