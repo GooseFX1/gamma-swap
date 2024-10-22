@@ -40,4 +40,6 @@ pub enum GammaError {
     ClockError,
     #[msg("Invalid fee")]
     InvalidFee,
+    #[msg("Invalid open time")]
+    InvalidOpenTime,
 }

@@ -39,6 +39,7 @@ pub fn create_amm_config(
     protocol_fee_rate: u64,
     fund_fee_rate: u64,
     create_pool_fee: u64,
+    max_open_time: u64,
 ) -> Result<()> {
     let amm_config = ctx.accounts.amm_config.deref_mut();
     amm_config.bump = ctx.bumps.amm_config;
@@ -50,5 +51,7 @@ pub fn create_amm_config(
     amm_config.create_pool_fee = create_pool_fee;
     amm_config.protocol_owner = ctx.accounts.owner.key();
     amm_config.fund_owner = ctx.accounts.owner.key();
+    amm_config.referral_project = Pubkey::default();
+    amm_config.max_open_time = max_open_time;
     Ok(())
 }

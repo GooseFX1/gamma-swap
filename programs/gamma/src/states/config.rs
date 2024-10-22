@@ -26,8 +26,10 @@ pub struct AmmConfig {
     pub fund_owner: Pubkey,
     /// Address of the referral project
     pub referral_project: Pubkey,
+    /// Max open time for a pool in seconds
+    pub max_open_time: u64,
     /// padding
-    pub padding: [u64; 12],
+    pub padding: [u64; 11],
 }
 
 impl AmmConfig {
