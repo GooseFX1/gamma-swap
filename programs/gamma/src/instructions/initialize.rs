@@ -264,7 +264,7 @@ pub fn initialize(
         .ok_or(GammaError::MathOverflow)?
         .integer_sqrt()
         .as_u64();
-
+    let lock_lp_amount = 100;
     #[cfg(feature = "enable-log")]
     msg!(
         "liquidity: {}, vault_0_amount: {}, vault_1_amount: {}",
@@ -316,7 +316,7 @@ pub fn initialize(
     user_pool_liquidity.initialize(ctx.accounts.creator.key(), ctx.accounts.pool_state.key());
     user_pool_liquidity.token_0_deposited = u128::from(init_amount_0);
     user_pool_liquidity.token_1_deposited = u128::from(init_amount_1);
-    user_pool_liquidity.lp_tokens_owned = u128::from(liquidity);
+    user_pool_liquidity.lp_tokens_owned = u128::from(liquidity).checked_sub(lock_lp_amount).ok_or(GammaError::MathOverflow)?;
     
     Ok(())
 }
