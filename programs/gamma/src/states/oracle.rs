@@ -7,6 +7,9 @@ pub const OBSERVATION_SEED: &str = "observation";
 // Number of ObservationState element
 pub const OBSERVATION_NUM: usize = 100;
 
+/// The duration of observation update in seconds
+pub const OBSERVATION_UPDATE_DURATION_DEFAULT: u64 = 15;
+
 /// The element of observations in ObservationState
 #[zero_copy(unsafe)]
 #[repr(packed)]
@@ -82,7 +85,7 @@ impl ObservationState {
         } else {
             let last_observation = self.observations[observation_index as usize];
             let delta_time = block_timestamp.saturating_sub(last_observation.block_timestamp);
-            if delta_time == 0 {
+            if delta_time < OBSERVATION_UPDATE_DURATION_DEFAULT {
                 return Ok(());
             }
             let delta_token_0_price_x32 = token_0_price_x32.checked_mul(delta_time.into()).ok_or(GammaError::MathOverflow)?;
