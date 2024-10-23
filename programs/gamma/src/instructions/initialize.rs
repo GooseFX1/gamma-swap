@@ -178,6 +178,9 @@ pub fn initialize(
     if open_time <= block_timestamp {
         open_time = block_timestamp + 1;
     }
+    if open_time > block_timestamp + ctx.accounts.amm_config.max_open_time {
+        return err!(GammaError::InvalidOpenTime);
+    }
     // due to stack/heap limitations, we have to create redundant new token vault accounts ourselves
     create_token_account(
         &ctx.accounts.authority.to_account_info(),

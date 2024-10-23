@@ -13,7 +13,7 @@ pub struct UpdateAmmConfig<'info> {
     pub amm_config: Account<'info, AmmConfig>,
 }
 
-pub fn update_amm_config(ctx: Context<UpdateAmmConfig>, param: u8, value: u64) -> Result<()> {
+pub fn update_amm_config(ctx: Context<UpdateAmmConfig>, param: u16, value: u64) -> Result<()> {
     let amm_config = &mut ctx.accounts.amm_config;
     match param {
         0 => update_trade_fee_rate(amm_config, value),
@@ -35,6 +35,7 @@ pub fn update_amm_config(ctx: Context<UpdateAmmConfig>, param: u8, value: u64) -
         }
         5 => amm_config.create_pool_fee = value,
         6 => amm_config.disable_create_pool = if value == 0 { false } else { true },
+        7 => amm_config.max_open_time = value,
         _ => return err!(GammaError::InvalidInput),
     }
 
