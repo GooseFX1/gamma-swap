@@ -24,13 +24,22 @@ idl-build = ["anchor-lang/idl-build", "anchor-spl/idl-build"]
 [dependencies]
 anchor-lang = { workspace = true }
 anchor-spl = { workspace = true }
+bincode = { workspace = true }
+default-boxed = { workspace = true }
 referral = { workspace = true }
+solana-program = { workspace = true }
 solana-security-txt = { workspace = true }
+spl-associated-token-account= {workspace=true}
 spl-math = { workspace = true }
 spl-memo = { workspace = true }
 spl-token = { workspace = true }
 uint = { workspace = true }
-spl-associated-token-account= {workspace=true}
+
+amm-anchor = { workspace = true }
+raydium-amm-v3 = { workspace = true }
+raydium-cp-swap = { workspace = true }
+dlmm = { workspace = true }
+dynamic-amm = { workspace = true }
 
 [dev-dependencies]
 proptest = { workspace = true }

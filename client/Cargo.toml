@@ -1,7 +1,6 @@
 [package]
 name = "gamma-cli"
 version = "0.2.0"
-rust-version = "1.75.0"
 edition = "2021"
 
 [dependencies]
