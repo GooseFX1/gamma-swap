@@ -257,6 +257,13 @@ impl DynamicFee {
                 continue;
             }
 
+            if observation_state.observations[last_observation_index].block_timestamp
+                > observation_with_index.observation.block_timestamp
+            {
+                // Break if current observation is older than the last observation.
+                break;
+            }
+
             let cumulative_token_0_price = observation_with_index
                 .observation
                 .cumulative_token_0_price_x32;
@@ -270,6 +277,7 @@ impl DynamicFee {
                 .saturating_sub(last_observation.block_timestamp)
                 as u128;
 
+            // Since we are using cumulative_token_price we are sure, that current_observation.cumulative_token_0_price > last_observation.cumulative_token_0_price
             let price = cumulative_token_0_price
                 .checked_sub(last_cumulative_token_0_price)
                 .ok_or(GammaError::MathOverflow)?
