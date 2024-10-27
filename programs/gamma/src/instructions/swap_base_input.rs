@@ -151,7 +151,6 @@ pub fn swap_base_input<'c, 'info>(
         ctx.accounts.amm_config.fund_fee_rate,
         block_timestamp,
         &observation_state,
-        trade_direction,
     ) {
         Ok(value) => value,
         Err(_) => return err!(GammaError::ZeroTradingTokens),

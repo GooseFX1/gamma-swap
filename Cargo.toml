@@ -40,7 +40,7 @@ quickcheck = "0.9"
 rand = "0.8.5"
 referral = { git = "https://github.com/GooseFX1/gfx-referral.git", branch = "make-types-public", features = ["cpi"] }
 regex = "1"
-rust_decimal = { version = "1", features = ["maths", "c-repr"] }
+rust_decimal = { version = "1.36.0", features = ["maths", "c-repr"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 solana-account-decoder = "1.17"
@@ -51,7 +51,7 @@ solana-program-test = "1.17"
 solana-sdk = "1.17"
 solana-security-txt = "1.1.1"
 solana-transaction-status = "1.17"
-spl-math = { version = "0.2", features = ["no-entrypoint"] }
+spl-math = { version = "0.3.0", features = ["no-entrypoint"] }
 spl-memo = "4.0.0"
 spl-token = { version = "4.0.0", features = ["no-entrypoint"] }
 spl-token-2022 = { version = "0.9.0", features = ["no-entrypoint"]}

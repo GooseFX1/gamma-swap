@@ -1,130 +1,28 @@
 use super::{ceil_div, FEE_RATE_DENOMINATOR_VALUE};
 use crate::{
     error::GammaError,
-    states::{Observation, ObservationState, OBSERVATION_NUM},
+    states::{Observation, ObservationState},
 };
 use anchor_lang::prelude::*;
+use rust_decimal::{Decimal, MathematicalOps};
+use rust_decimal::prelude::FromPrimitive;
+use rust_decimal::prelude::ToPrimitive;
+
 //pub const FEE_RATE_DENOMINATOR_VALUE: u64 = 1_000_000;
 
 // Volatility-based fee constants
 pub const MAX_FEE_VOLATILITY: u64 = 10000; // 1% max fee
 pub const VOLATILITY_WINDOW: u64 = 3600; // 1 hour window for volatility calculation
 
-// Rebalancing-focused fee constants
-pub const MIN_FEE_REBALANCE: u64 = 10_000; // 0.1% min fee /100_000
-pub const MAX_FEE_REBALANCE: u64 = 100_000; // 10% max fee
-pub const MID_FEE_REBALANCE: u64 = 26_000; // 2.6% mid fee
-pub const OUT_FEE_REBALANCE: u64 = 50_000; // 5% out fee
-
 const MAX_FEE: u64 = 100000; // 10% max fee
 const VOLATILITY_FACTOR: u64 = 30_000; // Adjust based on desired sensitivity
-const IMBALANCE_FACTOR: u64 = 20_000; // Adjust based on desired sensitivity
 
 pub enum FeeType {
     Volatility,
 }
-
-struct ObservationWithIndex {
-    observation: Observation,
-    index: u16,
-}
-
 pub struct DynamicFee {}
 
 impl DynamicFee {
-    /// Calculates a dynamic fee based on price volatility and liquidity imbalance
-    ///
-    /// # Arguments
-    /// * `pool_state` - The current state of the pool
-    /// * `observation_state` - Historical price observations
-    /// * `vault_0` - Amount of token 0 in the vault
-    /// * `vault_1` - Amount of token 1 in the vault
-    ///
-    /// # Returns
-    /// A fee rate as a u64, where 10000 represents 1%
-    pub fn calculate_volatile_fee(
-        block_timestamp: u64,
-        observation_state: &ObservationState,
-        vault_0: u64,
-        vault_1: u64,
-        base_fees: u64,
-    ) -> Result<u64> {
-        // 1. Price volatility: (max_price - min_price) / avg_price
-        // 2. Volatility component: min(VOLATILITY_FACTOR * volatility, MAX_FEE - BASE_FEE)
-        // 3. Liquidity imbalance: |current_ratio - ideal_ratio|
-        // 4. Imbalance component: IMBALANCE_FACTOR * imbalance / FEE_RATE_DENOMINATOR_VALUE
-        // 5. Final fee: min(BASE_FEE + volatility_component + imbalance_component, MAX_FEE)
-
-        // Calculate recent price volatility
-        let (min_price, max_price, avg_price) =
-            Self::get_price_range(observation_state, block_timestamp, VOLATILITY_WINDOW)?;
-        // Handle case where no valid observations were found
-        if min_price == 0 && max_price == 0 && avg_price == 0 {
-            return Ok(base_fees);
-        }
-
-        let recent_price_volatility = if avg_price > 0 {
-            max_price
-                .saturating_sub(min_price)
-                .checked_mul(FEE_RATE_DENOMINATOR_VALUE as u128)
-                .and_then(|product| product.checked_div(avg_price))
-                .unwrap_or(0)
-        } else {
-            0
-        };
-
-        let volatility_component_calculated = VOLATILITY_FACTOR
-            .saturating_mul(recent_price_volatility as u64)
-            .checked_div(FEE_RATE_DENOMINATOR_VALUE)
-            .ok_or(GammaError::MathOverflow)?;
-
-        // Calculate volatility component
-        let volatility_component = std::cmp::min(
-            volatility_component_calculated,
-            MAX_FEE
-                .checked_sub(base_fees)
-                .ok_or(GammaError::MathOverflow)?,
-        );
-
-        // Calculate liquidity imbalance component
-        let total_liquidity = vault_0
-            .checked_add(vault_1)
-            .ok_or(GammaError::MathOverflow)? as u128;
-
-        let current_ratio = if total_liquidity > 0 {
-            (vault_0 as u128)
-                .checked_mul(FEE_RATE_DENOMINATOR_VALUE as u128)
-                .and_then(|product| product.checked_div(total_liquidity))
-                .unwrap_or(0)
-        } else {
-            0
-        };
-
-        let ideal_ratio = FEE_RATE_DENOMINATOR_VALUE
-            .checked_div(2)
-            .ok_or(GammaError::MathOverflow)? as u128;
-
-        let imbalance = if current_ratio > ideal_ratio {
-            current_ratio.saturating_sub(ideal_ratio)
-        } else {
-            ideal_ratio.saturating_sub(current_ratio)
-        };
-
-        let liquidity_imbalance_component = IMBALANCE_FACTOR
-            .saturating_mul(imbalance as u64)
-            .checked_div(FEE_RATE_DENOMINATOR_VALUE)
-            .unwrap_or(0);
-        // Calculate final dynamic fee
-        let dynamic_fee = base_fees
-            .checked_add(volatility_component)
-            .ok_or(GammaError::MathOverflow)?
-            .checked_add(liquidity_imbalance_component)
-            .ok_or(GammaError::MathOverflow)?;
-        #[cfg(feature = "enable-log")]
-        msg!("dynamic_fee: {}", dynamic_fee);
-        Ok(std::cmp::min(dynamic_fee, MAX_FEE))
-    }
-
     /// Calculates the dynamic fee based on the specified fee type
     ///
     /// # Arguments
@@ -139,8 +37,6 @@ impl DynamicFee {
     pub fn calculate_dynamic_fee(
         block_timestamp: u64,
         observation_state: &ObservationState,
-        vault_0: u64,
-        vault_1: u64,
         fee_type: FeeType,
         base_fees: u64,
     ) -> Result<u64> {
@@ -148,174 +44,151 @@ impl DynamicFee {
             FeeType::Volatility => Self::calculate_volatile_fee(
                 block_timestamp,
                 observation_state,
-                vault_0,
-                vault_1,
                 base_fees,
             ),
         }
     }
 
-    /// Calculates a fee based on price volatility over a given time window
-    ///
-    /// # Arguments
-    /// * `observation_state` - Historical price observations
-    ///
-    /// # Returns
-    /// A fee rate as a u64, where 10000 represents 1%
-    pub fn calculate_volatility_fee(
+    pub fn calculate_volatile_fee(
         block_timestamp: u64,
         observation_state: &ObservationState,
         base_fees: u64,
     ) -> Result<u64> {
-        // 1. Calculate price range: (price_a, price_b)
-        // 2. Volatility = |price_b - price_a| / min(price_a, price_b) * FEE_RATE_DENOMINATOR_VALUE
-        // 3. Dynamic fee = min(volatility / 100 + BASE_FEE_VOLATILITY, MAX_FEE_VOLATILITY)
+        // Get TWAPs for both tokens
+        let (twap_token_0_price, twap_token_1_price) =
+            Self::get_twap_prices(observation_state, block_timestamp, VOLATILITY_WINDOW)?;
+    
+        // Handle case where no valid observations were found
+        if twap_token_0_price.is_zero() || twap_token_1_price.is_zero() {
+            return Ok(base_fees);
+        }
+    
+        // Calculate the logarithm of the price ratio
+        let price_ratio = twap_token_0_price
+            .checked_div(twap_token_1_price)
+            .ok_or(GammaError::MathOverflow)?;
+    
+        // Calculate the absolute value of the logarithmic price change
+        let log_price_ratio = price_ratio.ln();
 
-        let (price_a, price_b, _) =
-            Self::get_price_range(observation_state, block_timestamp, VOLATILITY_WINDOW)?;
-        let volatility = if price_b > price_a {
-            price_b
-                .checked_sub(price_a)
-                .ok_or(GammaError::MathOverflow)?
-                .checked_div(price_a)
-                .ok_or(GammaError::MathOverflow)?
-                .checked_mul(FEE_RATE_DENOMINATOR_VALUE as u128)
-                .ok_or(GammaError::MathOverflow)?
-        } else {
-            price_a
-                .checked_sub(price_b)
-                .ok_or(GammaError::MathOverflow)?
-                .checked_div(price_b)
-                .ok_or(GammaError::MathOverflow)?
-                .checked_mul(FEE_RATE_DENOMINATOR_VALUE as u128)
-                .ok_or(GammaError::MathOverflow)?
-        };
+        let abs_log_price_ratio = log_price_ratio.abs();
+    
+        // Scale the logarithmic value to match the fee rate denominator
+        // Multiply by FEE_RATE_DENOMINATOR_VALUE to scale to the appropriate precision
+        let scaled_log = abs_log_price_ratio
+            .checked_mul(Decimal::from_u64(FEE_RATE_DENOMINATOR_VALUE).unwrap())
+            .ok_or(GammaError::MathOverflow)?;
+    
+        // Convert scaled_log to u64
+        let scaled_log_u64 = scaled_log
+            .to_u64()
+            .ok_or(GammaError::MathOverflow)?;
+    
+        // Calculate volatility component
+        let volatility_component_calculated = VOLATILITY_FACTOR
+            .saturating_mul(scaled_log_u64)
+            .checked_div(FEE_RATE_DENOMINATOR_VALUE)
+            .ok_or(GammaError::MathOverflow)?;
+    
+        let volatility_component = std::cmp::min(
+            volatility_component_calculated,
+            MAX_FEE.checked_sub(base_fees).ok_or(GammaError::MathOverflow)?,
+        );
+    
+        // Calculate final dynamic fee
+        let dynamic_fee = base_fees
+            .checked_add(volatility_component)
+            .ok_or(GammaError::MathOverflow)?;
+    
+        Ok(std::cmp::min(dynamic_fee, MAX_FEE))
+    }    
 
-        let dynamic_fee = volatility
-            .checked_div(100)
-            .ok_or(GammaError::MathOverflow)?
-            .checked_add(base_fees as u128)
-            .ok_or(GammaError::MathOverflow)?; // Increase fee by 1 bp for each 1% of volatility
-        Ok(dynamic_fee.min(MAX_FEE_VOLATILITY as u128) as u64)
-    }
-
-    /// Gets the price range within a specified time window
-    ///
-    /// # Arguments
-    /// * `observation_state` - Historical price observations
-    /// * `current_time` - The current timestamp
-    /// * `window` - The time window to consider
-    ///
-    /// # Returns
-    /// A tuple of (min_price, max_price, average_price) observed within the window
-    fn get_price_range(
+    fn get_twap_prices(
         observation_state: &ObservationState,
         current_time: u64,
         window: u64,
-    ) -> Result<(u128, u128, u128)> {
-        let mut min_price = u128::MAX;
-        let mut max_price = 0u128;
-        let mut total_price = 0u128;
-
-        let mut descending_order_observations = observation_state
-            .observations
-            .iter()
-            .enumerate()
-            .filter(|(_, observation)| {
-                observation.block_timestamp != 0
-                    && observation.cumulative_token_0_price_x32 != 0
-                    && observation.cumulative_token_1_price_x32 != 0
-            })
-            .map(|(index, observation)| ObservationWithIndex {
-                index: index as u16,
-                observation: *observation,
-            })
-            .collect::<Vec<_>>();
-
-        descending_order_observations.sort_by(|a, b| {
-            { b.observation.block_timestamp }.cmp(&{ a.observation.block_timestamp })
-        });
-
-        let mut count = 0;
-        for observation_with_index in descending_order_observations {
-            let is_in_observation_window = current_time
-                .saturating_sub(observation_with_index.observation.block_timestamp)
-                <= window;
-
-            if !is_in_observation_window {
-                // they are already in descending order of block timestamp.
-                break;
+    ) -> Result<(Decimal, Decimal)> {
+        let window_start_time = current_time.saturating_sub(window);
+    
+        // Initialize variables to store observations at window start and end
+        let mut observation_start: Option<&Observation> = None;
+        let mut observation_end: Option<&Observation> = None;
+    
+        // Iterate over observations to find the ones closest to window_start_time and current_time
+        for observation in observation_state.observations.iter() {
+            if observation.block_timestamp == 0 {
+                continue; // Skip uninitialized observations
             }
-            let last_observation_index = if observation_with_index.index == 0 {
-                OBSERVATION_NUM - 1
-            } else {
-                observation_with_index.index as usize - 1
-            };
-
-            // if last observation is not valid, skip this observation
-            if observation_state.observations[last_observation_index].block_timestamp == 0 {
-                continue;
+    
+            // Find the observation closest to the window start time
+            if observation.block_timestamp >= window_start_time {
+                if observation_start.is_none()
+                    || observation.block_timestamp < observation_start.unwrap().block_timestamp
+                {
+                    observation_start = Some(observation);
+                }
             }
-
-            if observation_state.observations[last_observation_index].block_timestamp
-                > observation_with_index.observation.block_timestamp
-            {
-                // Break if current observation is older than the last observation.
-                break;
+    
+            // Find the latest observation up to the current time
+            if observation.block_timestamp <= current_time {
+                if observation_end.is_none()
+                    || observation.block_timestamp > observation_end.unwrap().block_timestamp
+                {
+                    observation_end = Some(observation);
+                }
             }
-
-            let cumulative_token_0_price = observation_with_index
-                .observation
-                .cumulative_token_0_price_x32;
-
-            let last_observation = &observation_state.observations[last_observation_index];
-            let last_cumulative_token_0_price = last_observation.cumulative_token_0_price_x32;
-
-            let time_delta = observation_with_index
-                .observation
-                .block_timestamp
-                .saturating_sub(last_observation.block_timestamp)
-                as u128;
-
-            // Since we are using cumulative_token_price we are sure, that current_observation.cumulative_token_0_price > last_observation.cumulative_token_0_price
-            let price = cumulative_token_0_price
-                .checked_sub(last_cumulative_token_0_price)
-                .ok_or(GammaError::MathOverflow)?
-                .checked_div(time_delta)
-                .ok_or(GammaError::MathOverflow)?;
-
-            // change cumulative
-            min_price = min_price.min(price);
-            max_price = max_price.max(price);
-            count += 1;
-
-            total_price = total_price
-                .checked_add(price)
-                .ok_or(GammaError::MathOverflow)?;
         }
-
-        if count == 0 {
-            // If no valid observations found, return a default range
-            // This could be (0, 0, 0) or another appropriate default
-            return Ok((0, 0, 0));
+    
+        if observation_start.is_none() || observation_end.is_none() {
+            // No valid observations found in the window
+            return Ok((Decimal::from_u64(0).unwrap(), Decimal::from_u64(0).unwrap()));
         }
-
-        // We are dividing  u128 by u128, we will lose precision here
-        // This can be optimized.
-        let price_avg = total_price
-            .checked_div(count as u128)
+    
+        let start_obs = observation_start.unwrap();
+        let end_obs = observation_end.unwrap();
+    
+        let time_delta = end_obs
+            .block_timestamp
+            .saturating_sub(start_obs.block_timestamp);
+        if time_delta == 0 {
+            // Avoid division by zero
+            return Ok((Decimal::from_u64(0).unwrap(), Decimal::from_u64(0).unwrap()));
+        }
+    
+        // Convert time_delta to Decimal
+        let time_delta_decimal = Decimal::from_u64(time_delta).ok_or(GammaError::MathOverflow)?;
+    
+        // Calculate TWAP for token 0
+        let cumulative_price_delta_token_0 = end_obs
+            .cumulative_token_0_price_x32
+            .checked_sub(start_obs.cumulative_token_0_price_x32)
             .ok_or(GammaError::MathOverflow)?;
-        Ok((min_price, max_price, price_avg))
+    
+        let twap_token_0_price = Decimal::from_u128(cumulative_price_delta_token_0)
+            .ok_or(GammaError::MathOverflow)?
+            .checked_div(time_delta_decimal)
+            .ok_or(GammaError::MathOverflow)?;
+    
+        // Calculate TWAP for token 1
+        let cumulative_price_delta_token_1 = end_obs
+            .cumulative_token_1_price_x32
+            .checked_sub(start_obs.cumulative_token_1_price_x32)
+            .ok_or(GammaError::MathOverflow)?;
+    
+        let twap_token_1_price = Decimal::from_u128(cumulative_price_delta_token_1)
+            .ok_or(GammaError::MathOverflow)?
+            .checked_div(time_delta_decimal)
+            .ok_or(GammaError::MathOverflow)?;
+    
+        Ok((twap_token_0_price, twap_token_1_price))
     }
-
+    
     /// Calculates the fee amount for a given input amount
     ///
     /// # Arguments
     /// * `amount` - The input amount
     /// * `pool_state` - The current state of the pool
     /// * `observation_state` - Historical price observations
-    /// * `vault_0` - Amount of token 0 in the vault
-    /// * `vault_1` - Amount of token 1 in the vault
     /// * `fee_type` - The type of fee calculation to use
     ///
     /// # Returns
@@ -325,16 +198,12 @@ impl DynamicFee {
         amount: u128,
         block_timestamp: u64,
         observation_state: &ObservationState,
-        vault_0: u64,
-        vault_1: u64,
         fee_type: FeeType,
         base_fees: u64,
     ) -> Result<u128> {
         let dynamic_fee_rate = Self::calculate_dynamic_fee(
             block_timestamp,
             observation_state,
-            vault_0,
-            vault_1,
             fee_type,
             base_fees,
         )?;
@@ -353,8 +222,6 @@ impl DynamicFee {
     /// * `post_fee_amount` - The amount after fees have been deducted
     /// * `pool_state` - The current state of the pool
     /// * `observation_state` - Historical price observations
-    /// * `vault_0` - Amount of token 0 in the vault
-    /// * `vault_1` - Amount of token 1 in the vault
     /// * `fee_type` - The type of fee calculation to use
     ///
     /// # Returns
@@ -363,8 +230,6 @@ impl DynamicFee {
         block_timestamp: u64,
         post_fee_amount: u128,
         observation_state: &ObservationState,
-        vault_0: u64,
-        vault_1: u64,
         fee_type: FeeType,
         base_fees: u64,
     ) -> Result<u128> {
@@ -386,8 +251,6 @@ impl DynamicFee {
         let dynamic_fee_rate = Self::calculate_dynamic_fee(
             block_timestamp,
             observation_state,
-            vault_0,
-            vault_1,
             fee_type,
             base_fees,
         )?;
