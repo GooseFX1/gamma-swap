@@ -103,24 +103,12 @@ impl CurveCalculator {
         fund_fee_rate: u64,
         block_timestamp: u64,
         observation_state: &ObservationState,
-        trade_direction: TradeDirection,
         // TODO: add fee type here once that is configurable on pool level/ or we can use it from pool_state
     ) -> Result<SwapResult> {
-        let vault0 = match trade_direction {
-            TradeDirection::ZeroForOne => swap_source_amount,
-            TradeDirection::OneForZero => swap_destination_amount,
-        };
-        let vault1 = match trade_direction {
-            TradeDirection::ZeroForOne => swap_destination_amount,
-            TradeDirection::OneForZero => swap_source_amount,
-        };
-
         let dynamic_fee = DynamicFee::dynamic_fee(
             source_amount_to_be_swapped,
             block_timestamp,
             observation_state,
-            vault0 as u64,
-            vault1 as u64,
             FeeType::Volatility,
             trade_fee_rate,
         )?;
@@ -164,7 +152,6 @@ impl CurveCalculator {
         fund_fee_rate: u64,
         block_timestamp: u64,
         observation_state: &ObservationState,
-        trade_direction: TradeDirection,
     ) -> Result<SwapResult> {
         let source_amount_swapped = ConstantProductCurve::swap_base_output_without_fees(
             destination_amount_to_be_swapped,
@@ -172,21 +159,10 @@ impl CurveCalculator {
             swap_destination_amount,
         )?;
 
-        let vault0 = match trade_direction {
-            TradeDirection::ZeroForOne => swap_source_amount,
-            TradeDirection::OneForZero => swap_destination_amount,
-        } as u64;
-        let vault1 = match trade_direction {
-            TradeDirection::ZeroForOne => swap_destination_amount,
-            TradeDirection::OneForZero => swap_source_amount,
-        } as u64;
-
         let source_amount = DynamicFee::calculate_pre_fee_amount(
             block_timestamp,
             source_amount_swapped,
             observation_state,
-            vault0,
-            vault1,
             FeeType::Volatility,
             trade_fee_rate,
         )?;

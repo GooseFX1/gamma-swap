@@ -10,15 +10,8 @@ use anchor_lang::prelude::*;
 pub const MAX_FEE_VOLATILITY: u64 = 10000; // 1% max fee
 pub const VOLATILITY_WINDOW: u64 = 3600; // 1 hour window for volatility calculation
 
-// Rebalancing-focused fee constants
-pub const MIN_FEE_REBALANCE: u64 = 10_000; // 0.1% min fee /100_000
-pub const MAX_FEE_REBALANCE: u64 = 100_000; // 10% max fee
-pub const MID_FEE_REBALANCE: u64 = 26_000; // 2.6% mid fee
-pub const OUT_FEE_REBALANCE: u64 = 50_000; // 5% out fee
-
 const MAX_FEE: u64 = 100000; // 10% max fee
 const VOLATILITY_FACTOR: u64 = 30_000; // Adjust based on desired sensitivity
-const IMBALANCE_FACTOR: u64 = 20_000; // Adjust based on desired sensitivity
 
 pub enum FeeType {
     Volatility,
@@ -45,14 +38,11 @@ impl DynamicFee {
     pub fn calculate_volatile_fee(
         block_timestamp: u64,
         observation_state: &ObservationState,
-        vault_0: u64,
-        vault_1: u64,
         base_fees: u64,
     ) -> Result<u64> {
         // 1. Price volatility: (max_price - min_price) / avg_price
         // 2. Volatility component: min(VOLATILITY_FACTOR * volatility, MAX_FEE - BASE_FEE)
         // 3. Liquidity imbalance: |current_ratio - ideal_ratio|
-        // 4. Imbalance component: IMBALANCE_FACTOR * imbalance / FEE_RATE_DENOMINATOR_VALUE
         // 5. Final fee: min(BASE_FEE + volatility_component + imbalance_component, MAX_FEE)
 
         // Calculate recent price volatility
@@ -85,40 +75,10 @@ impl DynamicFee {
                 .checked_sub(base_fees)
                 .ok_or(GammaError::MathOverflow)?,
         );
-
-        // Calculate liquidity imbalance component
-        let total_liquidity = vault_0
-            .checked_add(vault_1)
-            .ok_or(GammaError::MathOverflow)? as u128;
-
-        let current_ratio = if total_liquidity > 0 {
-            (vault_0 as u128)
-                .checked_mul(FEE_RATE_DENOMINATOR_VALUE as u128)
-                .and_then(|product| product.checked_div(total_liquidity))
-                .unwrap_or(0)
-        } else {
-            0
-        };
-
-        let ideal_ratio = FEE_RATE_DENOMINATOR_VALUE
-            .checked_div(2)
-            .ok_or(GammaError::MathOverflow)? as u128;
-
-        let imbalance = if current_ratio > ideal_ratio {
-            current_ratio.saturating_sub(ideal_ratio)
-        } else {
-            ideal_ratio.saturating_sub(current_ratio)
-        };
-
-        let liquidity_imbalance_component = IMBALANCE_FACTOR
-            .saturating_mul(imbalance as u64)
-            .checked_div(FEE_RATE_DENOMINATOR_VALUE)
-            .unwrap_or(0);
+        
         // Calculate final dynamic fee
         let dynamic_fee = base_fees
             .checked_add(volatility_component)
-            .ok_or(GammaError::MathOverflow)?
-            .checked_add(liquidity_imbalance_component)
             .ok_or(GammaError::MathOverflow)?;
         #[cfg(feature = "enable-log")]
         msg!("dynamic_fee: {}", dynamic_fee);
@@ -139,8 +99,6 @@ impl DynamicFee {
     pub fn calculate_dynamic_fee(
         block_timestamp: u64,
         observation_state: &ObservationState,
-        vault_0: u64,
-        vault_1: u64,
         fee_type: FeeType,
         base_fees: u64,
     ) -> Result<u64> {
@@ -148,8 +106,6 @@ impl DynamicFee {
             FeeType::Volatility => Self::calculate_volatile_fee(
                 block_timestamp,
                 observation_state,
-                vault_0,
-                vault_1,
                 base_fees,
             ),
         }
@@ -325,16 +281,12 @@ impl DynamicFee {
         amount: u128,
         block_timestamp: u64,
         observation_state: &ObservationState,
-        vault_0: u64,
-        vault_1: u64,
         fee_type: FeeType,
         base_fees: u64,
     ) -> Result<u128> {
         let dynamic_fee_rate = Self::calculate_dynamic_fee(
             block_timestamp,
             observation_state,
-            vault_0,
-            vault_1,
             fee_type,
             base_fees,
         )?;
@@ -363,8 +315,6 @@ impl DynamicFee {
         block_timestamp: u64,
         post_fee_amount: u128,
         observation_state: &ObservationState,
-        vault_0: u64,
-        vault_1: u64,
         fee_type: FeeType,
         base_fees: u64,
     ) -> Result<u128> {
@@ -386,8 +336,6 @@ impl DynamicFee {
         let dynamic_fee_rate = Self::calculate_dynamic_fee(
             block_timestamp,
             observation_state,
-            vault_0,
-            vault_1,
             fee_type,
             base_fees,
         )?;
