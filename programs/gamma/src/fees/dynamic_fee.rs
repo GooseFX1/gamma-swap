@@ -4,6 +4,9 @@ use crate::{
     states::{Observation, ObservationState, OBSERVATION_NUM},
 };
 use anchor_lang::prelude::*;
+use rust_decimal::Decimal;
+use rust_decimal::prelude::*;
+use rust_decimal::MathematicalOps; // For ln()
 //pub const FEE_RATE_DENOMINATOR_VALUE: u64 = 1_000_000;
 
 // Volatility-based fee constants
@@ -46,25 +49,46 @@ impl DynamicFee {
         // 5. Final fee: min(BASE_FEE + volatility_component + imbalance_component, MAX_FEE)
 
         // Calculate recent price volatility
-        let (min_price, max_price, avg_price) =
+        let (min_price, max_price, twap_price) =
             Self::get_price_range(observation_state, block_timestamp, VOLATILITY_WINDOW)?;
         // Handle case where no valid observations were found
-        if min_price == 0 && max_price == 0 && avg_price == 0 {
+        if min_price == 0 || max_price == 0 || twap_price == 0 {
             return Ok(base_fees);
         }
 
-        let recent_price_volatility = if avg_price > 0 {
-            max_price
-                .saturating_sub(min_price)
-                .checked_mul(FEE_RATE_DENOMINATOR_VALUE as u128)
-                .and_then(|product| product.checked_div(avg_price))
-                .unwrap_or(0)
-        } else {
-            0
-        };
+        // Convert prices to Decimal for logarithmic calculations
+        let max_price_decimal = Decimal::from_u128(max_price).ok_or(GammaError::MathOverflow)?;
+        let min_price_decimal = Decimal::from_u128(min_price).ok_or(GammaError::MathOverflow)?;
+        let twap_price_decimal = Decimal::from_u128(twap_price).ok_or(GammaError::MathOverflow)?;
 
+        // Compute logarithms
+        let log_max_price = max_price_decimal.ln();
+        let log_min_price = min_price_decimal.ln();
+        let log_twap_price = twap_price_decimal.ln().abs();
+
+        // Compute volatility numerator and denominator
+        let volatility_numerator = (log_max_price - log_min_price).abs();
+        let volatility_denominator = log_twap_price;
+
+        // Check if volatility_denominator is zero to avoid division by zero
+        if volatility_denominator.is_zero() {
+            return Ok(base_fees);
+        }
+
+        // Compute volatility: volatility = volatility_numerator / volatility_denominator
+        let volatility = volatility_numerator
+            .checked_div(volatility_denominator)
+            .ok_or(GammaError::MathOverflow)?;
+
+        // Convert volatility to u64 scaled by FEE_RATE_DENOMINATOR_VALUE
+        let scaled_volatility = (volatility * Decimal::from_u64(FEE_RATE_DENOMINATOR_VALUE)
+            .ok_or(GammaError::MathOverflow)?)
+            .to_u64()
+            .ok_or(GammaError::MathOverflow)?;
+
+        // Calculate volatility component
         let volatility_component_calculated = VOLATILITY_FACTOR
-            .saturating_mul(recent_price_volatility as u64)
+            .saturating_mul(scaled_volatility)
             .checked_div(FEE_RATE_DENOMINATOR_VALUE)
             .ok_or(GammaError::MathOverflow)?;
 
@@ -155,7 +179,7 @@ impl DynamicFee {
         Ok(dynamic_fee.min(MAX_FEE_VOLATILITY as u128) as u64)
     }
 
-    /// Gets the price range within a specified time window
+    /// Gets the price range within a specified time window and computes TWAP
     ///
     /// # Arguments
     /// * `observation_state` - Historical price observations
@@ -163,7 +187,7 @@ impl DynamicFee {
     /// * `window` - The time window to consider
     ///
     /// # Returns
-    /// A tuple of (min_price, max_price, average_price) observed within the window
+    /// A tuple of (min_price, max_price, twap_price) observed within the window
     fn get_price_range(
         observation_state: &ObservationState,
         current_time: u64,
@@ -171,7 +195,6 @@ impl DynamicFee {
     ) -> Result<(u128, u128, u128)> {
         let mut min_price = u128::MAX;
         let mut max_price = 0u128;
-        let mut total_price = 0u128;
 
         let mut descending_order_observations = observation_state
             .observations
@@ -191,8 +214,35 @@ impl DynamicFee {
         descending_order_observations.sort_by(|a, b| {
             { b.observation.block_timestamp }.cmp(&{ a.observation.block_timestamp })
         });
+        
 
-        let mut count = 0;
+        if descending_order_observations.len() < 2 {
+            // Not enough data points to compute TWAP
+            return Ok((0, 0, 0));
+        }
+
+        // For TWAP: use first and last observations
+        let first_obs = descending_order_observations.first().unwrap();
+        let last_obs = descending_order_observations.last().unwrap();
+        
+        let total_time_delta = last_obs
+            .observation
+            .block_timestamp
+            .saturating_sub(first_obs.observation.block_timestamp) as u128;
+        if total_time_delta == 0 {
+            return Ok((0, 0, 0));
+        }
+
+        // Calculate TWAP directly from cumulative prices
+        let twap_price = last_obs
+            .observation
+            .cumulative_token_0_price_x32
+            .checked_sub(first_obs.observation.cumulative_token_0_price_x32)
+            .ok_or(GammaError::MathOverflow)?
+            .checked_div(total_time_delta)
+            .ok_or(GammaError::MathOverflow)?;
+
+        // Iterate to find min/max spot prices
         for observation_with_index in descending_order_observations {
             let is_in_observation_window = current_time
                 .saturating_sub(observation_with_index.observation.block_timestamp)
@@ -220,48 +270,31 @@ impl DynamicFee {
                 break;
             }
 
-            let cumulative_token_0_price = observation_with_index
-                .observation
-                .cumulative_token_0_price_x32;
+            let obs = observation_state.observations[last_observation_index];
+            let next_obs = observation_with_index.observation;
 
-            let last_observation = &observation_state.observations[last_observation_index];
-            let last_cumulative_token_0_price = last_observation.cumulative_token_0_price_x32;
-
-            let time_delta = observation_with_index
-                .observation
+            let time_delta = next_obs
                 .block_timestamp
-                .saturating_sub(last_observation.block_timestamp)
-                as u128;
+                .saturating_sub(obs.block_timestamp) as u128;
 
-            // Since we are using cumulative_token_price we are sure, that current_observation.cumulative_token_0_price > last_observation.cumulative_token_0_price
-            let price = cumulative_token_0_price
-                .checked_sub(last_cumulative_token_0_price)
+            if time_delta == 0 {
+                continue;
+            }
+
+            // Calculate spot price for this interval
+            let price = next_obs
+                .cumulative_token_0_price_x32
+                .checked_sub(obs.cumulative_token_0_price_x32)
                 .ok_or(GammaError::MathOverflow)?
                 .checked_div(time_delta)
                 .ok_or(GammaError::MathOverflow)?;
 
-            // change cumulative
+            // Update min and max prices
             min_price = min_price.min(price);
             max_price = max_price.max(price);
-            count += 1;
-
-            total_price = total_price
-                .checked_add(price)
-                .ok_or(GammaError::MathOverflow)?;
         }
 
-        if count == 0 {
-            // If no valid observations found, return a default range
-            // This could be (0, 0, 0) or another appropriate default
-            return Ok((0, 0, 0));
-        }
-
-        // We are dividing  u128 by u128, we will lose precision here
-        // This can be optimized.
-        let price_avg = total_price
-            .checked_div(count as u128)
-            .ok_or(GammaError::MathOverflow)?;
-        Ok((min_price, max_price, price_avg))
+        Ok((min_price, max_price, twap_price))
     }
 
     /// Calculates the fee amount for a given input amount

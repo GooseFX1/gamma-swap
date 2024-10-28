@@ -25,12 +25,13 @@ idl-build = ["anchor-lang/idl-build", "anchor-spl/idl-build"]
 anchor-lang = { workspace = true }
 anchor-spl = { workspace = true }
 referral = { workspace = true }
+rust_decimal ={ workspace = true}
 solana-security-txt = { workspace = true }
+spl-associated-token-account= {workspace=true}
 spl-math = { workspace = true }
 spl-memo = { workspace = true }
 spl-token = { workspace = true }
 uint = { workspace = true }
-spl-associated-token-account= {workspace=true}
 
 [dev-dependencies]
 proptest = { workspace = true }
