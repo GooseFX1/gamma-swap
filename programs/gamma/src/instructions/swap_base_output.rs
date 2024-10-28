@@ -24,6 +24,26 @@ pub fn swap_base_output<'c, 'info>(
     {
         return err!(GammaError::NotApproved);
     }
+
+    let (token_0_price_x64_before_swap, token_1_price_x64_before_swap) =
+        if ctx.accounts.input_vault.key() == pool_state.token_0_vault
+            && ctx.accounts.output_vault.key() == pool_state.token_1_vault
+        {
+            pool_state.token_price_x32(
+                ctx.accounts.input_vault.amount,
+                ctx.accounts.output_vault.amount,
+            )?
+        } else if ctx.accounts.input_vault.key() == pool_state.token_1_vault
+            && ctx.accounts.output_vault.key() == pool_state.token_0_vault
+        {
+            pool_state.token_price_x32(
+                ctx.accounts.output_vault.amount,
+                ctx.accounts.input_vault.amount,
+            )?
+        } else {
+            return err!(GammaError::InvalidVault);
+        };
+
     let out_transfer_fee = get_transfer_inverse_fee(
         &ctx.accounts.output_token_mint.to_account_info(),
         amount_out_less_fee,
@@ -161,7 +181,7 @@ pub fn swap_base_output<'c, 'info>(
             input_transfer_amount = input_transfer_amount
                 .checked_sub(referral_amount)
                 .ok_or(GammaError::MathError)?;
-            
+
             anchor_spl::token_2022::transfer_checked(
                 CpiContext::new(
                     ctx.accounts.input_token_program.to_account_info(),
@@ -255,30 +275,10 @@ pub fn swap_base_output<'c, 'info>(
         &[&[crate::AUTH_SEED.as_bytes(), &[pool_state.auth_bump]]],
     )?;
 
-    ctx.accounts.input_vault.reload()?;
-    ctx.accounts.output_vault.reload()?;
-    let (token_0_price_x64, token_1_price_x64) = if ctx.accounts.input_vault.key()
-        == pool_state.token_0_vault
-        && ctx.accounts.output_vault.key() == pool_state.token_1_vault
-    {
-        pool_state.token_price_x32(
-            ctx.accounts.input_vault.amount,
-            ctx.accounts.output_vault.amount,
-        )?
-    } else if ctx.accounts.input_vault.key() == pool_state.token_1_vault
-        && ctx.accounts.output_vault.key() == pool_state.token_0_vault
-    {
-        pool_state.token_price_x32(
-            ctx.accounts.output_vault.amount,
-            ctx.accounts.input_vault.amount,
-        )?
-    } else {
-        return err!(GammaError::InvalidVault);
-    };
     observation_state.update(
         oracle::block_timestamp()?,
-        token_0_price_x64,
-        token_1_price_x64,
+        token_0_price_x64_before_swap,
+        token_1_price_x64_before_swap,
     )?;
     pool_state.recent_epoch = Clock::get()?.epoch;
 
