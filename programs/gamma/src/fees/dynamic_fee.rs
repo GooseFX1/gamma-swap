@@ -233,11 +233,9 @@ impl DynamicFee {
     ) -> Result<(u128, u128, u128)> {
         let mut min_price = u128::MAX;
         let mut max_price = 0u128;
-        let mut weighted_price_sum = Decimal::new(0, 0);
-        let mut total_weight = Decimal::new(0, 0);
 
         // Collect valid observations within the window
-        let observations = observation_state
+        let mut observations = observation_state
             .observations
             .iter()
             .filter(|obs| {
@@ -247,12 +245,32 @@ impl DynamicFee {
             })
             .collect::<Vec<_>>();
 
+        // Sort observations by block timestamp to ensure chronological order
+        observations.sort_by_key(|obs| obs.block_timestamp);
+
         if observations.len() < 2 {
             // Not enough data points to compute TWAP
             return Ok((0, 0, 0));
         }
 
-        // Iterate over observation pairs to compute TWAP
+        // For TWAP: use first and last observations
+        let first_obs = observations.first().unwrap();
+        let last_obs = observations.last().unwrap();
+        
+        let total_time_delta = last_obs.block_timestamp.saturating_sub(first_obs.block_timestamp) as u128;
+        if total_time_delta == 0 {
+            return Ok((0, 0, 0));
+        }
+
+        // Calculate TWAP directly from cumulative prices
+        let twap_price = last_obs
+            .cumulative_token_0_price_x32
+            .checked_sub(first_obs.cumulative_token_0_price_x32)
+            .ok_or(GammaError::MathOverflow)?
+            .checked_div(total_time_delta)
+            .ok_or(GammaError::MathOverflow)?;
+
+        // Iterate to find min/max spot prices
         for i in 0..observations.len() - 1 {
             let obs = observations[i];
             let next_obs = observations[i + 1];
@@ -261,12 +279,11 @@ impl DynamicFee {
                 .block_timestamp
                 .saturating_sub(obs.block_timestamp) as u128;
 
-            // Ensure time_delta is positive
             if time_delta == 0 {
                 continue;
             }
 
-            // Calculate price over the interval
+            // Calculate spot price for this interval
             let price = next_obs
                 .cumulative_token_0_price_x32
                 .checked_sub(obs.cumulative_token_0_price_x32)
@@ -277,28 +294,7 @@ impl DynamicFee {
             // Update min and max prices
             min_price = min_price.min(price);
             max_price = max_price.max(price);
-
-            // Accumulate weighted prices for TWAP
-            let price_decimal = Decimal::from_u128(price).ok_or(GammaError::MathOverflow)?;
-            let time_delta_decimal =
-                Decimal::from_u128(time_delta).ok_or(GammaError::MathOverflow)?;
-            weighted_price_sum = weighted_price_sum + (price_decimal * time_delta_decimal);
-            total_weight = total_weight + time_delta_decimal;
         }
-
-        if total_weight.is_zero() {
-            // Avoid division by zero
-            return Ok((0, 0, 0));
-        }
-
-        // Compute TWAP
-        let twap_price_decimal = weighted_price_sum
-            .checked_div(total_weight)
-            .ok_or(GammaError::MathOverflow)?;
-
-        let twap_price = twap_price_decimal
-            .to_u128()
-            .ok_or(GammaError::MathOverflow)?;
 
         Ok((min_price, max_price, twap_price))
     }
