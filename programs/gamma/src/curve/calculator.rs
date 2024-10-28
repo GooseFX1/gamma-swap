@@ -114,13 +114,12 @@ impl CurveCalculator {
             TradeDirection::ZeroForOne => swap_destination_amount,
             TradeDirection::OneForZero => swap_source_amount,
         };
-
         let dynamic_fee = DynamicFee::dynamic_fee(
             source_amount_to_be_swapped,
             block_timestamp,
             observation_state,
-            vault0 as u64,
-            vault1 as u64,
+            vault0,
+            vault1,
             FeeType::Volatility,
             trade_fee_rate,
         )?;
@@ -175,11 +174,11 @@ impl CurveCalculator {
         let vault0 = match trade_direction {
             TradeDirection::ZeroForOne => swap_source_amount,
             TradeDirection::OneForZero => swap_destination_amount,
-        } as u64;
+        };
         let vault1 = match trade_direction {
             TradeDirection::ZeroForOne => swap_destination_amount,
             TradeDirection::OneForZero => swap_source_amount,
-        } as u64;
+        };
 
         let source_amount = DynamicFee::calculate_pre_fee_amount(
             block_timestamp,

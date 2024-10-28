@@ -605,12 +605,14 @@ impl TestEnv {
             system_program: system_program::ID,
         };
 
+        let max_open_time = 60 * 60 * 24 * 5; // 5 days
         let data = gamma::instruction::CreateAmmConfig {
             index: amm_index,
             trade_fee_rate,
             protocol_fee_rate,
             fund_fee_rate,
             create_pool_fee,
+            max_open_time,
         };
 
         let transaction = self

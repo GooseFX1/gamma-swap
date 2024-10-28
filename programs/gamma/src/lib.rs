@@ -68,6 +68,7 @@ pub mod gamma {
         protocol_fee_rate: u64,
         fund_fee_rate: u64,
         create_pool_fee: u64,
+        max_open_time: u64,
     ) -> Result<()> {
         assert!(trade_fee_rate < FEE_RATE_DENOMINATOR_VALUE);
         assert!(protocol_fee_rate <= FEE_RATE_DENOMINATOR_VALUE);
@@ -80,6 +81,7 @@ pub mod gamma {
             protocol_fee_rate,
             fund_fee_rate,
             create_pool_fee,
+            max_open_time,
         )
     }
 
@@ -110,7 +112,7 @@ pub mod gamma {
     /// * `new_fund_owner`- The config's new fund owner, be set when `param` is 4
     /// * `param`- The vaule can be 0 | 1 | 2 | 3 | 4, otherwise will report a error
     ///
-    pub fn update_amm_config(ctx: Context<UpdateAmmConfig>, param: u8, value: u64) -> Result<()> {
+    pub fn update_amm_config(ctx: Context<UpdateAmmConfig>, param: u16, value: u64) -> Result<()> {
         instructions::update_amm_config(ctx, param, value)
     }
 
