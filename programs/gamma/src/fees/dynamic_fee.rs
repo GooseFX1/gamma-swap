@@ -1,7 +1,7 @@
 use super::{ceil_div, FEE_RATE_DENOMINATOR_VALUE};
 use crate::{
     error::GammaError,
-    states::ObservationState,
+    states::{Observation, ObservationState, OBSERVATION_NUM},
 };
 use anchor_lang::prelude::*;
 use rust_decimal::Decimal;
@@ -25,6 +25,11 @@ const IMBALANCE_FACTOR: u64 = 20_000; // Adjust based on desired sensitivity
 
 pub enum FeeType {
     Volatility,
+}
+
+struct ObservationWithIndex {
+    observation: Observation,
+    index: u16,
 }
 
 pub struct DynamicFee {}
@@ -234,46 +239,75 @@ impl DynamicFee {
         let mut min_price = u128::MAX;
         let mut max_price = 0u128;
 
-        // Collect valid observations within the window
-        let mut observations = observation_state
+        let mut descending_order_observations = observation_state
             .observations
             .iter()
-            .filter(|obs| {
-                obs.block_timestamp != 0
-                    && obs.cumulative_token_0_price_x32 != 0
-                    && current_time.saturating_sub(obs.block_timestamp) <= window
+            .enumerate()
+            .filter(|(_, observation)| {
+                observation.block_timestamp != 0
+                    && observation.cumulative_token_0_price_x32 != 0
+                    && observation.cumulative_token_1_price_x32 != 0
+            })
+            .map(|(index, observation)| ObservationWithIndex {
+                index: index as u16,
+                observation: *observation,
             })
             .collect::<Vec<_>>();
 
-        // Sort observations by block timestamp to ensure chronological order
-        observations.sort_by_key(|obs| obs.block_timestamp);
+        descending_order_observations.sort_by(|a, b| {
+            { b.observation.block_timestamp }.cmp(&{ a.observation.block_timestamp })
+        });
+        
 
-        if observations.len() < 2 {
+        if descending_order_observations.len() < 2 {
             // Not enough data points to compute TWAP
             return Ok((0, 0, 0));
         }
 
         // For TWAP: use first and last observations
-        let first_obs = observations.first().unwrap();
-        let last_obs = observations.last().unwrap();
+        let first_obs = descending_order_observations.first().unwrap();
+        let last_obs = descending_order_observations.last().unwrap();
         
-        let total_time_delta = last_obs.block_timestamp.saturating_sub(first_obs.block_timestamp) as u128;
+        let total_time_delta = last_obs
+            .observation
+            .block_timestamp
+            .saturating_sub(first_obs.observation.block_timestamp) as u128;
         if total_time_delta == 0 {
             return Ok((0, 0, 0));
         }
 
         // Calculate TWAP directly from cumulative prices
         let twap_price = last_obs
+            .observation
             .cumulative_token_0_price_x32
-            .checked_sub(first_obs.cumulative_token_0_price_x32)
+            .checked_sub(first_obs.observation.cumulative_token_0_price_x32)
             .ok_or(GammaError::MathOverflow)?
             .checked_div(total_time_delta)
             .ok_or(GammaError::MathOverflow)?;
 
         // Iterate to find min/max spot prices
-        for i in 0..observations.len() - 1 {
-            let obs = observations[i];
-            let next_obs = observations[i + 1];
+        for observation_with_index in descending_order_observations {
+            let is_in_observation_window = current_time
+                .saturating_sub(observation_with_index.observation.block_timestamp)
+                <= window;
+
+            if !is_in_observation_window {
+                // they are already in descending order of block timestamp.
+                break;
+            }
+            let last_observation_index = if observation_with_index.index == 0 {
+                OBSERVATION_NUM - 1
+            } else {
+                observation_with_index.index as usize - 1
+            };
+
+            // if last observation is not valid, skip this observation
+            if observation_state.observations[last_observation_index].block_timestamp == 0 {
+                continue;
+            }
+
+            let obs = observation_state.observations[last_observation_index];
+            let next_obs = observation_with_index.observation;
 
             let time_delta = next_obs
                 .block_timestamp
