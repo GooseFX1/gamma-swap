@@ -173,7 +173,13 @@ pub fn swap_base_output<'c, 'info>(
             .checked_div(10_000)
             .unwrap_or(0);
 
-        if referral_amount != 0 {
+        let referral_transfer_fee = get_transfer_fee(
+            &ctx.accounts.input_token_mint.to_account_info(),
+            referral_amount,
+        )?;
+
+        // We are aware of the fact that when referral fees are very small the referee will not get any tokens
+        if referral_amount != 0 && referral_transfer_fee < referral_amount {
             // subtract referral amount from dynamic fee and transfer amount
             dynamic_fee = dynamic_fee
                 .checked_sub(referral_amount)
