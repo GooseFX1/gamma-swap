@@ -1,6 +1,6 @@
 //! The Uniswap invariantConstantProductCurve::
 
-use crate::math::CheckedCeilDiv;
+use crate::utils::math::CheckedCeilDiv;
 use crate::{
     curve::calculator::{RoundDirection, TradingTokenResult},
     error::GammaError,

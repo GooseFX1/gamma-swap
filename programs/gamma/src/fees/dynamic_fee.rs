@@ -4,10 +4,9 @@ use crate::{
     states::{Observation, ObservationState, OBSERVATION_NUM},
 };
 use anchor_lang::prelude::*;
-use rust_decimal::Decimal;
 use rust_decimal::prelude::*;
+use rust_decimal::Decimal;
 use rust_decimal::MathematicalOps; // For ln()
-//pub const FEE_RATE_DENOMINATOR_VALUE: u64 = 1_000_000;
 
 // Volatility-based fee constants
 pub const MAX_FEE_VOLATILITY: u64 = 10000; // 1% max fee
@@ -28,27 +27,88 @@ struct ObservationWithIndex {
 pub struct DynamicFee {}
 
 impl DynamicFee {
-    /// Calculates a dynamic fee based on price volatility and liquidity imbalance
+    /// Calculates the fee amount for a given input amount (base_fees + dynamic_fee)
+    ///
+    /// # Arguments
+    /// * `amount` - The input amount
+    /// * `block_timestamp` - The current block timestamp
+    /// * `observation_state` - Historical price observations
+    /// * `fee_type` - The type of fee calculation to use
+    /// * `base_fees` - The base fee rate
+    ///
+    /// # Returns
+    /// The fee amount as a u128, or None if calculation fails
+
+    pub fn dynamic_fee(
+        amount: u128,
+        block_timestamp: u64,
+        observation_state: &ObservationState,
+        fee_type: FeeType,
+        base_fees: u64,
+    ) -> Result<u128> {
+        let dynamic_fee_rate =
+            Self::calculate_dynamic_fee(block_timestamp, observation_state, fee_type, base_fees)?;
+
+        Ok(ceil_div(
+            amount,
+            u128::from(dynamic_fee_rate),
+            u128::from(FEE_RATE_DENOMINATOR_VALUE),
+        )
+        .ok_or(GammaError::MathOverflow)?)
+    }
+
+    /// Calculates the dynamic fee based on the specified fee type
     ///
     /// # Arguments
     /// * `pool_state` - The current state of the pool
     /// * `observation_state` - Historical price observations
     /// * `vault_0` - Amount of token 0 in the vault
     /// * `vault_1` - Amount of token 1 in the vault
+    /// * `fee_type` - The type of fee calculation to use
     ///
     /// # Returns
     /// A fee rate as a u64, where 10000 represents 1%
-    pub fn calculate_volatile_fee(
+    fn calculate_dynamic_fee(
+        block_timestamp: u64,
+        observation_state: &ObservationState,
+        fee_type: FeeType,
+        base_fees: u64,
+    ) -> Result<u64> {
+        match fee_type {
+            FeeType::Volatility => {
+                Self::calculate_volatile_fee(block_timestamp, observation_state, base_fees)
+            }
+        }
+    }
+
+    /// Calculates a dynamic fee based on price volatility
+    ///
+    /// # Arguments
+    /// * `block_timestamp` - The current block timestamp
+    /// * `observation_state` - Historical price observations
+    /// * `base_fees` - The base fee rate
+    ///
+    /// # Returns
+    /// A fee rate as a u64, where 10000 represents 1%
+    fn calculate_volatile_fee(
         block_timestamp: u64,
         observation_state: &ObservationState,
         base_fees: u64,
     ) -> Result<u64> {
-        // 1. Price volatility: (max_price - min_price) / avg_price
-        // 2. Volatility component: min(VOLATILITY_FACTOR * volatility, MAX_FEE - BASE_FEE)
-        // 3. Liquidity imbalance: |current_ratio - ideal_ratio|
-        // 5. Final fee: min(BASE_FEE + volatility_component + imbalance_component, MAX_FEE)
+        // 1. Price volatility calculation:
+        //    - Get min, max and TWAP (Time-Weighted Average Price) over the volatility window
+        //    - Volatility = |ln(max_price) - ln(min_price)| / |ln(twap_price)|
+        //
+        // 2. Volatility component calculation:
+        //    - Scale volatility by FEE_RATE_DENOMINATOR_VALUE (1_000_000)
+        //    - Multiply by VOLATILITY_FACTOR (30_000) to adjust sensitivity
+        //    - Cap the component at (MAX_FEE - BASE_FEE) to ensure total fee doesn't exceed MAX_FEE
+        //
+        // 3. Final fee calculation:
+        //    - Add base_fees to volatility_component
+        //    - Ensure final fee doesn't exceed MAX_FEE (100_000 = 10%)
+        //    - Result is a fee rate where 10_000 represents 1%
 
-        // Calculate recent price volatility
         let (min_price, max_price, twap_price) =
             Self::get_price_range(observation_state, block_timestamp, VOLATILITY_WINDOW)?;
         // Handle case where no valid observations were found
@@ -81,10 +141,10 @@ impl DynamicFee {
             .ok_or(GammaError::MathOverflow)?;
 
         // Convert volatility to u64 scaled by FEE_RATE_DENOMINATOR_VALUE
-        let scaled_volatility = (volatility * Decimal::from_u64(FEE_RATE_DENOMINATOR_VALUE)
-            .ok_or(GammaError::MathOverflow)?)
-            .to_u64()
-            .ok_or(GammaError::MathOverflow)?;
+        let scaled_volatility = (volatility
+            * Decimal::from_u64(FEE_RATE_DENOMINATOR_VALUE).ok_or(GammaError::MathOverflow)?)
+        .to_u64()
+        .ok_or(GammaError::MathOverflow)?;
 
         // Calculate volatility component
         let volatility_component_calculated = VOLATILITY_FACTOR
@@ -99,7 +159,7 @@ impl DynamicFee {
                 .checked_sub(base_fees)
                 .ok_or(GammaError::MathOverflow)?,
         );
-        
+
         // Calculate final dynamic fee
         let dynamic_fee = base_fees
             .checked_add(volatility_component)
@@ -107,76 +167,6 @@ impl DynamicFee {
         #[cfg(feature = "enable-log")]
         msg!("dynamic_fee: {}", dynamic_fee);
         Ok(std::cmp::min(dynamic_fee, MAX_FEE))
-    }
-
-    /// Calculates the dynamic fee based on the specified fee type
-    ///
-    /// # Arguments
-    /// * `pool_state` - The current state of the pool
-    /// * `observation_state` - Historical price observations
-    /// * `vault_0` - Amount of token 0 in the vault
-    /// * `vault_1` - Amount of token 1 in the vault
-    /// * `fee_type` - The type of fee calculation to use
-    ///
-    /// # Returns
-    /// A fee rate as a u64, where 10000 represents 1%
-    pub fn calculate_dynamic_fee(
-        block_timestamp: u64,
-        observation_state: &ObservationState,
-        fee_type: FeeType,
-        base_fees: u64,
-    ) -> Result<u64> {
-        match fee_type {
-            FeeType::Volatility => Self::calculate_volatile_fee(
-                block_timestamp,
-                observation_state,
-                base_fees,
-            ),
-        }
-    }
-
-    /// Calculates a fee based on price volatility over a given time window
-    ///
-    /// # Arguments
-    /// * `observation_state` - Historical price observations
-    ///
-    /// # Returns
-    /// A fee rate as a u64, where 10000 represents 1%
-    pub fn calculate_volatility_fee(
-        block_timestamp: u64,
-        observation_state: &ObservationState,
-        base_fees: u64,
-    ) -> Result<u64> {
-        // 1. Calculate price range: (price_a, price_b)
-        // 2. Volatility = |price_b - price_a| / min(price_a, price_b) * FEE_RATE_DENOMINATOR_VALUE
-        // 3. Dynamic fee = min(volatility / 100 + BASE_FEE_VOLATILITY, MAX_FEE_VOLATILITY)
-
-        let (price_a, price_b, _) =
-            Self::get_price_range(observation_state, block_timestamp, VOLATILITY_WINDOW)?;
-        let volatility = if price_b > price_a {
-            price_b
-                .checked_sub(price_a)
-                .ok_or(GammaError::MathOverflow)?
-                .checked_div(price_a)
-                .ok_or(GammaError::MathOverflow)?
-                .checked_mul(FEE_RATE_DENOMINATOR_VALUE as u128)
-                .ok_or(GammaError::MathOverflow)?
-        } else {
-            price_a
-                .checked_sub(price_b)
-                .ok_or(GammaError::MathOverflow)?
-                .checked_div(price_b)
-                .ok_or(GammaError::MathOverflow)?
-                .checked_mul(FEE_RATE_DENOMINATOR_VALUE as u128)
-                .ok_or(GammaError::MathOverflow)?
-        };
-
-        let dynamic_fee = volatility
-            .checked_div(100)
-            .ok_or(GammaError::MathOverflow)?
-            .checked_add(base_fees as u128)
-            .ok_or(GammaError::MathOverflow)?; // Increase fee by 1 bp for each 1% of volatility
-        Ok(dynamic_fee.min(MAX_FEE_VOLATILITY as u128) as u64)
     }
 
     /// Gets the price range within a specified time window and computes TWAP
@@ -195,7 +185,10 @@ impl DynamicFee {
     ) -> Result<(u128, u128, u128)> {
         let mut min_price = u128::MAX;
         let mut max_price = 0u128;
-
+        // Filter and sort observations:
+        // 1. Remove invalid observations (zero timestamps or prices)
+        // 2. Keep only observations within our time window
+        // 3. Sort from newest to oldest
         let mut descending_order_observations = observation_state
             .observations
             .iter()
@@ -204,6 +197,7 @@ impl DynamicFee {
                 observation.block_timestamp != 0
                     && observation.cumulative_token_0_price_x32 != 0
                     && observation.cumulative_token_1_price_x32 != 0
+                    && current_time.saturating_sub(observation.block_timestamp) <= window
             })
             .map(|(index, observation)| ObservationWithIndex {
                 index: index as u16,
@@ -211,47 +205,44 @@ impl DynamicFee {
             })
             .collect::<Vec<_>>();
 
+        // Sort observations by timestamp (newest first)
         descending_order_observations.sort_by(|a, b| {
             { b.observation.block_timestamp }.cmp(&{ a.observation.block_timestamp })
         });
-        
 
+        // Need at least 2 observations to calculate prices
         if descending_order_observations.len() < 2 {
             // Not enough data points to compute TWAP
             return Ok((0, 0, 0));
         }
 
-        // For TWAP: use first and last observations
-        let first_obs = descending_order_observations.first().unwrap();
-        let last_obs = descending_order_observations.last().unwrap();
-        
-        let total_time_delta = last_obs
+        // For TWAP: use first and last observations within our window
+        // Get newest and oldest observations in our filtered set
+        let newest_obs = descending_order_observations.first().unwrap();
+        let oldest_obs = descending_order_observations.last().unwrap();
+
+        // Calculate time delta using the correct start time
+        let total_time_delta = newest_obs
             .observation
             .block_timestamp
-            .saturating_sub(first_obs.observation.block_timestamp) as u128;
+            .saturating_sub(oldest_obs.observation.block_timestamp)
+            as u128;
+
         if total_time_delta == 0 {
             return Ok((0, 0, 0));
         }
 
-        // Calculate TWAP directly from cumulative prices
-        let twap_price = last_obs
+        // Calculate TWAP using real observations only
+        let twap_price = newest_obs
             .observation
             .cumulative_token_0_price_x32
-            .checked_sub(first_obs.observation.cumulative_token_0_price_x32)
+            .checked_sub(oldest_obs.observation.cumulative_token_0_price_x32)
             .ok_or(GammaError::MathOverflow)?
             .checked_div(total_time_delta)
             .ok_or(GammaError::MathOverflow)?;
 
         // Iterate to find min/max spot prices
         for observation_with_index in descending_order_observations {
-            let is_in_observation_window = current_time
-                .saturating_sub(observation_with_index.observation.block_timestamp)
-                <= window;
-
-            if !is_in_observation_window {
-                // they are already in descending order of block timestamp.
-                break;
-            }
             let last_observation_index = if observation_with_index.index == 0 {
                 OBSERVATION_NUM - 1
             } else {
@@ -262,7 +253,7 @@ impl DynamicFee {
             if observation_state.observations[last_observation_index].block_timestamp == 0 {
                 continue;
             }
-
+            
             if observation_state.observations[last_observation_index].block_timestamp
                 > observation_with_index.observation.block_timestamp
             {
@@ -295,41 +286,6 @@ impl DynamicFee {
         }
 
         Ok((min_price, max_price, twap_price))
-    }
-
-    /// Calculates the fee amount for a given input amount
-    ///
-    /// # Arguments
-    /// * `amount` - The input amount
-    /// * `pool_state` - The current state of the pool
-    /// * `observation_state` - Historical price observations
-    /// * `vault_0` - Amount of token 0 in the vault
-    /// * `vault_1` - Amount of token 1 in the vault
-    /// * `fee_type` - The type of fee calculation to use
-    ///
-    /// # Returns
-    /// The fee amount as a u128, or None if calculation fails
-
-    pub fn dynamic_fee(
-        amount: u128,
-        block_timestamp: u64,
-        observation_state: &ObservationState,
-        fee_type: FeeType,
-        base_fees: u64,
-    ) -> Result<u128> {
-        let dynamic_fee_rate = Self::calculate_dynamic_fee(
-            block_timestamp,
-            observation_state,
-            fee_type,
-            base_fees,
-        )?;
-
-        Ok(ceil_div(
-            amount,
-            u128::from(dynamic_fee_rate),
-            u128::from(FEE_RATE_DENOMINATOR_VALUE),
-        )
-        .ok_or(GammaError::MathOverflow)?)
     }
 
     /// Calculates the pre-fee amount given a post-fee amount
