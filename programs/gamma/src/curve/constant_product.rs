@@ -1,11 +1,11 @@
 //! The Uniswap invariantConstantProductCurve::
 
+use crate::math::CheckedCeilDiv;
 use crate::{
     curve::calculator::{RoundDirection, TradingTokenResult},
     error::GammaError,
 };
 use anchor_lang::prelude::*;
-use spl_math::checked_ceil_div::CheckedCeilDiv;
 
 /// ConstantProductCurve struct implementing CurveCalculator
 #[derive(Clone, Debug, Default, PartialEq)]
