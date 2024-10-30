@@ -1,7 +1,9 @@
 //! The Uniswap invariantConstantProductCurve::
 
+use crate::math::CheckedCeilDiv;
 use crate::{
-    curve::calculator::{RoundDirection, TradingTokenResult}, error::GammaError,
+    curve::calculator::{RoundDirection, TradingTokenResult},
+    error::GammaError,
 };
 use anchor_lang::prelude::*;
 
@@ -48,8 +50,8 @@ impl ConstantProductCurve {
         let denominator = swap_destination_amount
             .checked_sub(destination_amount_to_be_swapped)
             .ok_or(GammaError::MathOverflow)?;
-        let source_amount_swapped = numerator
-            .checked_div(denominator)
+        let (source_amount_swapped, _) = numerator
+            .checked_ceil_div(denominator)
             .ok_or(GammaError::MathOverflow)?;
         Ok(source_amount_swapped)
     }
