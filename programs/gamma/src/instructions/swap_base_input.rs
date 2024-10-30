@@ -175,18 +175,23 @@ pub fn swap_base_input<'c, 'info>(
         Err(_) => return err!(GammaError::ZeroTradingTokens),
     };
 
-    let constant_after = u128::from(result.new_swap_source_amount)
+    let constant_after = u128::from(
+            result
+                .new_swap_source_amount
+                .checked_sub(result.dynamic_fee)
+                .ok_or(GammaError::MathOverflow)?
+        )
         .checked_mul(u128::from(result.new_swap_destination_amount))
         .ok_or(GammaError::MathOverflow)?;
     #[cfg(feature = "enable-log")]
     msg!(
-        "source_amount_swapped:{}, destination_amount_swapped:{},constant_before:{},constant_after:{}",
+        "source_amount_swapped:{}, destination_amount_swapped:{}, dynamic_fee: {}, constant_before:{},constant_after:{}",
         result.source_amount_swapped,
         result.destination_amount_swapped,
+        result.dynamic_fee,
         constant_before,
         constant_after
     );
-    require_gte!(constant_after, constant_before);
     let source_amount_swapped = match u64::try_from(result.source_amount_swapped) {
         Ok(value) => value,
         Err(_) => return err!(GammaError::MathOverflow),
@@ -322,6 +327,7 @@ pub fn swap_base_input<'c, 'info>(
         output_transfer_fee,
         base_input: true
     });
+    require_gte!(constant_after, constant_before);
     transfer_from_user_to_pool_vault(
         ctx.accounts.payer.to_account_info(),
         ctx.accounts.input_token_account.to_account_info(),
