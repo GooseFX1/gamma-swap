@@ -27,7 +27,9 @@ use spl_token_2022::{
     extension::StateWithExtensionsMut,
     state::{Account, Mint},
 };
-
+// This module is only to make sure the gist compiles for jupiter.
+// If any change is made in the file, we should send the changes to the jupiter team.
+mod jupiter;
 mod test_swaps;
 use test_swaps::run_swap_test;
 
@@ -222,14 +224,19 @@ fn main() -> Result<()> {
             let signature = send_txn(&rpc_client, &txn, true)?;
             println!("{}", signature);
         }
-        GammaCommands::CreateReferralProject { name, default_share_bps, referral_program, amm_config } => {
+        GammaCommands::CreateReferralProject {
+            name,
+            default_share_bps,
+            referral_program,
+            amm_config,
+        } => {
             let instruction = create_referral_project_instr(
                 &pool_config,
                 payer.pubkey(),
                 amm_config,
                 name,
                 default_share_bps,
-                referral_program
+                referral_program,
             );
 
             let recent_hash = rpc_client.get_latest_blockhash()?;
@@ -317,10 +324,11 @@ fn main() -> Result<()> {
             let token_1_vault_info =
                 StateWithExtensionsMut::<Account>::unpack(&mut token_1_vault_data)?;
 
-            let (total_token_0_amount, total_token_1_amount) = pool_state.vault_amount_without_fee(
-                token_0_vault_info.base.amount,
-                token_1_vault_info.base.amount,
-            )?;
+            let (total_token_0_amount, total_token_1_amount) = pool_state
+                .vault_amount_without_fee(
+                    token_0_vault_info.base.amount,
+                    token_1_vault_info.base.amount,
+                )?;
             // calculate amount
             let results = gamma::curve::CurveCalculator::lp_tokens_to_trading_tokens(
                 u128::from(lp_token_amount),
@@ -425,10 +433,11 @@ fn main() -> Result<()> {
             let token_1_vault_info =
                 StateWithExtensionsMut::<Account>::unpack(&mut token_1_vault_data)?;
 
-            let (total_token_0_amount, total_token_1_amount) = pool_state.vault_amount_without_fee(
-                token_0_vault_info.base.amount,
-                token_1_vault_info.base.amount,
-            )?;
+            let (total_token_0_amount, total_token_1_amount) = pool_state
+                .vault_amount_without_fee(
+                    token_0_vault_info.base.amount,
+                    token_1_vault_info.base.amount,
+                )?;
             // calculate amount
             let results = gamma::curve::CurveCalculator::lp_tokens_to_trading_tokens(
                 u128::from(lp_token_amount),
@@ -555,10 +564,11 @@ fn main() -> Result<()> {
             let user_input_token_info =
                 StateWithExtensionsMut::<Account>::unpack(&mut user_input_token_data)?;
 
-            let (total_token_0_amount, total_token_1_amount) = pool_state.vault_amount_without_fee(
-                token_0_vault_info.base.amount,
-                token_1_vault_info.base.amount,
-            )?;
+            let (total_token_0_amount, total_token_1_amount) = pool_state
+                .vault_amount_without_fee(
+                    token_0_vault_info.base.amount,
+                    token_1_vault_info.base.amount,
+                )?;
 
             let (
                 trade_direction,
@@ -721,10 +731,11 @@ fn main() -> Result<()> {
             let user_input_token_info =
                 StateWithExtensionsMut::<Account>::unpack(&mut user_input_token_data)?;
 
-            let (total_token_0_amount, total_token_1_amount) = pool_state.vault_amount_without_fee(
-                token_0_vault_info.base.amount,
-                token_1_vault_info.base.amount,
-            )?;
+            let (total_token_0_amount, total_token_1_amount) = pool_state
+                .vault_amount_without_fee(
+                    token_0_vault_info.base.amount,
+                    token_1_vault_info.base.amount,
+                )?;
 
             let (
                 trade_direction,
