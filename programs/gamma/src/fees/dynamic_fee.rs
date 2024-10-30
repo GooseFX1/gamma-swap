@@ -249,6 +249,11 @@ impl DynamicFee {
                 observation_with_index.index as usize - 1
             };
 
+            // if last observation is not valid, skip this observation
+            if observation_state.observations[last_observation_index].block_timestamp == 0 {
+                continue;
+            }
+            
             if observation_state.observations[last_observation_index].block_timestamp
                 > observation_with_index.observation.block_timestamp
             {
