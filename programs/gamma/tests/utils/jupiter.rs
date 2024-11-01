@@ -248,8 +248,11 @@ impl Amm for Gamma {
                 .context("Missing observation state")?,
         )
         .context("swap failed")?;
+        dbg!(&result);
+        dbg!(self.timestamp.load(std::sync::atomic::Ordering::Relaxed) as u64);
 
         let amount_out: u64 = result.destination_amount_swapped.try_into()?;
+        dbg!(amount_out);
         let actual_amount_out =
             if let Some(transfer_fee_config) = destination_mint_transfer_fee_config {
                 amount_out.saturating_sub(

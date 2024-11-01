@@ -1,10 +1,18 @@
+use std::collections::HashMap;
+
+use anchor_spl::token::TokenAccount;
 use gamma::{
     curve::TradeDirection,
     states::{ObservationState, PoolState},
 };
 use solana_program_test::tokio;
-use solana_sdk::{signature::Keypair, signer::Signer};
+use solana_sdk::{
+    clock::{self, Clock},
+    signature::Keypair,
+    signer::Signer,
+};
 mod utils;
+use jupiter_amm_interface::{AccountMap, Amm, AmmContext, ClockRef, KeyedAccount, SwapMode};
 use utils::jupiter;
 
 use utils::*;
@@ -98,13 +106,221 @@ async fn jupiter_quotes() {
         .await;
 
     ///// We make at 3 swaps to set initial observation of price. /////
-    let observation: ObservationState = test_env.fetch_account(pool_state1.observation_key).await;
-    let pool_state1: PoolState = test_env.fetch_account(pool_id).await;
-
-    let mut price_changes = vec![get_current_price_token_0_price(observation)];
-    let mut pool_state_changes = vec![pool_state1];
-
     test_env.jump_seconds(100).await;
+    let pool_state_info = test_env.get_account_info(pool_id).await.unwrap().unwrap();
+    let keyed_account = KeyedAccount {
+        key: pool_id,
+        account: pool_state_info,
+        params: None,
+    };
+    let clock: Clock = test_env
+        .program_test_context
+        .banks_client
+        .get_sysvar()
+        .await
+        .unwrap();
+
+    let amm_context = AmmContext {
+        clock_ref: ClockRef::from(clock),
+    };
+    let mut jupiter_quote_result =
+        jupiter::Gamma::from_keyed_account(&keyed_account, &amm_context).unwrap();
+    let mut pool_state_before: PoolState = test_env.fetch_account(pool_id).await;
+
+    let user_token_0_pk = test_env
+        .get_or_create_associated_token_account(user.pubkey(), test_env.token_0_mint, &user)
+        .await;
+    let user_token_1_pk = test_env
+        .get_or_create_associated_token_account(user.pubkey(), test_env.token_1_mint, &user)
+        .await;
+
+    let mut account_map: AccountMap = HashMap::new();
 
     ////////////////// Actual test start here /////////////
+    for _ in 0..100 {
+        let swap_amount = 100000000000;
+        let pool_state_info = test_env.get_account_info(pool_id).await.unwrap().unwrap();
+        let token_0_mint = test_env
+            .get_account_info(pool_state0.token_0_mint)
+            .await
+            .unwrap()
+            .unwrap();
+        let token_1_mint = test_env
+            .get_account_info(pool_state0.token_1_mint)
+            .await
+            .unwrap()
+            .unwrap();
+        let amm_config = test_env
+            .get_account_info(pool_state0.amm_config)
+            .await
+            .unwrap()
+            .unwrap();
+        let observation_state_info = test_env
+            .get_account_info(pool_state0.observation_key)
+            .await
+            .unwrap()
+            .unwrap();
+
+        let token_0_vault = test_env
+            .get_account_info(pool_state0.token_0_vault)
+            .await
+            .unwrap()
+            .unwrap();
+        let token_1_vault = test_env
+            .get_account_info(pool_state0.token_1_vault)
+            .await
+            .unwrap()
+            .unwrap();
+        account_map.insert(pool_state0.token_0_mint, token_0_mint);
+        account_map.insert(pool_state0.token_1_mint, token_1_mint);
+        account_map.insert(pool_state0.amm_config, amm_config);
+        account_map.insert(pool_id, pool_state_info);
+        account_map.insert(pool_state0.observation_key, observation_state_info);
+        account_map.insert(pool_state0.token_0_vault, token_0_vault);
+        account_map.insert(pool_state0.token_1_vault, token_1_vault);
+
+        jupiter_quote_result.update(&account_map).unwrap();
+        let quote = jupiter_quote_result
+            .quote(&jupiter_amm_interface::QuoteParams {
+                amount: swap_amount,
+                input_mint: test_env.token_0_mint,
+                output_mint: test_env.token_1_mint,
+                swap_mode: SwapMode::ExactIn,
+            })
+            .unwrap();
+
+        let user_token_0_account_before: TokenAccount =
+            test_env.fetch_account(user_token_0_pk).await;
+        let user_token_1_account_before: TokenAccount =
+            test_env.fetch_account(user_token_1_pk).await;
+
+        // perform actual swap
+        test_env
+            .swap_base_input(
+                &user,
+                pool_id,
+                amm_index,
+                swap_amount,
+                0,
+                TradeDirection::ZeroForOne,
+            )
+            .await;
+
+        let user_token_0_account_after: TokenAccount =
+            test_env.fetch_account(user_token_0_pk).await;
+        let user_token_1_account_after: TokenAccount =
+            test_env.fetch_account(user_token_1_pk).await;
+
+        let change_in_token_0 = user_token_0_account_after
+            .amount
+            .abs_diff(user_token_0_account_before.amount);
+        let change_in_token_1 = user_token_1_account_after
+            .amount
+            .abs_diff(user_token_1_account_before.amount);
+
+        assert_eq!(swap_amount, change_in_token_0);
+        assert_eq!(quote.in_amount, change_in_token_0);
+        assert_eq!(quote.out_amount, change_in_token_1);
+
+        let pool_state_after: PoolState = test_env.fetch_account(pool_id).await;
+        let fees_charged = pool_state_after.cumulative_trade_fees_token_0
+            - pool_state_before.cumulative_trade_fees_token_0;
+        assert_eq!(fees_charged as u64, quote.fee_amount);
+        pool_state_before = pool_state_after;
+        test_env.jump_seconds(16).await;
+    }
+
+    for _ in 0..100 {
+        let swap_amount = 100000;
+        let pool_state_info = test_env.get_account_info(pool_id).await.unwrap().unwrap();
+        let token_0_mint = test_env
+            .get_account_info(pool_state0.token_0_mint)
+            .await
+            .unwrap()
+            .unwrap();
+        let token_1_mint = test_env
+            .get_account_info(pool_state0.token_1_mint)
+            .await
+            .unwrap()
+            .unwrap();
+        let amm_config = test_env
+            .get_account_info(pool_state0.amm_config)
+            .await
+            .unwrap()
+            .unwrap();
+        let observation_state_info = test_env
+            .get_account_info(pool_state0.observation_key)
+            .await
+            .unwrap()
+            .unwrap();
+
+        let token_0_vault = test_env
+            .get_account_info(pool_state0.token_0_vault)
+            .await
+            .unwrap()
+            .unwrap();
+        let token_1_vault = test_env
+            .get_account_info(pool_state0.token_1_vault)
+            .await
+            .unwrap()
+            .unwrap();
+        account_map.insert(pool_state0.token_0_mint, token_0_mint);
+        account_map.insert(pool_state0.token_1_mint, token_1_mint);
+        account_map.insert(pool_state0.amm_config, amm_config);
+        account_map.insert(pool_id, pool_state_info);
+        account_map.insert(pool_state0.observation_key, observation_state_info);
+        account_map.insert(pool_state0.token_0_vault, token_0_vault);
+        account_map.insert(pool_state0.token_1_vault, token_1_vault);
+
+        jupiter_quote_result.update(&account_map).unwrap();
+        let quote = jupiter_quote_result
+            .quote(&jupiter_amm_interface::QuoteParams {
+                amount: swap_amount,
+                input_mint: test_env.token_1_mint,
+                output_mint: test_env.token_0_mint,
+                swap_mode: SwapMode::ExactIn,
+            })
+            .unwrap();
+
+        let user_token_0_account_before: TokenAccount =
+            test_env.fetch_account(user_token_0_pk).await;
+        let user_token_1_account_before: TokenAccount =
+            test_env.fetch_account(user_token_1_pk).await;
+
+        // perform actual swap
+        test_env
+            .swap_base_input(
+                &user,
+                pool_id,
+                amm_index,
+                swap_amount,
+                0,
+                TradeDirection::OneForZero,
+            )
+            .await;
+
+        let user_token_0_account_after: TokenAccount =
+            test_env.fetch_account(user_token_0_pk).await;
+        let user_token_1_account_after: TokenAccount =
+            test_env.fetch_account(user_token_1_pk).await;
+
+        let change_in_token_0 = user_token_0_account_after
+            .amount
+            .abs_diff(user_token_0_account_before.amount);
+        let change_in_token_1 = user_token_1_account_after
+            .amount
+            .abs_diff(user_token_1_account_before.amount);
+
+        assert_eq!(swap_amount, change_in_token_1);
+        assert_eq!(quote.in_amount, change_in_token_1);
+        assert_eq!(quote.out_amount, change_in_token_0);
+
+        let pool_state_after: PoolState = test_env.fetch_account(pool_id).await;
+        let fees_charged = pool_state_after.cumulative_trade_fees_token_1
+            - pool_state_before.cumulative_trade_fees_token_1;
+        assert_eq!(fees_charged as u64, quote.fee_amount);
+        pool_state_before = pool_state_after;
+
+        test_env.jump_seconds(16).await;
+    }
 }

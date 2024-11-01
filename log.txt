@@ -1,0 +1,779 @@
+warning: profiles for the non root package will be ignored, specify profiles at the workspace root:
+package:   /Users/sushantchandla/Documents/gamma-swap/programs/gamma/Cargo.toml
+workspace: /Users/sushantchandla/Documents/gamma-swap/Cargo.toml
+    Finished release [optimized] target(s) in 0.35s
+warning: profiles for the non root package will be ignored, specify profiles at the workspace root:
+package:   /Users/sushantchandla/Documents/gamma-swap/programs/gamma/Cargo.toml
+workspace: /Users/sushantchandla/Documents/gamma-swap/Cargo.toml
+warning: unused variable: `account_metas`
+   --> programs/gamma/tests/utils/jupiter.rs:329:13
+    |
+329 |         let account_metas = gamma::accounts::Swap {
+    |             ^^^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_account_metas`
+    |
+    = note: `#[warn(unused_variables)]` on by default
+
+   Compiling gamma v0.1.0 (/Users/sushantchandla/Documents/gamma-swap/programs/gamma)
+warning: `gamma` (test "swap_test") generated 1 warning
+warning: unused import: `ObservationState`
+ --> programs/gamma/tests/jupiter_quotes.rs:6:14
+  |
+6 |     states::{ObservationState, PoolState},
+  |              ^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: unused import: `self`
+  --> programs/gamma/tests/jupiter_quotes.rs:10:13
+   |
+10 |     clock::{self, Clock},
+   |             ^^^^
+
+warning: unused variable: `pool_state1`
+  --> programs/gamma/tests/jupiter_quotes.rs:70:9
+   |
+70 |     let pool_state1: PoolState = test_env.fetch_account(pool_id).await;
+   |         ^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_pool_state1`
+
+warning: `gamma` (test "jupiter_quotes") generated 4 warnings (1 duplicate) (run `cargo fix --test "jupiter_quotes"` to apply 2 suggestions)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.10s
+     Running unittests src/lib.rs (target/debug/deps/gamma-5367ee493d9d3472)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 3 filtered out; finished in 0.00s
+
+     Running tests/jupiter_quotes.rs (target/debug/deps/jupiter_quotes-92ba39caec6f5173)
+
+running 1 test
+[2024-11-01T14:03:03.600805000Z INFO  solana_program_test] "gamma" SBF program from /Users/sushantchandla/Documents/gamma-swap/target/deploy/gamma.so, modified 10 minutes, 56 seconds, 496 ms, 951 µs and 616 ns ago
+[2024-11-01T14:03:03.668444000Z DEBUG solana_runtime::message_processor::stable_log] Program 11111111111111111111111111111111 invoke [1]
+[2024-11-01T14:03:03.668612000Z DEBUG solana_runtime::message_processor::stable_log] Program 11111111111111111111111111111111 success
+[2024-11-01T14:03:03.674261000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [1]
+[2024-11-01T14:03:03.674874000Z DEBUG solana_runtime::message_processor::stable_log] Program log: Instruction: InitializeMint
+[2024-11-01T14:03:03.675199000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 2920 of 200000 compute units
+[2024-11-01T14:03:03.675241000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success
+[2024-11-01T14:03:03.677540000Z DEBUG solana_runtime::message_processor::stable_log] Program 11111111111111111111111111111111 invoke [1]
+[2024-11-01T14:03:03.677634000Z DEBUG solana_runtime::message_processor::stable_log] Program 11111111111111111111111111111111 success
+[2024-11-01T14:03:03.679276000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [1]
+[2024-11-01T14:03:03.679630000Z DEBUG solana_runtime::message_processor::stable_log] Program log: Instruction: InitializeMint
+[2024-11-01T14:03:03.679931000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 2920 of 200000 compute units
+[2024-11-01T14:03:03.679953000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success
+[2024-11-01T14:03:03.906406000Z DEBUG solana_runtime::message_processor::stable_log] Program GAMMA7meSFWaBXF25oSUgmGRwaW6sCMFLmBNiMSdbHVT invoke [1]
+[2024-11-01T14:03:03.906891000Z DEBUG solana_runtime::message_processor::stable_log] Program log: Instruction: CreateAmmConfig
+[2024-11-01T14:03:03.907502000Z DEBUG solana_runtime::message_processor::stable_log] Program 11111111111111111111111111111111 invoke [2]
+[2024-11-01T14:03:03.907544000Z DEBUG solana_runtime::message_processor::stable_log] Program 11111111111111111111111111111111 success
+[2024-11-01T14:03:03.908144000Z DEBUG solana_runtime::message_processor::stable_log] Program GAMMA7meSFWaBXF25oSUgmGRwaW6sCMFLmBNiMSdbHVT consumed 10747 of 200000 compute units
+[2024-11-01T14:03:03.908206000Z DEBUG solana_runtime::message_processor::stable_log] Program GAMMA7meSFWaBXF25oSUgmGRwaW6sCMFLmBNiMSdbHVT success
+[2024-11-01T14:03:03.913758000Z DEBUG solana_runtime::message_processor::stable_log] Program ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL invoke [1]
+[2024-11-01T14:03:03.914399000Z DEBUG solana_runtime::message_processor::stable_log] Program log: Create
+[2024-11-01T14:03:03.914859000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]
+[2024-11-01T14:03:03.915072000Z DEBUG solana_runtime::message_processor::stable_log] Program log: Instruction: GetAccountDataSize
+[2024-11-01T14:03:03.915253000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 1595 of 190103 compute units
+[2024-11-01T14:03:03.915304000Z DEBUG solana_runtime::message_processor::stable_log] Program return: TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA pQAAAAAAAAA=
+[2024-11-01T14:03:03.915326000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success
+[2024-11-01T14:03:03.915708000Z DEBUG solana_runtime::message_processor::stable_log] Program 11111111111111111111111111111111 invoke [2]
+[2024-11-01T14:03:03.915743000Z DEBUG solana_runtime::message_processor::stable_log] Program 11111111111111111111111111111111 success
+[2024-11-01T14:03:03.915779000Z DEBUG solana_runtime::message_processor::stable_log] Program log: Initialize the associated token account
+[2024-11-01T14:03:03.915987000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]
+[2024-11-01T14:03:03.916214000Z DEBUG solana_runtime::message_processor::stable_log] Program log: Instruction: InitializeImmutableOwner
+[2024-11-01T14:03:03.916324000Z DEBUG solana_runtime::message_processor::stable_log] Program log: Please upgrade to SPL Token 2022 for immutable owner support
+[2024-11-01T14:03:03.916349000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 1405 of 183490 compute units
+[2024-11-01T14:03:03.916371000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success
+[2024-11-01T14:03:03.916670000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]
+[2024-11-01T14:03:03.916958000Z DEBUG solana_runtime::message_processor::stable_log] Program log: Instruction: InitializeAccount3
+[2024-11-01T14:03:03.917531000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 4214 of 179608 compute units
+[2024-11-01T14:03:03.917553000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success
+[2024-11-01T14:03:03.917637000Z DEBUG solana_runtime::message_processor::stable_log] Program ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL consumed 24889 of 200000 compute units
+[2024-11-01T14:03:03.917660000Z DEBUG solana_runtime::message_processor::stable_log] Program ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL success
+[2024-11-01T14:03:04.121367000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [1]
+[2024-11-01T14:03:04.121836000Z DEBUG solana_runtime::message_processor::stable_log] Program log: Instruction: MintTo
+[2024-11-01T14:03:04.122416000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 4573 of 200000 compute units
+[2024-11-01T14:03:04.122442000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success
+[2024-11-01T14:03:04.124895000Z DEBUG solana_runtime::message_processor::stable_log] Program ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL invoke [1]
+[2024-11-01T14:03:04.125480000Z DEBUG solana_runtime::message_processor::stable_log] Program log: Create
+[2024-11-01T14:03:04.125871000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]
+[2024-11-01T14:03:04.126078000Z DEBUG solana_runtime::message_processor::stable_log] Program log: Instruction: GetAccountDataSize
+[2024-11-01T14:03:04.126230000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 1595 of 191603 compute units
+[2024-11-01T14:03:04.126253000Z DEBUG solana_runtime::message_processor::stable_log] Program return: TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA pQAAAAAAAAA=
+[2024-11-01T14:03:04.126278000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success
+[2024-11-01T14:03:04.126646000Z DEBUG solana_runtime::message_processor::stable_log] Program 11111111111111111111111111111111 invoke [2]
+[2024-11-01T14:03:04.126680000Z DEBUG solana_runtime::message_processor::stable_log] Program 11111111111111111111111111111111 success
+[2024-11-01T14:03:04.126714000Z DEBUG solana_runtime::message_processor::stable_log] Program log: Initialize the associated token account
+[2024-11-01T14:03:04.126885000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]
+[2024-11-01T14:03:04.127058000Z DEBUG solana_runtime::message_processor::stable_log] Program log: Instruction: InitializeImmutableOwner
+[2024-11-01T14:03:04.127160000Z DEBUG solana_runtime::message_processor::stable_log] Program log: Please upgrade to SPL Token 2022 for immutable owner support
+[2024-11-01T14:03:04.127182000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 1405 of 184990 compute units
+[2024-11-01T14:03:04.127200000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success
+[2024-11-01T14:03:04.127484000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]
+[2024-11-01T14:03:04.127741000Z DEBUG solana_runtime::message_processor::stable_log] Program log: Instruction: InitializeAccount3
+[2024-11-01T14:03:04.128253000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 4214 of 181108 compute units
+[2024-11-01T14:03:04.128273000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success
+[2024-11-01T14:03:04.128359000Z DEBUG solana_runtime::message_processor::stable_log] Program ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL consumed 23389 of 200000 compute units
+[2024-11-01T14:03:04.128379000Z DEBUG solana_runtime::message_processor::stable_log] Program ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL success
+[2024-11-01T14:03:04.332261000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [1]
+[2024-11-01T14:03:04.332831000Z DEBUG solana_runtime::message_processor::stable_log] Program log: Instruction: MintTo
+[2024-11-01T14:03:04.333525000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 4573 of 200000 compute units
+[2024-11-01T14:03:04.333564000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success
+[2024-11-01T14:03:04.538113000Z DEBUG solana_runtime::message_processor::stable_log] Program GAMMA7meSFWaBXF25oSUgmGRwaW6sCMFLmBNiMSdbHVT invoke [1]
+[2024-11-01T14:03:04.540001000Z DEBUG solana_runtime::message_processor::stable_log] Program log: Instruction: Initialize
+[2024-11-01T14:03:04.544498000Z DEBUG solana_runtime::message_processor::stable_log] Program 11111111111111111111111111111111 invoke [2]
+[2024-11-01T14:03:04.546256000Z DEBUG solana_runtime::message_processor::stable_log] Program 11111111111111111111111111111111 success
+[2024-11-01T14:03:04.551467000Z DEBUG solana_runtime::message_processor::stable_log] Program 11111111111111111111111111111111 invoke [2]
+[2024-11-01T14:03:04.551656000Z DEBUG solana_runtime::message_processor::stable_log] Program 11111111111111111111111111111111 success
+[2024-11-01T14:03:04.553428000Z DEBUG solana_runtime::message_processor::stable_log] Program 11111111111111111111111111111111 invoke [2]
+[2024-11-01T14:03:04.553597000Z DEBUG solana_runtime::message_processor::stable_log] Program 11111111111111111111111111111111 success
+[2024-11-01T14:03:04.556594000Z DEBUG solana_runtime::message_processor::stable_log] Program 11111111111111111111111111111111 invoke [2]
+[2024-11-01T14:03:04.556950000Z DEBUG solana_runtime::message_processor::stable_log] Program 11111111111111111111111111111111 success
+[2024-11-01T14:03:04.557297000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]
+[2024-11-01T14:03:04.561650000Z DEBUG solana_runtime::message_processor::stable_log] Program log: Instruction: InitializeAccount3
+[2024-11-01T14:03:04.564120000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 4214 of 150637 compute units
+[2024-11-01T14:03:04.564404000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success
+[2024-11-01T14:03:04.567321000Z DEBUG solana_runtime::message_processor::stable_log] Program 11111111111111111111111111111111 invoke [2]
+[2024-11-01T14:03:04.568021000Z DEBUG solana_runtime::message_processor::stable_log] Program 11111111111111111111111111111111 success
+[2024-11-01T14:03:04.569227000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]
+[2024-11-01T14:03:04.572573000Z DEBUG solana_runtime::message_processor::stable_log] Program log: Instruction: InitializeAccount3
+[2024-11-01T14:03:04.573944000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 4214 of 140800 compute units
+[2024-11-01T14:03:04.574188000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success
+[2024-11-01T14:03:04.574759000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]
+[2024-11-01T14:03:04.575255000Z DEBUG solana_runtime::message_processor::stable_log] Program log: Instruction: TransferChecked
+[2024-11-01T14:03:04.576055000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 6174 of 133464 compute units
+[2024-11-01T14:03:04.576084000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success
+[2024-11-01T14:03:04.576493000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]
+[2024-11-01T14:03:04.576902000Z DEBUG solana_runtime::message_processor::stable_log] Program log: Instruction: TransferChecked
+[2024-11-01T14:03:04.577718000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 6174 of 124313 compute units
+[2024-11-01T14:03:04.577757000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success
+[2024-11-01T14:03:04.579213000Z DEBUG solana_runtime::message_processor::stable_log] Program GAMMA7meSFWaBXF25oSUgmGRwaW6sCMFLmBNiMSdbHVT consumed 90896 of 200000 compute units
+[2024-11-01T14:03:04.579583000Z DEBUG solana_runtime::message_processor::stable_log] Program GAMMA7meSFWaBXF25oSUgmGRwaW6sCMFLmBNiMSdbHVT success
+[2024-11-01T14:03:04.828942000Z DEBUG solana_runtime::message_processor::stable_log] Program GAMMA7meSFWaBXF25oSUgmGRwaW6sCMFLmBNiMSdbHVT invoke [1]
+[2024-11-01T14:03:04.830931000Z DEBUG solana_runtime::message_processor::stable_log] Program log: Instruction: SwapBaseInput
+[2024-11-01T14:03:04.835642000Z DEBUG solana_runtime::message_processor::stable_log] Program log: actual_amount_in:1000 source_amount_swapped:1000, destination_amount_swapped:1997, dynamic_fee: 1, constant_before:200000000000000000000000000,constant_after:200000000000009999998004997
+[2024-11-01T14:03:04.835826000Z DEBUG solana_runtime::message_processor::stable_log] Program data: QMbN6CYIceLyjBADfILi4XrO/slhdMwoRrLGCrTYE0CcLtoe8SXiRwCgck4YCQAAAEDlnDASAADoAwAAAAAAAM0HAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAE=
+[2024-11-01T14:03:04.836332000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]
+[2024-11-01T14:03:04.836930000Z DEBUG solana_runtime::message_processor::stable_log] Program log: Instruction: TransferChecked
+[2024-11-01T14:03:04.838065000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 6174 of 168939 compute units
+[2024-11-01T14:03:04.838115000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success
+[2024-11-01T14:03:04.838716000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]
+[2024-11-01T14:03:04.839311000Z DEBUG solana_runtime::message_processor::stable_log] Program log: Instruction: TransferChecked
+[2024-11-01T14:03:04.840398000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 6174 of 159758 compute units
+[2024-11-01T14:03:04.840431000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success
+[2024-11-01T14:03:04.840778000Z DEBUG solana_runtime::message_processor::stable_log] Program GAMMA7meSFWaBXF25oSUgmGRwaW6sCMFLmBNiMSdbHVT consumed 47768 of 200000 compute units
+[2024-11-01T14:03:04.840840000Z DEBUG solana_runtime::message_processor::stable_log] Program GAMMA7meSFWaBXF25oSUgmGRwaW6sCMFLmBNiMSdbHVT success
+[2024-11-01T14:03:05.084176000Z DEBUG solana_runtime::message_processor::stable_log] Program GAMMA7meSFWaBXF25oSUgmGRwaW6sCMFLmBNiMSdbHVT invoke [1]
+[2024-11-01T14:03:05.085586000Z DEBUG solana_runtime::message_processor::stable_log] Program log: Instruction: SwapBaseInput
+[2024-11-01T14:03:05.089077000Z DEBUG solana_runtime::message_processor::stable_log] Program log: actual_amount_in:1000 source_amount_swapped:1000, destination_amount_swapped:1997, dynamic_fee: 1, constant_before:200000000000029999998003000,constant_after:200000000000039999992015994
+[2024-11-01T14:03:05.089208000Z DEBUG solana_runtime::message_processor::stable_log] Program data: QMbN6CYIceLyjBADfILi4XrO/slhdMwoRrLGCrTYE0CcLtoe8SXiR+ijck4YCQAAMzjlnDASAADoAwAAAAAAAM0HAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAE=
+[2024-11-01T14:03:05.089624000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]
+[2024-11-01T14:03:05.090122000Z DEBUG solana_runtime::message_processor::stable_log] Program log: Instruction: TransferChecked
+[2024-11-01T14:03:05.091058000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 6174 of 168844 compute units
+[2024-11-01T14:03:05.091088000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success
+[2024-11-01T14:03:05.091579000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]
+[2024-11-01T14:03:05.092119000Z DEBUG solana_runtime::message_processor::stable_log] Program log: Instruction: TransferChecked
+[2024-11-01T14:03:05.093013000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 6174 of 159663 compute units
+[2024-11-01T14:03:05.093036000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success
+[2024-11-01T14:03:05.093329000Z DEBUG solana_runtime::message_processor::stable_log] Program GAMMA7meSFWaBXF25oSUgmGRwaW6sCMFLmBNiMSdbHVT consumed 48156 of 200000 compute units
+[2024-11-01T14:03:05.093356000Z DEBUG solana_runtime::message_processor::stable_log] Program GAMMA7meSFWaBXF25oSUgmGRwaW6sCMFLmBNiMSdbHVT success
+[2024-11-01T14:03:05.329203000Z DEBUG solana_runtime::message_processor::stable_log] Program GAMMA7meSFWaBXF25oSUgmGRwaW6sCMFLmBNiMSdbHVT invoke [1]
+[2024-11-01T14:03:05.331100000Z DEBUG solana_runtime::message_processor::stable_log] Program log: Instruction: SwapBaseInput
+[2024-11-01T14:03:05.335485000Z DEBUG solana_runtime::message_processor::stable_log] Program log: actual_amount_in:2000 source_amount_swapped:2000, destination_amount_swapped:999, dynamic_fee: 2, constant_before:200000000000059999992012000,constant_after:200000000000059999998002004
+[2024-11-01T14:03:05.335668000Z DEBUG solana_runtime::message_processor::stable_log] Program data: QMbN6CYIceLyjBADfILi4XrO/slhdMwoRrLGCrTYE0CcLtoe8SXiR2Yw5ZwwEgAA0KdyThgJAADQBwAAAAAAAOcDAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAE=
+[2024-11-01T14:03:05.336198000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]
+[2024-11-01T14:03:05.336810000Z DEBUG solana_runtime::message_processor::stable_log] Program log: Instruction: TransferChecked
+[2024-11-01T14:03:05.337927000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 6174 of 168273 compute units
+[2024-11-01T14:03:05.337962000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success
+[2024-11-01T14:03:05.338549000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]
+[2024-11-01T14:03:05.339115000Z DEBUG solana_runtime::message_processor::stable_log] Program log: Instruction: TransferChecked
+[2024-11-01T14:03:05.340152000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 6174 of 159092 compute units
+[2024-11-01T14:03:05.340180000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success
+[2024-11-01T14:03:05.340496000Z DEBUG solana_runtime::message_processor::stable_log] Program GAMMA7meSFWaBXF25oSUgmGRwaW6sCMFLmBNiMSdbHVT consumed 48727 of 200000 compute units
+[2024-11-01T14:03:05.340525000Z DEBUG solana_runtime::message_processor::stable_log] Program GAMMA7meSFWaBXF25oSUgmGRwaW6sCMFLmBNiMSdbHVT success
+[programs/gamma/tests/utils/jupiter.rs:251:9] &result = SwapResult {
+    new_swap_source_amount: 20099999998006,
+    new_swap_destination_amount: 9950298261182,
+    source_amount_swapped: 100000000000,
+    destination_amount_swapped: 49701739819,
+    dynamic_fee: 100000000,
+    protocol_fee: 2000,
+    fund_fee: 500,
+}
+[programs/gamma/tests/utils/jupiter.rs:252:9] self.timestamp.load(std::sync::atomic::Ordering::Relaxed) as u64 = 1730470512
+[programs/gamma/tests/utils/jupiter.rs:255:9] amount_out = 49701739819
+[2024-11-01T14:03:05.577181000Z DEBUG solana_runtime::message_processor::stable_log] Program GAMMA7meSFWaBXF25oSUgmGRwaW6sCMFLmBNiMSdbHVT invoke [1]
+[2024-11-01T14:03:05.579309000Z DEBUG solana_runtime::message_processor::stable_log] Program log: Instruction: SwapBaseInput
+[2024-11-01T14:03:05.585886000Z DEBUG solana_runtime::message_processor::stable_log] Program log: actual_amount_in:100000000000 source_amount_swapped:100000000000, destination_amount_swapped:49701739819, dynamic_fee: 100000000, constant_before:200000000000079999998004006,constant_after:200000000000091187067203092
+[2024-11-01T14:03:05.586135000Z DEBUG solana_runtime::message_processor::stable_log] Program data: QMbN6CYIceLyjBADfILi4XrO/slhdMwoRrLGCrTYE0CcLtoe8SXiRzY45ZwwEgAA6aNyThgJAAAA6HZIFwAAACtddJILAAAAAAAAAAAAAAAAAAAAAAAAAAE=
+[2024-11-01T14:03:05.586696000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]
+[2024-11-01T14:03:05.587329000Z DEBUG solana_runtime::message_processor::stable_log] Program log: Instruction: TransferChecked
+[2024-11-01T14:03:05.588421000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 6174 of 161801 compute units
+[2024-11-01T14:03:05.588460000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success
+[2024-11-01T14:03:05.589063000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]
+[2024-11-01T14:03:05.589623000Z DEBUG solana_runtime::message_processor::stable_log] Program log: Instruction: TransferChecked
+[2024-11-01T14:03:05.590737000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 6174 of 152620 compute units
+[2024-11-01T14:03:05.590766000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success
+[2024-11-01T14:03:05.591141000Z DEBUG solana_runtime::message_processor::stable_log] Program GAMMA7meSFWaBXF25oSUgmGRwaW6sCMFLmBNiMSdbHVT consumed 55199 of 200000 compute units
+[2024-11-01T14:03:05.591183000Z DEBUG solana_runtime::message_processor::stable_log] Program GAMMA7meSFWaBXF25oSUgmGRwaW6sCMFLmBNiMSdbHVT success
+[programs/gamma/tests/utils/jupiter.rs:251:9] &result = SwapResult {
+    new_swap_source_amount: 20199999995506,
+    new_swap_destination_amount: 9901088374177,
+    source_amount_swapped: 100000000000,
+    destination_amount_swapped: 49209887005,
+    dynamic_fee: 100000000,
+    protocol_fee: 2000,
+    fund_fee: 500,
+}
+[programs/gamma/tests/utils/jupiter.rs:252:9] self.timestamp.load(std::sync::atomic::Ordering::Relaxed) as u64 = 1730470512
+[programs/gamma/tests/utils/jupiter.rs:255:9] amount_out = 49209887005
+[2024-11-01T14:03:05.826034000Z DEBUG solana_runtime::message_processor::stable_log] Program GAMMA7meSFWaBXF25oSUgmGRwaW6sCMFLmBNiMSdbHVT invoke [1]
+[2024-11-01T14:03:05.827265000Z DEBUG solana_runtime::message_processor::stable_log] Program log: Instruction: SwapBaseInput
+[2024-11-01T14:03:05.831226000Z DEBUG solana_runtime::message_processor::stable_log] Program log: actual_amount_in:100000000000 source_amount_swapped:100000000000, destination_amount_swapped:49209887005, dynamic_fee: 100000000, constant_before:200000995005041559614248092,constant_after:200000995005042491146448562
+[2024-11-01T14:03:05.831333000Z DEBUG solana_runtime::message_processor::stable_log] Program data: QMbN6CYIceLyjBADfILi4XrO/slhdMwoRrLGCrTYE0CcLtoe8SXiR3IWXOVHEgAAvkb+uwwJAAAA6HZIFwAAAB1JI3ULAAAAAAAAAAAAAAAAAAAAAAAAAAE=
+[2024-11-01T14:03:05.831682000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]
+[2024-11-01T14:03:05.832104000Z DEBUG solana_runtime::message_processor::stable_log] Program log: Instruction: TransferChecked
+[2024-11-01T14:03:05.832871000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 6174 of 161091 compute units
+[2024-11-01T14:03:05.832896000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success
+[2024-11-01T14:03:05.833309000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]
+[2024-11-01T14:03:05.833698000Z DEBUG solana_runtime::message_processor::stable_log] Program log: Instruction: TransferChecked
+[2024-11-01T14:03:05.834449000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 6174 of 151910 compute units
+[2024-11-01T14:03:05.834508000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success
+[2024-11-01T14:03:05.834751000Z DEBUG solana_runtime::message_processor::stable_log] Program GAMMA7meSFWaBXF25oSUgmGRwaW6sCMFLmBNiMSdbHVT consumed 55909 of 200000 compute units
+[2024-11-01T14:03:05.834773000Z DEBUG solana_runtime::message_processor::stable_log] Program GAMMA7meSFWaBXF25oSUgmGRwaW6sCMFLmBNiMSdbHVT success
+[programs/gamma/tests/utils/jupiter.rs:251:9] &result = SwapResult {
+    new_swap_source_amount: 20299999993006,
+    new_swap_destination_amount: 9852369819851,
+    source_amount_swapped: 100000000000,
+    destination_amount_swapped: 48718554326,
+    dynamic_fee: 113900000,
+    protocol_fee: 2278,
+    fund_fee: 569,
+}
+[programs/gamma/tests/utils/jupiter.rs:252:9] self.timestamp.load(std::sync::atomic::Ordering::Relaxed) as u64 = 1730470512
+[programs/gamma/tests/utils/jupiter.rs:255:9] amount_out = 48718554326
+[2024-11-01T14:03:06.065254000Z DEBUG solana_runtime::message_processor::stable_log] Program GAMMA7meSFWaBXF25oSUgmGRwaW6sCMFLmBNiMSdbHVT invoke [1]
+[2024-11-01T14:03:06.067541000Z DEBUG solana_runtime::message_processor::stable_log] Program log: Instruction: SwapBaseInput
+[2024-11-01T14:03:06.075200000Z DEBUG solana_runtime::message_processor::stable_log] Program log: actual_amount_in:100000000000 source_amount_swapped:100000000000, destination_amount_swapped:48718554326, dynamic_fee: 113900000, constant_before:200001985089127187911006062,constant_after:200001985089145344451062106
+[2024-11-01T14:03:06.075415000Z DEBUG solana_runtime::message_processor::stable_log] Program data: QMbN6CYIceLyjBADfILi4XrO/slhdMwoRrLGCrTYE0CcLtoe8SXiR6700i1fEgAAof3aRgEJAAAA6HZIFwAAANYk2lcLAAAAAAAAAAAAAAAAAAAAAAAAAAE=
+[2024-11-01T14:03:06.075997000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]
+[2024-11-01T14:03:06.076674000Z DEBUG solana_runtime::message_processor::stable_log] Program log: Instruction: TransferChecked
+[2024-11-01T14:03:06.077833000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 6174 of 156508 compute units
+[2024-11-01T14:03:06.077906000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success
+[2024-11-01T14:03:06.078550000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]
+[2024-11-01T14:03:06.079131000Z DEBUG solana_runtime::message_processor::stable_log] Program log: Instruction: TransferChecked
+[2024-11-01T14:03:06.080258000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 6174 of 147327 compute units
+[2024-11-01T14:03:06.080287000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success
+[2024-11-01T14:03:06.080653000Z DEBUG solana_runtime::message_processor::stable_log] Program GAMMA7meSFWaBXF25oSUgmGRwaW6sCMFLmBNiMSdbHVT consumed 60492 of 200000 compute units
+[2024-11-01T14:03:06.080689000Z DEBUG solana_runtime::message_processor::stable_log] Program GAMMA7meSFWaBXF25oSUgmGRwaW6sCMFLmBNiMSdbHVT success
+[programs/gamma/tests/utils/jupiter.rs:251:9] &result = SwapResult {
+    new_swap_source_amount: 20399999990159,
+    new_swap_destination_amount: 9804135261303,
+    source_amount_swapped: 100000000000,
+    destination_amount_swapped: 48234558548,
+    dynamic_fee: 127700000,
+    protocol_fee: 2554,
+    fund_fee: 638,
+}
+[programs/gamma/tests/utils/jupiter.rs:252:9] self.timestamp.load(std::sync::atomic::Ordering::Relaxed) as u64 = 1730470512
+[programs/gamma/tests/utils/jupiter.rs:255:9] amount_out = 48234558548
+[2024-11-01T14:03:06.317429000Z DEBUG solana_runtime::message_processor::stable_log] Program GAMMA7meSFWaBXF25oSUgmGRwaW6sCMFLmBNiMSdbHVT invoke [1]
+[2024-11-01T14:03:06.318753000Z DEBUG solana_runtime::message_processor::stable_log] Program log: Instruction: SwapBaseInput
+[2024-11-01T14:03:06.323943000Z DEBUG solana_runtime::message_processor::stable_log] Program log: actual_amount_in:100000000000 source_amount_swapped:100000000000, destination_amount_swapped:48234558548, dynamic_fee: 127700000, constant_before:200003107246018128602846309,constant_after:200003107246025836500417177
+[2024-11-01T14:03:06.324063000Z DEBUG solana_runtime::message_processor::stable_log] Program data: QMbN6CYIceLyjBADfILi4XrO/slhdMwoRrLGCrTYE0CcLtoe8SXiR4/RSXZ2EgAAy9gA7/UIAAAA6HZIFwAAAFT0ADsLAAAAAAAAAAAAAAAAAAAAAAAAAAE=
+[2024-11-01T14:03:06.324446000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]
+[2024-11-01T14:03:06.324907000Z DEBUG solana_runtime::message_processor::stable_log] Program log: Instruction: TransferChecked
+[2024-11-01T14:03:06.325735000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 6174 of 155510 compute units
+[2024-11-01T14:03:06.325759000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success
+[2024-11-01T14:03:06.326205000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]
+[2024-11-01T14:03:06.326634000Z DEBUG solana_runtime::message_processor::stable_log] Program log: Instruction: TransferChecked
+[2024-11-01T14:03:06.327532000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 6174 of 146329 compute units
+[2024-11-01T14:03:06.327624000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success
+[2024-11-01T14:03:06.327913000Z DEBUG solana_runtime::message_processor::stable_log] Program GAMMA7meSFWaBXF25oSUgmGRwaW6sCMFLmBNiMSdbHVT consumed 61490 of 200000 compute units
+[2024-11-01T14:03:06.327944000Z DEBUG solana_runtime::message_processor::stable_log] Program GAMMA7meSFWaBXF25oSUgmGRwaW6sCMFLmBNiMSdbHVT success
+[programs/gamma/tests/utils/jupiter.rs:251:9] &result = SwapResult {
+    new_swap_source_amount: 20499999986967,
+    new_swap_destination_amount: 9756377554019,
+    source_amount_swapped: 100000000000,
+    destination_amount_swapped: 47757707284,
+    dynamic_fee: 141500000,
+    protocol_fee: 2830,
+    fund_fee: 707,
+}
+[programs/gamma/tests/utils/jupiter.rs:252:9] self.timestamp.load(std::sync::atomic::Ordering::Relaxed) as u64 = 1730470512
+[programs/gamma/tests/utils/jupiter.rs:255:9] amount_out = 47757707284
+[2024-11-01T14:03:06.561097000Z DEBUG solana_runtime::message_processor::stable_log] Program GAMMA7meSFWaBXF25oSUgmGRwaW6sCMFLmBNiMSdbHVT invoke [1]
+[2024-11-01T14:03:06.563114000Z DEBUG solana_runtime::message_processor::stable_log] Program log: Instruction: SwapBaseInput
+[2024-11-01T14:03:06.570269000Z DEBUG solana_runtime::message_processor::stable_log] Program log: actual_amount_in:100000000000 source_amount_swapped:100000000000, destination_amount_swapped:47757707284, dynamic_fee: 141500000, constant_before:200004359202803905139438001,constant_after:200004359202810737649970373
+[2024-11-01T14:03:06.570443000Z DEBUG solana_runtime::message_processor::stable_log] Program data: QMbN6CYIceLyjBADfILi4XrO/slhdMwoRrLGCrTYE0CcLtoe8SXiRxetwL6NEgAAd+T/s+oIAAAA6HZIFwAAABTIlB4LAAAAAAAAAAAAAAAAAAAAAAAAAAE=
+[2024-11-01T14:03:06.570967000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]
+[2024-11-01T14:03:06.571599000Z DEBUG solana_runtime::message_processor::stable_log] Program log: Instruction: TransferChecked
+[2024-11-01T14:03:06.572706000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 6174 of 154568 compute units
+[2024-11-01T14:03:06.572738000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success
+[2024-11-01T14:03:06.573330000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]
+[2024-11-01T14:03:06.573932000Z DEBUG solana_runtime::message_processor::stable_log] Program log: Instruction: TransferChecked
+[2024-11-01T14:03:06.574912000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 6174 of 145387 compute units
+[2024-11-01T14:03:06.574944000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success
+[2024-11-01T14:03:06.575270000Z DEBUG solana_runtime::message_processor::stable_log] Program GAMMA7meSFWaBXF25oSUgmGRwaW6sCMFLmBNiMSdbHVT consumed 62432 of 200000 compute units
+[2024-11-01T14:03:06.575299000Z DEBUG solana_runtime::message_processor::stable_log] Program GAMMA7meSFWaBXF25oSUgmGRwaW6sCMFLmBNiMSdbHVT success
+[programs/gamma/tests/utils/jupiter.rs:251:9] &result = SwapResult {
+    new_swap_source_amount: 20599999983430,
+    new_swap_destination_amount: 9709089645987,
+    source_amount_swapped: 100000000000,
+    destination_amount_swapped: 47287908032,
+    dynamic_fee: 155200000,
+    protocol_fee: 3104,
+    fund_fee: 776,
+}
+[programs/gamma/tests/utils/jupiter.rs:252:9] self.timestamp.load(std::sync::atomic::Ordering::Relaxed) as u64 = 1730470512
+[programs/gamma/tests/utils/jupiter.rs:255:9] amount_out = 47287908032
+[2024-11-01T14:03:06.812072000Z DEBUG solana_runtime::message_processor::stable_log] Program GAMMA7meSFWaBXF25oSUgmGRwaW6sCMFLmBNiMSdbHVT invoke [1]
+[2024-11-01T14:03:06.814679000Z DEBUG solana_runtime::message_processor::stable_log] Program log: Instruction: SwapBaseInput
+[2024-11-01T14:03:06.823805000Z DEBUG solana_runtime::message_processor::stable_log] Program log: actual_amount_in:100000000000 source_amount_swapped:100000000000, destination_amount_swapped:47287908032, dynamic_fee: 155200000, constant_before:200005739695726323929905170,constant_after:200005739695739527383595410
+[2024-11-01T14:03:06.824027000Z DEBUG solana_runtime::message_processor::stable_log] Program data: QMbN6CYIceLyjBADfILi4XrO/slhdMwoRrLGCrTYE0CcLtoe8SXiR0aHNwelEgAAYxxrld8IAAAA6HZIFwAAAMA2lAILAAAAAAAAAAAAAAAAAAAAAAAAAAE=
+[2024-11-01T14:03:06.824708000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]
+[2024-11-01T14:03:06.825399000Z DEBUG solana_runtime::message_processor::stable_log] Program log: Instruction: TransferChecked
+[2024-11-01T14:03:06.826642000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 6174 of 153514 compute units
+[2024-11-01T14:03:06.826684000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success
+[2024-11-01T14:03:06.827363000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]
+[2024-11-01T14:03:06.828013000Z DEBUG solana_runtime::message_processor::stable_log] Program log: Instruction: TransferChecked
+[2024-11-01T14:03:06.829246000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 6174 of 144333 compute units
+[2024-11-01T14:03:06.829279000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success
+[2024-11-01T14:03:06.829709000Z DEBUG solana_runtime::message_processor::stable_log] Program GAMMA7meSFWaBXF25oSUgmGRwaW6sCMFLmBNiMSdbHVT consumed 63486 of 200000 compute units
+[2024-11-01T14:03:06.829748000Z DEBUG solana_runtime::message_processor::stable_log] Program GAMMA7meSFWaBXF25oSUgmGRwaW6sCMFLmBNiMSdbHVT success
+[programs/gamma/tests/utils/jupiter.rs:251:9] &result = SwapResult {
+    new_swap_source_amount: 20699999979550,
+    new_swap_destination_amount: 9662264669705,
+    source_amount_swapped: 100000000000,
+    destination_amount_swapped: 46824976282,
+    dynamic_fee: 168900000,
+    protocol_fee: 3378,
+    fund_fee: 844,
+}
+[programs/gamma/tests/utils/jupiter.rs:252:9] self.timestamp.load(std::sync::atomic::Ordering::Relaxed) as u64 = 1730470512
+[programs/gamma/tests/utils/jupiter.rs:255:9] amount_out = 46824976282
+[2024-11-01T14:03:07.069797000Z DEBUG solana_runtime::message_processor::stable_log] Program GAMMA7meSFWaBXF25oSUgmGRwaW6sCMFLmBNiMSdbHVT invoke [1]
+[2024-11-01T14:03:07.070972000Z DEBUG solana_runtime::message_processor::stable_log] Program log: Instruction: SwapBaseInput
+[2024-11-01T14:03:07.076088000Z DEBUG solana_runtime::message_processor::stable_log] Program log: actual_amount_in:100000000000 source_amount_swapped:100000000000, destination_amount_swapped:46824976282, dynamic_fee: 168900000, constant_before:200007246508781316739565850,constant_after:200007246508797474330032750
+[2024-11-01T14:03:07.076208000Z DEBUG solana_runtime::message_processor::stable_log] Program data: QMbN6CYIceLyjBADfILi4XrO/slhdMwoRrLGCrTYE0CcLtoe8SXiRx5grk+8EgAAo+XWktQIAAAA6HZIFwAAAJpv/OYKAAAAAAAAAAAAAAAAAAAAAAAAAAE=
+[2024-11-01T14:03:07.076556000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]
+[2024-11-01T14:03:07.076984000Z DEBUG solana_runtime::message_processor::stable_log] Program log: Instruction: TransferChecked
+[2024-11-01T14:03:07.077758000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 6174 of 152388 compute units
+[2024-11-01T14:03:07.077790000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success
+[2024-11-01T14:03:07.078208000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]
+[2024-11-01T14:03:07.078624000Z DEBUG solana_runtime::message_processor::stable_log] Program log: Instruction: TransferChecked
+[2024-11-01T14:03:07.079379000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 6174 of 143207 compute units
+[2024-11-01T14:03:07.079403000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success
+[2024-11-01T14:03:07.079729000Z DEBUG solana_runtime::message_processor::stable_log] Program GAMMA7meSFWaBXF25oSUgmGRwaW6sCMFLmBNiMSdbHVT consumed 64612 of 200000 compute units
+[2024-11-01T14:03:07.079790000Z DEBUG solana_runtime::message_processor::stable_log] Program GAMMA7meSFWaBXF25oSUgmGRwaW6sCMFLmBNiMSdbHVT success
+[programs/gamma/tests/utils/jupiter.rs:251:9] &result = SwapResult {
+    new_swap_source_amount: 20799999975328,
+    new_swap_destination_amount: 9615895844363,
+    source_amount_swapped: 100000000000,
+    destination_amount_swapped: 46368825342,
+    dynamic_fee: 182500000,
+    protocol_fee: 3650,
+    fund_fee: 912,
+}
+[programs/gamma/tests/utils/jupiter.rs:252:9] self.timestamp.load(std::sync::atomic::Ordering::Relaxed) as u64 = 1730470512
+[programs/gamma/tests/utils/jupiter.rs:255:9] amount_out = 46368825342
+[2024-11-01T14:03:07.310637000Z DEBUG solana_runtime::message_processor::stable_log] Program GAMMA7meSFWaBXF25oSUgmGRwaW6sCMFLmBNiMSdbHVT invoke [1]
+[2024-11-01T14:03:07.312831000Z DEBUG solana_runtime::message_processor::stable_log] Program log: Instruction: SwapBaseInput
+[2024-11-01T14:03:07.321758000Z DEBUG solana_runtime::message_processor::stable_log] Program log: actual_amount_in:100000000000 source_amount_swapped:100000000000, destination_amount_swapped:46368825342, dynamic_fee: 182500000, constant_before:200008878424506106069038240,constant_after:200008878424515421480376064
+[2024-11-01T14:03:07.321964000Z DEBUG solana_runtime::message_processor::stable_log] Program data: QMbN6CYIceLyjBADfILi4XrO/slhdMwoRrLGCrTYE0CcLtoe8SXiR6A3JZjTEgAACXbaq8kIAAAA6HZIFwAAAP4fzMsKAAAAAAAAAAAAAAAAAAAAAAAAAAE=
+[2024-11-01T14:03:07.322559000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]
+[2024-11-01T14:03:07.323237000Z DEBUG solana_runtime::message_processor::stable_log] Program log: Instruction: TransferChecked
+[2024-11-01T14:03:07.324524000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 6174 of 151040 compute units
+[2024-11-01T14:03:07.324670000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success
+[2024-11-01T14:03:07.325286000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]
+[2024-11-01T14:03:07.325868000Z DEBUG solana_runtime::message_processor::stable_log] Program log: Instruction: TransferChecked
+[2024-11-01T14:03:07.326980000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 6174 of 141859 compute units
+[2024-11-01T14:03:07.327008000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success
+[2024-11-01T14:03:07.327403000Z DEBUG solana_runtime::message_processor::stable_log] Program GAMMA7meSFWaBXF25oSUgmGRwaW6sCMFLmBNiMSdbHVT consumed 65960 of 200000 compute units
+[2024-11-01T14:03:07.327442000Z DEBUG solana_runtime::message_processor::stable_log] Program GAMMA7meSFWaBXF25oSUgmGRwaW6sCMFLmBNiMSdbHVT success
+[programs/gamma/tests/utils/jupiter.rs:251:9] &result = SwapResult {
+    new_swap_source_amount: 20899999970766,
+    new_swap_destination_amount: 9569976520422,
+    source_amount_swapped: 100000000000,
+    destination_amount_swapped: 45919323941,
+    dynamic_fee: 196000000,
+    protocol_fee: 3920,
+    fund_fee: 980,
+}
+[programs/gamma/tests/utils/jupiter.rs:252:9] self.timestamp.load(std::sync::atomic::Ordering::Relaxed) as u64 = 1730470512
+[programs/gamma/tests/utils/jupiter.rs:255:9] amount_out = 45919323941
+[2024-11-01T14:03:07.566705000Z DEBUG solana_runtime::message_processor::stable_log] Program GAMMA7meSFWaBXF25oSUgmGRwaW6sCMFLmBNiMSdbHVT invoke [1]
+[2024-11-01T14:03:07.568659000Z DEBUG solana_runtime::message_processor::stable_log] Program log: Instruction: SwapBaseInput
+[2024-11-01T14:03:07.576902000Z DEBUG solana_runtime::message_processor::stable_log] Program log: actual_amount_in:100000000000 source_amount_swapped:100000000000, destination_amount_swapped:45919323941, dynamic_fee: 196000000, constant_before:200010633281639300885892058,constant_after:200010633281653103689983252
+[2024-11-01T14:03:07.577150000Z DEBUG solana_runtime::message_processor::stable_log] Program data: QMbN6CYIceLyjBADfILi4XrO/slhdMwoRrLGCrTYE0CcLtoe8SXiR84NnODqEgAAC1YO4L4IAAAA6HZIFwAAACVHAbEKAAAAAAAAAAAAAAAAAAAAAAAAAAE=
+[2024-11-01T14:03:07.577701000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]
+[2024-11-01T14:03:07.578328000Z DEBUG solana_runtime::message_processor::stable_log] Program log: Instruction: TransferChecked
+[2024-11-01T14:03:07.579427000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 6174 of 149709 compute units
+[2024-11-01T14:03:07.579467000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success
+[2024-11-01T14:03:07.580111000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]
+[2024-11-01T14:03:07.580673000Z DEBUG solana_runtime::message_processor::stable_log] Program log: Instruction: TransferChecked
+[2024-11-01T14:03:07.581675000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 6174 of 140528 compute units
+[2024-11-01T14:03:07.581700000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success
+[2024-11-01T14:03:07.582039000Z DEBUG solana_runtime::message_processor::stable_log] Program GAMMA7meSFWaBXF25oSUgmGRwaW6sCMFLmBNiMSdbHVT consumed 67291 of 200000 compute units
+[2024-11-01T14:03:07.582068000Z DEBUG solana_runtime::message_processor::stable_log] Program GAMMA7meSFWaBXF25oSUgmGRwaW6sCMFLmBNiMSdbHVT success
+[programs/gamma/tests/utils/jupiter.rs:251:9] &result = SwapResult {
+    new_swap_source_amount: 20999999965866,
+    new_swap_destination_amount: 9524500221813,
+    source_amount_swapped: 100000000000,
+    destination_amount_swapped: 45476298609,
+    dynamic_fee: 209500000,
+    protocol_fee: 4190,
+    fund_fee: 1047,
+}
+[programs/gamma/tests/utils/jupiter.rs:252:9] self.timestamp.load(std::sync::atomic::Ordering::Relaxed) as u64 = 1730470512
+[programs/gamma/tests/utils/jupiter.rs:255:9] amount_out = 45476298609
+[2024-11-01T14:03:07.817358000Z DEBUG solana_runtime::message_processor::stable_log] Program GAMMA7meSFWaBXF25oSUgmGRwaW6sCMFLmBNiMSdbHVT invoke [1]
+[2024-11-01T14:03:07.819835000Z DEBUG solana_runtime::message_processor::stable_log] Program log: Instruction: SwapBaseInput
+[2024-11-01T14:03:07.830385000Z DEBUG solana_runtime::message_processor::stable_log] Program log: actual_amount_in:100000000000 source_amount_swapped:100000000000, destination_amount_swapped:45476298609, dynamic_fee: 209500000, constant_before:200012508950158221451915452,constant_after:200012508950167239605135058
+[2024-11-01T14:03:07.830590000Z DEBUG solana_runtime::message_processor::stable_log] Program data: QMbN6CYIceLyjBADfILi4XrO/slhdMwoRrLGCrTYE0CcLtoe8SXiR6riEikCEwAA5g4NL7QIAAAA6HZIFwAAAHE/mZYKAAAAAAAAAAAAAAAAAAAAAAAAAAE=
+[2024-11-01T14:03:07.831176000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]
+[2024-11-01T14:03:07.831877000Z DEBUG solana_runtime::message_processor::stable_log] Program log: Instruction: TransferChecked
+[2024-11-01T14:03:07.833210000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 6174 of 148336 compute units
+[2024-11-01T14:03:07.833281000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success
+[2024-11-01T14:03:07.833982000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]
+[2024-11-01T14:03:07.834632000Z DEBUG solana_runtime::message_processor::stable_log] Program log: Instruction: TransferChecked
+[2024-11-01T14:03:07.835858000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 6174 of 139155 compute units
+[2024-11-01T14:03:07.835890000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success
+[2024-11-01T14:03:07.836289000Z DEBUG solana_runtime::message_processor::stable_log] Program GAMMA7meSFWaBXF25oSUgmGRwaW6sCMFLmBNiMSdbHVT consumed 68664 of 200000 compute units
+[2024-11-01T14:03:07.836326000Z DEBUG solana_runtime::message_processor::stable_log] Program GAMMA7meSFWaBXF25oSUgmGRwaW6sCMFLmBNiMSdbHVT success
+[programs/gamma/tests/utils/jupiter.rs:251:9] &result = SwapResult {
+    new_swap_source_amount: 21099999960629,
+    new_swap_destination_amount: 9479460596020,
+    source_amount_swapped: 100000000000,
+    destination_amount_swapped: 45039625793,
+    dynamic_fee: 223000000,
+    protocol_fee: 4460,
+    fund_fee: 1115,
+}
+[programs/gamma/tests/utils/jupiter.rs:252:9] self.timestamp.load(std::sync::atomic::Ordering::Relaxed) as u64 = 1730470512
+[programs/gamma/tests/utils/jupiter.rs:255:9] amount_out = 45039625793
+[2024-11-01T14:03:08.072405000Z DEBUG solana_runtime::message_processor::stable_log] Program GAMMA7meSFWaBXF25oSUgmGRwaW6sCMFLmBNiMSdbHVT invoke [1]
+[2024-11-01T14:03:08.073779000Z DEBUG solana_runtime::message_processor::stable_log] Program log: Instruction: SwapBaseInput
+[2024-11-01T14:03:08.080390000Z DEBUG solana_runtime::message_processor::stable_log] Program log: actual_amount_in:100000000000 source_amount_swapped:100000000000, destination_amount_swapped:45039625793, dynamic_fee: 223000000, constant_before:200014504283083901767000377,constant_after:200014504283093244414096580
+[2024-11-01T14:03:08.080512000Z DEBUG solana_runtime::message_processor::stable_log] Program data: QMbN6CYIceLyjBADfILi4XrO/slhdMwoRrLGCrTYE0CcLtoe8SXiRzW2iXEZEwAAdc9zmKkIAAAA6HZIFwAAAEEmknwKAAAAAAAAAAAAAAAAAAAAAAAAAAE=
+[2024-11-01T14:03:08.080954000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]
+[2024-11-01T14:03:08.081412000Z DEBUG solana_runtime::message_processor::stable_log] Program log: Instruction: TransferChecked
+[2024-11-01T14:03:08.082377000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 6174 of 146849 compute units
+[2024-11-01T14:03:08.082437000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success
+[2024-11-01T14:03:08.082931000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]
+[2024-11-01T14:03:08.083407000Z DEBUG solana_runtime::message_processor::stable_log] Program log: Instruction: TransferChecked
+[2024-11-01T14:03:08.084262000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 6174 of 137668 compute units
+[2024-11-01T14:03:08.084284000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success
+[2024-11-01T14:03:08.084567000Z DEBUG solana_runtime::message_processor::stable_log] Program GAMMA7meSFWaBXF25oSUgmGRwaW6sCMFLmBNiMSdbHVT consumed 70151 of 200000 compute units
+[2024-11-01T14:03:08.084596000Z DEBUG solana_runtime::message_processor::stable_log] Program GAMMA7meSFWaBXF25oSUgmGRwaW6sCMFLmBNiMSdbHVT success
+[programs/gamma/tests/utils/jupiter.rs:251:9] &result = SwapResult {
+    new_swap_source_amount: 21199999955054,
+    new_swap_destination_amount: 9434851322141,
+    source_amount_swapped: 100000000000,
+    destination_amount_swapped: 44609273879,
+    dynamic_fee: 236300000,
+    protocol_fee: 4726,
+    fund_fee: 1181,
+}
+[programs/gamma/tests/utils/jupiter.rs:252:9] self.timestamp.load(std::sync::atomic::Ordering::Relaxed) as u64 = 1730470512
+[programs/gamma/tests/utils/jupiter.rs:255:9] amount_out = 44609273879
+[2024-11-01T14:03:08.316728000Z DEBUG solana_runtime::message_processor::stable_log] Program GAMMA7meSFWaBXF25oSUgmGRwaW6sCMFLmBNiMSdbHVT invoke [1]
+[2024-11-01T14:03:08.318240000Z DEBUG solana_runtime::message_processor::stable_log] Program log: Instruction: SwapBaseInput
+[2024-11-01T14:03:08.325630000Z DEBUG solana_runtime::message_processor::stable_log] Program log: actual_amount_in:100000000000 source_amount_swapped:100000000000, destination_amount_swapped:44609273879, dynamic_fee: 236300000, constant_before:200016618149958164051285080,constant_after:200016618149962950556750614
+[2024-11-01T14:03:08.325772000Z DEBUG solana_runtime::message_processor::stable_log] Program data: QMbN6CYIceLyjBADfILi4XrO/slhdMwoRrLGCrTYE0CcLtoe8SXiR26IALowEwAANKnhG58IAAAA6HZIFwAAABeA62IKAAAAAAAAAAAAAAAAAAAAAAAAAAE=
+[2024-11-01T14:03:08.326192000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]
+[2024-11-01T14:03:08.326711000Z DEBUG solana_runtime::message_processor::stable_log] Program log: Instruction: TransferChecked
+[2024-11-01T14:03:08.327625000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 6174 of 145260 compute units
+[2024-11-01T14:03:08.327652000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success
+[2024-11-01T14:03:08.328137000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]
+[2024-11-01T14:03:08.328601000Z DEBUG solana_runtime::message_processor::stable_log] Program log: Instruction: TransferChecked
+[2024-11-01T14:03:08.329498000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 6174 of 136079 compute units
+[2024-11-01T14:03:08.329521000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success
+[2024-11-01T14:03:08.329826000Z DEBUG solana_runtime::message_processor::stable_log] Program GAMMA7meSFWaBXF25oSUgmGRwaW6sCMFLmBNiMSdbHVT consumed 71740 of 200000 compute units
+[2024-11-01T14:03:08.329905000Z DEBUG solana_runtime::message_processor::stable_log] Program GAMMA7meSFWaBXF25oSUgmGRwaW6sCMFLmBNiMSdbHVT success
+[programs/gamma/tests/utils/jupiter.rs:251:9] &result = SwapResult {
+    new_swap_source_amount: 21299999949147,
+    new_swap_destination_amount: 9390666332232,
+    source_amount_swapped: 100000000000,
+    destination_amount_swapped: 44184989909,
+    dynamic_fee: 249700000,
+    protocol_fee: 4994,
+    fund_fee: 1248,
+}
+[programs/gamma/tests/utils/jupiter.rs:252:9] self.timestamp.load(std::sync::atomic::Ordering::Relaxed) as u64 = 1730470512
+[programs/gamma/tests/utils/jupiter.rs:255:9] amount_out = 44184989909
+[2024-11-01T14:03:08.560481000Z DEBUG solana_runtime::message_processor::stable_log] Program GAMMA7meSFWaBXF25oSUgmGRwaW6sCMFLmBNiMSdbHVT invoke [1]
+[2024-11-01T14:03:08.562686000Z DEBUG solana_runtime::message_processor::stable_log] Program log: Instruction: SwapBaseInput
+[2024-11-01T14:03:08.572877000Z DEBUG solana_runtime::message_processor::stable_log] Program log: actual_amount_in:100000000000 source_amount_swapped:100000000000, destination_amount_swapped:44184989909, dynamic_fee: 249700000, constant_before:200018847549598705715163727,constant_after:200018847549614886676606104
+[2024-11-01T14:03:08.573046000Z DEBUG solana_runtime::message_processor::stable_log] Program data: QMbN6CYIceLyjBADfILi4XrO/slhdMwoRrLGCrTYE0CcLtoe8SXiR1tZdwJIEwAAHSn2uJQIAAAA6HZIFwAAANVwoUkKAAAAAAAAAAAAAAAAAAAAAAAAAAE=
+[2024-11-01T14:03:08.573565000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]
+[2024-11-01T14:03:08.574155000Z DEBUG solana_runtime::message_processor::stable_log] Program log: Instruction: TransferChecked
+[2024-11-01T14:03:08.575332000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 6174 of 143564 compute units
+[2024-11-01T14:03:08.575385000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success
+[2024-11-01T14:03:08.576005000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]
+[2024-11-01T14:03:08.576615000Z DEBUG solana_runtime::message_processor::stable_log] Program log: Instruction: TransferChecked
+[2024-11-01T14:03:08.577713000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 6174 of 134383 compute units
+[2024-11-01T14:03:08.577743000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success
+[2024-11-01T14:03:08.578116000Z DEBUG solana_runtime::message_processor::stable_log] Program GAMMA7meSFWaBXF25oSUgmGRwaW6sCMFLmBNiMSdbHVT consumed 73436 of 200000 compute units
+[2024-11-01T14:03:08.578149000Z DEBUG solana_runtime::message_processor::stable_log] Program GAMMA7meSFWaBXF25oSUgmGRwaW6sCMFLmBNiMSdbHVT success
+[programs/gamma/tests/utils/jupiter.rs:251:9] &result = SwapResult {
+    new_swap_source_amount: 21399999942905,
+    new_swap_destination_amount: 9346899540838,
+    source_amount_swapped: 100000000000,
+    destination_amount_swapped: 43766791394,
+    dynamic_fee: 262900000,
+    protocol_fee: 5258,
+    fund_fee: 1314,
+}
+[programs/gamma/tests/utils/jupiter.rs:252:9] self.timestamp.load(std::sync::atomic::Ordering::Relaxed) as u64 = 1730470512
+[programs/gamma/tests/utils/jupiter.rs:255:9] amount_out = 43766791394
+[2024-11-01T14:03:08.815386000Z DEBUG solana_runtime::message_processor::stable_log] Program GAMMA7meSFWaBXF25oSUgmGRwaW6sCMFLmBNiMSdbHVT invoke [1]
+[2024-11-01T14:03:08.817862000Z DEBUG solana_runtime::message_processor::stable_log] Program log: Instruction: SwapBaseInput
+[2024-11-01T14:03:08.829261000Z DEBUG solana_runtime::message_processor::stable_log] Program log: actual_amount_in:100000000000 source_amount_swapped:100000000000, destination_amount_swapped:43766791394, dynamic_fee: 262900000, constant_before:200021192340381505761213960,constant_after:200021192340382684405654390
+[2024-11-01T14:03:08.829507000Z DEBUG solana_runtime::message_processor::stable_log] Program data: QMbN6CYIceLyjBADfILi4XrO/slhdMwoRrLGCrTYE0CcLtoe8SXiR/ko7kpfEwAASLhUb4oIAAAA6HZIFwAAAOI8tDAKAAAAAAAAAAAAAAAAAAAAAAAAAAE=
+[2024-11-01T14:03:08.830083000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]
+[2024-11-01T14:03:08.830781000Z DEBUG solana_runtime::message_processor::stable_log] Program log: Instruction: TransferChecked
+[2024-11-01T14:03:08.832009000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 6174 of 141807 compute units
+[2024-11-01T14:03:08.832061000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success
+[2024-11-01T14:03:08.832722000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]
+[2024-11-01T14:03:08.833354000Z DEBUG solana_runtime::message_processor::stable_log] Program log: Instruction: TransferChecked
+[2024-11-01T14:03:08.834578000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 6174 of 132626 compute units
+[2024-11-01T14:03:08.834706000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success
+[2024-11-01T14:03:08.835120000Z DEBUG solana_runtime::message_processor::stable_log] Program GAMMA7meSFWaBXF25oSUgmGRwaW6sCMFLmBNiMSdbHVT consumed 75193 of 200000 compute units
+[2024-11-01T14:03:08.835159000Z DEBUG solana_runtime::message_processor::stable_log] Program GAMMA7meSFWaBXF25oSUgmGRwaW6sCMFLmBNiMSdbHVT success
+[programs/gamma/tests/utils/jupiter.rs:251:9] &result = SwapResult {
+    new_swap_source_amount: 21499999936333,
+    new_swap_destination_amount: 9303545064185,
+    source_amount_swapped: 100000000000,
+    destination_amount_swapped: 43354476653,
+    dynamic_fee: 276100000,
+    protocol_fee: 5522,
+    fund_fee: 1380,
+}
+[programs/gamma/tests/utils/jupiter.rs:252:9] self.timestamp.load(std::sync::atomic::Ordering::Relaxed) as u64 = 1730470512
+[programs/gamma/tests/utils/jupiter.rs:255:9] amount_out = 43354476653
+[2024-11-01T14:03:09.070407000Z DEBUG solana_runtime::message_processor::stable_log] Program GAMMA7meSFWaBXF25oSUgmGRwaW6sCMFLmBNiMSdbHVT invoke [1]
+[2024-11-01T14:03:09.072957000Z DEBUG solana_runtime::message_processor::stable_log] Program log: Instruction: SwapBaseInput
+[2024-11-01T14:03:09.085535000Z DEBUG solana_runtime::message_processor::stable_log] Program log: actual_amount_in:100000000000 source_amount_swapped:100000000000, destination_amount_swapped:43354476653, dynamic_fee: 276100000, constant_before:200023649578844146933467054,constant_after:200023649578856474920033605
+[2024-11-01T14:03:09.085754000Z DEBUG solana_runtime::message_processor::stable_log] Program data: QMbN6CYIceLyjBADfILi4XrO/slhdMwoRrLGCrTYE0CcLtoe8SXiR033ZJN2EwAAZnugPoAIAAAA6HZIFwAAAG3QIBgKAAAAAAAAAAAAAAAAAAAAAAAAAAE=
+[2024-11-01T14:03:09.086359000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]
+[2024-11-01T14:03:09.087017000Z DEBUG solana_runtime::message_processor::stable_log] Program log: Instruction: TransferChecked
+[2024-11-01T14:03:09.088273000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 6174 of 139879 compute units
+[2024-11-01T14:03:09.088314000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success
+[2024-11-01T14:03:09.088997000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]
+[2024-11-01T14:03:09.089622000Z DEBUG solana_runtime::message_processor::stable_log] Program log: Instruction: TransferChecked
+[2024-11-01T14:03:09.090833000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 6174 of 130698 compute units
+[2024-11-01T14:03:09.090968000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success
+[2024-11-01T14:03:09.091450000Z DEBUG solana_runtime::message_processor::stable_log] Program GAMMA7meSFWaBXF25oSUgmGRwaW6sCMFLmBNiMSdbHVT consumed 77121 of 200000 compute units
+[2024-11-01T14:03:09.091512000Z DEBUG solana_runtime::message_processor::stable_log] Program GAMMA7meSFWaBXF25oSUgmGRwaW6sCMFLmBNiMSdbHVT success
+[programs/gamma/tests/utils/jupiter.rs:251:9] &result = SwapResult {
+    new_swap_source_amount: 21599999929431,
+    new_swap_destination_amount: 9260597128135,
+    source_amount_swapped: 100000000000,
+    destination_amount_swapped: 42947936050,
+    dynamic_fee: 289300000,
+    protocol_fee: 5786,
+    fund_fee: 1446,
+}
+[programs/gamma/tests/utils/jupiter.rs:252:9] self.timestamp.load(std::sync::atomic::Ordering::Relaxed) as u64 = 1730470512
+[programs/gamma/tests/utils/jupiter.rs:255:9] amount_out = 42947936050
+[2024-11-01T14:03:09.327016000Z DEBUG solana_runtime::message_processor::stable_log] Program GAMMA7meSFWaBXF25oSUgmGRwaW6sCMFLmBNiMSdbHVT invoke [1]
+[2024-11-01T14:03:09.328729000Z DEBUG solana_runtime::message_processor::stable_log] Program log: Instruction: SwapBaseInput
+[2024-11-01T14:03:09.338138000Z DEBUG solana_runtime::message_processor::stable_log] Program log: actual_amount_in:100000000000 source_amount_swapped:100000000000, destination_amount_swapped:42947936050, dynamic_fee: 289300000, constant_before:200026218223435628365528735,constant_after:200026218223455751809141185
+[2024-11-01T14:03:09.338310000Z DEBUG solana_runtime::message_processor::stable_log] Program data: QMbN6CYIceLyjBADfILi4XrO/slhdMwoRrLGCrTYE0CcLtoe8SXiR1fE29uNEwAA+ap/JnYIAAAA6HZIFwAAADJ/5f8JAAAAAAAAAAAAAAAAAAAAAAAAAAE=
+[2024-11-01T14:03:09.338778000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]
+[2024-11-01T14:03:09.339345000Z DEBUG solana_runtime::message_processor::stable_log] Program log: Instruction: TransferChecked
+[2024-11-01T14:03:09.340393000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 6174 of 137874 compute units
+[2024-11-01T14:03:09.340427000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success
+[2024-11-01T14:03:09.340980000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]
+[2024-11-01T14:03:09.341487000Z DEBUG solana_runtime::message_processor::stable_log] Program log: Instruction: TransferChecked
+[2024-11-01T14:03:09.342457000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 6174 of 128693 compute units
+[2024-11-01T14:03:09.342479000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success
+[2024-11-01T14:03:09.342771000Z DEBUG solana_runtime::message_processor::stable_log] Program GAMMA7meSFWaBXF25oSUgmGRwaW6sCMFLmBNiMSdbHVT consumed 79126 of 200000 compute units
+[2024-11-01T14:03:09.342798000Z DEBUG solana_runtime::message_processor::stable_log] Program GAMMA7meSFWaBXF25oSUgmGRwaW6sCMFLmBNiMSdbHVT success
+[programs/gamma/tests/utils/jupiter.rs:251:9] &result = SwapResult {
+    new_swap_source_amount: 21699999922199,
+    new_swap_destination_amount: 9218050023168,
+    source_amount_swapped: 100000000000,
+    destination_amount_swapped: 42547104967,
+    dynamic_fee: 302400000,
+    protocol_fee: 6048,
+    fund_fee: 1512,
+}
+[programs/gamma/tests/utils/jupiter.rs:252:9] self.timestamp.load(std::sync::atomic::Ordering::Relaxed) as u64 = 1730470512
+[programs/gamma/tests/utils/jupiter.rs:255:9] amount_out = 42547104967
+[2024-11-01T14:03:09.575347000Z DEBUG solana_runtime::message_processor::stable_log] Program GAMMA7meSFWaBXF25oSUgmGRwaW6sCMFLmBNiMSdbHVT invoke [1]
+[2024-11-01T14:03:09.576889000Z DEBUG solana_runtime::message_processor::stable_log] Program log: Instruction: SwapBaseInput
+[2024-11-01T14:03:09.585875000Z DEBUG solana_runtime::message_processor::stable_log] Program log: actual_amount_in:100000000000 source_amount_swapped:100000000000, destination_amount_swapped:42547104967, dynamic_fee: 302400000, constant_before:200028897247232282833968865,constant_after:200028897247245084144306432
+[2024-11-01T14:03:09.586026000Z DEBUG solana_runtime::message_processor::stable_log] Program data: QMbN6CYIceLyjBADfILi4XrO/slhdMwoRrLGCrTYE0CcLtoe8SXiRxeQUiSlEwAAxyuaJmwIAAAA6HZIFwAAAMdMAegJAAAAAAAAAAAAAAAAAAAAAAAAAAE=
+[2024-11-01T14:03:09.586448000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]
+[2024-11-01T14:03:09.586949000Z DEBUG solana_runtime::message_processor::stable_log] Program log: Instruction: TransferChecked
+[2024-11-01T14:03:09.587848000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 6174 of 135872 compute units
+[2024-11-01T14:03:09.587876000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success
+[2024-11-01T14:03:09.588364000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]
+[2024-11-01T14:03:09.588838000Z DEBUG solana_runtime::message_processor::stable_log] Program log: Instruction: TransferChecked
+[2024-11-01T14:03:09.589736000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 6174 of 126691 compute units
+[2024-11-01T14:03:09.589759000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success
+[2024-11-01T14:03:09.590085000Z DEBUG solana_runtime::message_processor::stable_log] Program GAMMA7meSFWaBXF25oSUgmGRwaW6sCMFLmBNiMSdbHVT consumed 81128 of 200000 compute units
+[2024-11-01T14:03:09.590127000Z DEBUG solana_runtime::message_processor::stable_log] Program GAMMA7meSFWaBXF25oSUgmGRwaW6sCMFLmBNiMSdbHVT success
+[programs/gamma/tests/utils/jupiter.rs:251:9] &result = SwapResult {
+    new_swap_source_amount: 21799999914639,
+    new_swap_destination_amount: 9175898187846,
+    source_amount_swapped: 100000000000,
+    destination_amount_swapped: 42151835322,
+    dynamic_fee: 315500000,
+    protocol_fee: 6310,
+    fund_fee: 1577,
+}
+[programs/gamma/tests/utils/jupiter.rs:252:9] self.timestamp.load(std::sync::atomic::Ordering::Relaxed) as u64 = 1730470512
+[programs/gamma/tests/utils/jupiter.rs:255:9] amount_out = 42151835322
+[2024-11-01T14:03:09.823421000Z DEBUG solana_runtime::message_processor::stable_log] Program GAMMA7meSFWaBXF25oSUgmGRwaW6sCMFLmBNiMSdbHVT invoke [1]
+[2024-11-01T14:03:09.825191000Z DEBUG solana_runtime::message_processor::stable_log] Program log: Instruction: SwapBaseInput
+[2024-11-01T14:03:09.835017000Z DEBUG solana_runtime::message_processor::stable_log] Program log: actual_amount_in:100000000000 source_amount_swapped:100000000000, destination_amount_swapped:42151835322, dynamic_fee: 315500000, constant_before:200031684715883631972356352,constant_after:200031684715900689374277594
+[2024-11-01T14:03:09.835196000Z DEBUG solana_runtime::message_processor::stable_log] Program data: QMbN6CYIceLyjBADfILi4XrO/slhdMwoRrLGCrTYE0CcLtoe8SXiR49ayWy8EwAAAN+YPmIIAAAA6HZIFwAAALr2cdAJAAAAAAAAAAAAAAAAAAAAAAAAAAE=
+[2024-11-01T14:03:09.835674000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]
+[2024-11-01T14:03:09.836187000Z DEBUG solana_runtime::message_processor::stable_log] Program log: Instruction: TransferChecked
+[2024-11-01T14:03:09.837106000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 6174 of 133743 compute units
+[2024-11-01T14:03:09.837141000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success
+[2024-11-01T14:03:09.837666000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]
+[2024-11-01T14:03:09.838225000Z DEBUG solana_runtime::message_processor::stable_log] Program log: Instruction: TransferChecked
+[2024-11-01T14:03:09.839119000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 6174 of 124562 compute units
+[2024-11-01T14:03:09.839142000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success
+[2024-11-01T14:03:09.839439000Z DEBUG solana_runtime::message_processor::stable_log] Program GAMMA7meSFWaBXF25oSUgmGRwaW6sCMFLmBNiMSdbHVT consumed 83257 of 200000 compute units
+[2024-11-01T14:03:09.839467000Z DEBUG solana_runtime::message_processor::stable_log] Program GAMMA7meSFWaBXF25oSUgmGRwaW6sCMFLmBNiMSdbHVT success
+[programs/gamma/tests/utils/jupiter.rs:251:9] &result = SwapResult {
+    new_swap_source_amount: 21899999906752,
+    new_swap_destination_amount: 9134136121227,
+    source_amount_swapped: 100000000000,
+    destination_amount_swapped: 41762066619,
+    dynamic_fee: 328500000,
+    protocol_fee: 6570,
+    fund_fee: 1642,
+}
+[programs/gamma/tests/utils/jupiter.rs:252:9] self.timestamp.load(std::sync::atomic::Ordering::Relaxed) as u64 = 1730470512
+[programs/gamma/tests/utils/jupiter.rs:255:9] amount_out = 41762066619
+[2024-11-01T14:03:10.069765000Z DEBUG solana_runtime::message_processor::stable_log] Program GAMMA7meSFWaBXF25oSUgmGRwaW6sCMFLmBNiMSdbHVT invoke [1]
+[2024-11-01T14:03:10.071468000Z DEBUG solana_runtime::message_processor::stable_log] Program log: Instruction: SwapBaseInput
+[2024-11-01T14:03:10.081705000Z DEBUG solana_runtime::message_processor::stable_log] Program log: actual_amount_in:100000000000 source_amount_swapped:100000000000, destination_amount_swapped:41762066619, dynamic_fee: 328500000, constant_before:200034579639408645779736192,constant_after:200034579639415551898324704
+[2024-11-01T14:03:10.081883000Z DEBUG solana_runtime::message_processor::stable_log] Program data: QMbN6CYIceLyjBADfILi4XrO/slhdMwoRrLGCrTYE0CcLtoe8SXiR8AjQLXTEwAARugmblgIAAAA6HZIFwAAALuQNrkJAAAAAAAAAAAAAAAAAAAAAAAAAAE=
+[2024-11-01T14:03:10.082348000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]
+[2024-11-01T14:03:10.082956000Z DEBUG solana_runtime::message_processor::stable_log] Program log: Instruction: TransferChecked
+[2024-11-01T14:03:10.083971000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 6174 of 131518 compute units
+[2024-11-01T14:03:10.084006000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success
+[2024-11-01T14:03:10.084555000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]
+[2024-11-01T14:03:10.085066000Z DEBUG solana_runtime::message_processor::stable_log] Program log: Instruction: TransferChecked
+[2024-11-01T14:03:10.086009000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 6174 of 122337 compute units
+[2024-11-01T14:03:10.086033000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success
+[2024-11-01T14:03:10.086329000Z DEBUG solana_runtime::message_processor::stable_log] Program GAMMA7meSFWaBXF25oSUgmGRwaW6sCMFLmBNiMSdbHVT consumed 85482 of 200000 compute units
+[2024-11-01T14:03:10.086356000Z DEBUG solana_runtime::message_processor::stable_log] Program GAMMA7meSFWaBXF25oSUgmGRwaW6sCMFLmBNiMSdbHVT success
+[programs/gamma/tests/utils/jupiter.rs:251:9] &result = SwapResult {
+    new_swap_source_amount: 21999999898540,
+    new_swap_destination_amount: 9092758423564,
+    source_amount_swapped: 100000000000,
+    destination_amount_swapped: 41377697663,
+    dynamic_fee: 341400000,
+    protocol_fee: 6828,
+    fund_fee: 1707,
+}
+[programs/gamma/tests/utils/jupiter.rs:252:9] self.timestamp.load(std::sync::atomic::Ordering::Relaxed) as u64 = 1730470512
+[programs/gamma/tests/utils/jupiter.rs:255:9] amount_out = 41377697663
+[2024-11-01T14:03:10.319185000Z DEBUG solana_runtime::message_processor::stable_log] Program GAMMA7meSFWaBXF25oSUgmGRwaW6sCMFLmBNiMSdbHVT invoke [1]
+[2024-11-01T14:03:10.320443000Z DEBUG solana_runtime::message_processor::stable_log] Program log: Instruction: SwapBaseInput
+[2024-11-01T14:03:10.326608000Z DEBUG solana_runtime::message_processor::stable_log] Program log: actual_amount_in:100000000000 source_amount_swapped:100000000000, destination_amount_swapped:41377697663, dynamic_fee: 341400000, constant_before:200037580128121849140308580,constant_after:200037580128130925595596560
+[2024-11-01T14:03:10.326756000Z DEBUG solana_runtime::message_processor::stable_log] Program data: QMbN6CYIceLyjBADfILi4XrO/slhdMwoRrLGCrTYE0CcLtoe8SXiR6zrtv3qEwAAi1fwtE4IAAAA6HZIFwAAAH+PTaIJAAAAAAAAAAAAAAAAAAAAAAAAAAE=
+[2024-11-01T14:03:10.327153000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]
+[2024-11-01T14:03:10.327611000Z DEBUG solana_runtime::message_processor::stable_log] Program log: Instruction: TransferChecked
+[2024-11-01T14:03:10.328416000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 6174 of 149037 compute units
+[2024-11-01T14:03:10.328444000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success
+[2024-11-01T14:03:10.328905000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]
+[2024-11-01T14:03:10.329353000Z DEBUG solana_runtime::message_processor::stable_log] Program log: Instruction: TransferChecked
+[2024-11-01T14:03:10.330182000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 6174 of 139856 compute units
+[2024-11-01T14:03:10.330209000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success
+[2024-11-01T14:03:10.330483000Z DEBUG solana_runtime::message_processor::stable_log] Program GAMMA7meSFWaBXF25oSUgmGRwaW6sCMFLmBNiMSdbHVT consumed 67963 of 200000 compute units
+[2024-11-01T14:03:10.330508000Z DEBUG solana_runtime::message_processor::stable_log] Program GAMMA7meSFWaBXF25oSUgmGRwaW6sCMFLmBNiMSdbHVT success
+[programs/gamma/tests/utils/jupiter.rs:251:9] &result = SwapResult {
+    new_swap_source_amount: 22099999890005,
+    new_swap_destination_amount: 9051759834951,
+    source_amount_swapped: 100000000000,
+    destination_amount_swapped: 40998588613,
+    dynamic_fee: 354300000,
+    protocol_fee: 7086,
+    fund_fee: 1771,
+}
+[programs/gamma/tests/utils/jupiter.rs:252:9] self.timestamp.load(std::sync::atomic::Ordering::Relaxed) as u64 = 1730470512
+[programs/gamma/tests/utils/jupiter.rs:255:9] amount_out = 40998588613
+[2024-11-01T14:03:10.560970000Z DEBUG solana_runtime::message_processor::stable_log] Program GAMMA7meSFWaBXF25oSUgmGRwaW6sCMFLmBNiMSdbHVT invoke [1]
+[2024-11-01T14:03:10.562947000Z DEBUG solana_runtime::message_processor::stable_log] Program log: Instruction: SwapBaseInput
+[2024-11-01T14:03:10.571708000Z DEBUG solana_runtime::message_processor::stable_log] Program log: actual_amount_in:100000000000 source_amount_swapped:100000000000, destination_amount_swapped:40998588613, dynamic_fee: 354300000, constant_before:200040684318250037200077820,constant_after:200040684318259253815264755
+[2024-11-01T14:03:10.571894000Z DEBUG solana_runtime::message_processor::stable_log] Program data: QMbN6CYIceLyjBADfILi4XrO/slhdMwoRrLGCrTYE0CcLtoe8SXiR1WyLUYCFAAADMiiEkUIAAAA6HZIFwAAAMXQtIsJAAAAAAAAAAAAAAAAAAAAAAAAAAE=
+[2024-11-01T14:03:10.572417000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]
+[2024-11-01T14:03:10.573025000Z DEBUG solana_runtime::message_processor::stable_log] Program log: Instruction: TransferChecked
+[2024-11-01T14:03:10.574175000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 6174 of 148476 compute units
+[2024-11-01T14:03:10.574276000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success
+[2024-11-01T14:03:10.574855000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]
+[2024-11-01T14:03:10.575435000Z DEBUG solana_runtime::message_processor::stable_log] Program log: Instruction: TransferChecked
+[2024-11-01T14:03:10.576434000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 6174 of 139295 compute units
+[2024-11-01T14:03:10.576461000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success
+[2024-11-01T14:03:10.576787000Z DEBUG solana_runtime::message_processor::stable_log] Program GAMMA7meSFWaBXF25oSUgmGRwaW6sCMFLmBNiMSdbHVT consumed 68524 of 200000 compute units
+[2024-11-01T14:03:10.576827000Z DEBUG solana_runtime::message_processor::stable_log] Program GAMMA7meSFWaBXF25oSUgmGRwaW6sCMFLmBNiMSdbHVT success
+[programs/gamma/tests/utils/jupiter.rs:251:9] &result = SwapResult {
+    new_swap_source_amount: 22199999881148,
+    new_swap_destination_amount: 9011135190831,
+    source_amount_swapped: 100000000000,
+    destination_amount_swapped: 40624644120,
+    dynamic_fee: 367200000,
+    protocol_fee: 7344,
+    fund_fee: 1836,
+}
+[programs/gamma/tests/utils/jupiter.rs:252:9] self.timestamp.load(std::sync::atomic::Ordering::Relaxed) as u64 = 1730470512
+[programs/gamma/tests/utils/jupiter.rs:255:9] amount_out = 40624644120
+[2024-11-01T14:03:10.812952000Z DEBUG solana_runtime::message_processor::stable_log] Program GAMMA7meSFWaBXF25oSUgmGRwaW6sCMFLmBNiMSdbHVT invoke [1]
+[2024-11-01T14:03:10.814891000Z DEBUG solana_runtime::message_processor::stable_log] Program log: Instruction: SwapBaseInput
+[2024-11-01T14:03:10.823366000Z DEBUG solana_runtime::message_processor::stable_log] Program log: actual_amount_in:100000000000 source_amount_swapped:100000000000, destination_amount_swapped:40624644120, dynamic_fee: 367200000, constant_before:200043891276597340096403748,constant_after:200043891276614687156153988
+[2024-11-01T14:03:10.823549000Z DEBUG solana_runtime::message_processor::stable_log] Program data: QMbN6CYIceLyjBADfILi4XrO/slhdMwoRrLGCrTYE0CcLtoe8SXiR7x3pI4ZFAAAR/fthjsIAAAA6HZIFwAAABjganUJAAAAAAAAAAAAAAAAAAAAAAAAAAE=
+[2024-11-01T14:03:10.824094000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]
+[2024-11-01T14:03:10.824707000Z DEBUG solana_runtime::message_processor::stable_log] Program log: Instruction: TransferChecked
+[2024-11-01T14:03:10.825847000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 6174 of 148099 compute units
+[2024-11-01T14:03:10.825881000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success
+[2024-11-01T14:03:10.826434000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]
+[2024-11-01T14:03:10.826942000Z DEBUG solana_runtime::message_processor::stable_log] Program log: Instruction: TransferChecked
+[2024-11-01T14:03:10.827927000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 6174 of 138918 compute units
+[2024-11-01T14:03:10.827956000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success
+[2024-11-01T14:03:10.828284000Z DEBUG solana_runtime::message_processor::stable_log] Program GAMMA7meSFWaBXF25oSUgmGRwaW6sCMFLmBNiMSdbHVT consumed 68901 of 200000 compute units
+[2024-11-01T14:03:10.828313000Z DEBUG solana_runtime::message_processor::stable_log] Program GAMMA7meSFWaBXF25oSUgmGRwaW6sCMFLmBNiMSdbHVT success
+[programs/gamma/tests/utils/jupiter.rs:251:9] &result = SwapResult {
+    new_swap_source_amount: 22299999871968,
+    new_swap_destination_amount: 8970879379617,
+    source_amount_swapped: 100000000000,
+    destination_amount_swapped: 40255811214,
+    dynamic_fee: 380000000,
+    protocol_fee: 7600,
+    fund_fee: 1900,
+}
+[programs/gamma/tests/utils/jupiter.rs:252:9] self.timestamp.load(std::sync::atomic::Ordering::Relaxed) as u64 = 1730470512
+[programs/gamma/tests/utils/jupiter.rs:255:9] amount_out = 40255811214
+[2024-11-01T14:03:11.062464000Z DEBUG solana_runtime::message_processor::stable_log] Program GAMMA7meSFWaBXF25oSUgmGRwaW6sCMFLmBNiMSdbHVT invoke [1]
+[2024-11-01T14:03:11.063673000Z DEBUG solana_runtime::message_processor::stable_log] Program log: Instruction: SwapBaseInput
+[2024-11-01T14:03:11.069552000Z DEBUG solana_runtime::message_processor::stable_log] Program log: actual_amount_in:100000000000 source_amount_swapped:100000000000, destination_amount_swapped:40255770985, dynamic_fee: 380100000, constant_before:200047200082734539247525408,constant_after:200047200082738682653676928
+[2024-11-01T14:03:11.069693000Z DEBUG solana_runtime::message_processor::stable_log] Program data: QMbN6CYIceLyjBADfILi4XrO/slhdMwoRrLGCrTYE0CcLtoe8SXiR+A7G9cwFAAALxeDETIIAAAA6HZIFwAAAGlRbl8JAAAAAAAAAAAAAAAAAAAAAAAAAAE=
+[2024-11-01T14:03:11.070067000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]
+[2024-11-01T14:03:11.070515000Z DEBUG solana_runtime::message_processor::stable_log] Program log: Instruction: TransferChecked
+[2024-11-01T14:03:11.071285000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 6174 of 148131 compute units
+[2024-11-01T14:03:11.071308000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success
+[2024-11-01T14:03:11.071721000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA invoke [2]
+[2024-11-01T14:03:11.072146000Z DEBUG solana_runtime::message_processor::stable_log] Program log: Instruction: TransferChecked
+[2024-11-01T14:03:11.072957000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA consumed 6174 of 138950 compute units
+[2024-11-01T14:03:11.072987000Z DEBUG solana_runtime::message_processor::stable_log] Program TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA success
+[2024-11-01T14:03:11.073263000Z DEBUG solana_runtime::message_processor::stable_log] Program GAMMA7meSFWaBXF25oSUgmGRwaW6sCMFLmBNiMSdbHVT consumed 68869 of 200000 compute units
+[2024-11-01T14:03:11.073292000Z DEBUG solana_runtime::message_processor::stable_log] Program GAMMA7meSFWaBXF25oSUgmGRwaW6sCMFLmBNiMSdbHVT success
+thread 'jupiter_quotes' panicked at programs/gamma/tests/jupiter_quotes.rs:223:9:
+assertion `left == right` failed
+  left: 40255811214
+ right: 40255770985
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test jupiter_quotes ... FAILED
+
+failures:
+
+failures:
+    jupiter_quotes
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 7.48s
+
+error: test failed, to rerun pass `--test jupiter_quotes`

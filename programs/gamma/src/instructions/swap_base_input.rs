@@ -160,6 +160,8 @@ pub fn swap_base_input<'c, 'info>(
         .ok_or(GammaError::MathOverflow)?;
 
     let mut observation_state = ctx.accounts.observation_state.load_mut()?;
+        
+    
 
     let result = match CurveCalculator::swap_base_input(
         u128::from(actual_amount_in),
@@ -183,9 +185,10 @@ pub fn swap_base_input<'c, 'info>(
         )
         .checked_mul(u128::from(result.new_swap_destination_amount))
         .ok_or(GammaError::MathOverflow)?;
-    #[cfg(feature = "enable-log")]
+    // #[cfg(feature = "enable-log")]
     msg!(
-        "source_amount_swapped:{}, destination_amount_swapped:{}, dynamic_fee: {}, constant_before:{},constant_after:{}",
+        "actual_amount_in:{} source_amount_swapped:{}, destination_amount_swapped:{}, dynamic_fee: {}, constant_before:{},constant_after:{}",
+        actual_amount_in,
         result.source_amount_swapped,
         result.destination_amount_swapped,
         result.dynamic_fee,
