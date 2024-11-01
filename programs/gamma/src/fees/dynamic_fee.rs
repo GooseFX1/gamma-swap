@@ -110,15 +110,8 @@ impl DynamicFee {
         let (min_price, max_price, twap_price) =
             Self::get_price_range(observation_state, block_timestamp, VOLATILITY_WINDOW)?;
         // Handle case where no valid observations were found
-        if min_price == 0 || max_price == 0 || twap_price == 0 {
-            return Ok(base_fees);
-        }
-
-        if max_price > f64::MAX as u128
-            || min_price > f64::MAX as u128
-            || twap_price > f64::MAX as u128
-        {
-            // In real world this will never happen.
+        if min_price == 0 || max_price == 0 || twap_price == 0 || twap_price == 1 {
+            // If twap is 1 we will get ln(1) = 0, so we can't divide by 0
             return Ok(base_fees);
         }
 
@@ -136,7 +129,7 @@ impl DynamicFee {
 
         // Compute volatility numerator and denominator
         let volatility_numerator = (log_max_price - log_min_price).abs();
-        let volatility_denominator = log_twap_price.to_f64().ok_or(GammaError::MathOverflow)?;
+        let volatility_denominator = log_twap_price.abs();
 
         // Check if volatility_denominator is zero to avoid division by zero
         if volatility_denominator.is_zero() {
@@ -149,19 +142,10 @@ impl DynamicFee {
         #[cfg(feature = "enable-log")]
         msg!("volatility: {} ", volatility);
 
-        // Convert volatility to u64 scaled by FEE_RATE_DENOMINATOR_VALUE
-        let scaled_volatility = (volatility * FEE_RATE_DENOMINATOR_VALUE as f64)
+        // Calculate volatility component
+        let volatility_component_calculated = (VOLATILITY_FACTOR as f64 * volatility)
             .to_u64()
             .ok_or(GammaError::MathOverflow)?;
-        #[cfg(feature = "enable-log")]
-        msg!("scaled_volatility: {} ", scaled_volatility);
-
-        // Calculate volatility component
-        let volatility_component_calculated = VOLATILITY_FACTOR
-            .saturating_mul(scaled_volatility)
-            .checked_div(FEE_RATE_DENOMINATOR_VALUE)
-            .ok_or(GammaError::MathOverflow)?;
-
         #[cfg(feature = "enable-log")]
         msg!(
             "volatility_component_calculated: {} ",
