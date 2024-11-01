@@ -1826,6 +1826,7 @@ version = "0.1.0"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
+ "jupiter-amm-interface",
  "proptest",
  "quickcheck",
  "rand 0.8.5",

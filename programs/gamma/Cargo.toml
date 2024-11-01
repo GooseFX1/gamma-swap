@@ -41,7 +41,8 @@ solana-sdk = {workspace=true}
 solana-program-test= {workspace=true}
 solana-program-runtime={workspace=true}
 static_init = "1.0.3"
-
+rust_decimal= {workspace=true}
+jupiter-amm-interface = {workspace=true}
 
 [profile.release]
 lto = "fat"

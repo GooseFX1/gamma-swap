@@ -29,7 +29,7 @@ use spl_token_2022::{
 };
 // This module is only to make sure the gist compiles for jupiter.
 // If any change is made in the file, we should send the changes to the jupiter team.
-mod jupiter;
+pub mod jupiter;
 mod test_swaps;
 use test_swaps::run_swap_test;
 
@@ -641,7 +641,6 @@ fn main() -> Result<()> {
                 amm_config_state.fund_fee_rate,
                 current_unix_timestamp,
                 &observation,
-                trade_direction,
             )?;
 
             let amount_out = u64::try_from(result.destination_amount_swapped).unwrap();
@@ -806,7 +805,6 @@ fn main() -> Result<()> {
                 amm_config_state.fund_fee_rate,
                 current_unix_timestamp,
                 &observation,
-                trade_direction,
             )?;
 
             let source_amount_swapped = u64::try_from(result.source_amount_swapped).unwrap();
