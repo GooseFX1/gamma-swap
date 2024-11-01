@@ -119,10 +119,9 @@ async fn jupiter_quotes() {
         .get_sysvar()
         .await
         .unwrap();
+    let clock_ref = ClockRef::from(clock);
 
-    let amm_context = AmmContext {
-        clock_ref: ClockRef::from(clock),
-    };
+    let amm_context: AmmContext = AmmContext { clock_ref };
     let mut jupiter_quote_result =
         jupiter::Gamma::from_keyed_account(&keyed_account, &amm_context).unwrap();
     let mut pool_state_before: PoolState = test_env.fetch_account(pool_id).await;
@@ -178,6 +177,14 @@ async fn jupiter_quotes() {
         account_map.insert(pool_state0.observation_key, observation_state_info);
         account_map.insert(pool_state0.token_0_vault, token_0_vault);
         account_map.insert(pool_state0.token_1_vault, token_1_vault);
+
+        let clock: Clock = test_env
+            .program_test_context
+            .banks_client
+            .get_sysvar()
+            .await
+            .unwrap();
+        amm_context.clock_ref.update(clock);
 
         jupiter_quote_result.update(&account_map).unwrap();
         let quote = jupiter_quote_result
@@ -273,6 +280,14 @@ async fn jupiter_quotes() {
         account_map.insert(pool_state0.token_1_vault, token_1_vault);
 
         jupiter_quote_result.update(&account_map).unwrap();
+
+        let clock: Clock = test_env
+            .program_test_context
+            .banks_client
+            .get_sysvar()
+            .await
+            .unwrap();
+        amm_context.clock_ref.update(clock);
         let quote = jupiter_quote_result
             .quote(&jupiter_amm_interface::QuoteParams {
                 amount: swap_amount,
