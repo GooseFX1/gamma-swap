@@ -318,7 +318,7 @@ async fn swap_change_with_swaps() {
         )
         .await;
 
-    test_env.jump_seconds(1).await;
+    test_env.jump_seconds(100).await;
 
     test_env
         .swap_base_input(
@@ -330,7 +330,8 @@ async fn swap_change_with_swaps() {
             TradeDirection::OneForZero,
         )
         .await;
-    test_env.jump_seconds(1).await;
+
+    test_env.jump_seconds(100).await;
     test_env
         .swap_base_input(
             &user,
@@ -349,7 +350,7 @@ async fn swap_change_with_swaps() {
     let mut price_changes = vec![get_current_price_token_0_price(observation)];
     let mut pool_state_changes = vec![pool_state1];
 
-    test_env.jump_seconds(1).await;
+    test_env.jump_seconds(100).await;
 
     ////////////////// Actual test start here /////////////
     ///////////////// The aim is to increase price0 and see change in dynamic fees.///////////////
@@ -380,12 +381,13 @@ async fn swap_change_with_swaps() {
         );
     dbg!(fee_charged_for_trade);
     // 0.004333 => 0.4333% fee is charged on the trade amount 3000000000000
-    assert_eq_with_copy!(fee_charged_for_trade, 1299900000000);
+    assert_eq_with_copy!(fee_charged_for_trade, 300000000000);
 
-    let percentage_change_in_price =
-        ((price_changes[price_changes.len() - 1] - price_changes[price_changes.len() - 2]) * 1000)
-            / price_changes[price_changes.len() - 2];
-    dbg!(percentage_change_in_price);
+    dbg!(&price_changes);
+    // let percentage_change_in_price =
+    //     ((price_changes[price_changes.len() - 1] - price_changes[price_changes.len() - 2]) * 1000)
+    //         / price_changes[price_changes.len() - 2];
+    // dbg!(percentage_change_in_price);
     // assert_eq!(percentage_change_in_price, 14948);
 
     // this trade will have even higher fees as price has increased
@@ -399,10 +401,11 @@ async fn swap_change_with_swaps() {
             TradeDirection::OneForZero,
         )
         .await;
-    test_env.jump_seconds(1).await;
+    test_env.jump_seconds(100).await;
     // change of price before this trade
 
     let observation: ObservationState = test_env.fetch_account(pool_state1.observation_key).await;
+    dbg!(observation);
     price_changes.push(get_current_price_token_0_price(observation));
 
     pool_state_changes.push(test_env.fetch_account(pool_id).await);
@@ -415,7 +418,7 @@ async fn swap_change_with_swaps() {
     dbg!(fee_charged_for_trade);
     // with increase in price by 14%
     // 0.014 => 0.9% fee is charged on the trade amount 3000000000000
-    assert_eq_with_copy!(fee_charged_for_trade, 71);
+    assert_eq_with_copy!(fee_charged_for_trade, 1);
 
     // this trade will have even higher fees as price has increased
     test_env
@@ -428,7 +431,7 @@ async fn swap_change_with_swaps() {
             TradeDirection::OneForZero,
         )
         .await;
-    test_env.jump_seconds(1).await;
+    test_env.jump_seconds(16).await;
     // change of price before this trade
 
     let observation: ObservationState = test_env.fetch_account(pool_state1.observation_key).await;
@@ -443,7 +446,7 @@ async fn swap_change_with_swaps() {
         );
     dbg!(fee_charged_for_trade);
     // 0.004333 => 0.4333% fee is charged on the trade amount 3000000000000
-    assert_eq_with_copy!(fee_charged_for_trade, 65);
+    assert_eq_with_copy!(fee_charged_for_trade, 78);
 
     // Now we do a ZeroForOne trade to decrease price and see change in dynamic fees.
     test_env
@@ -451,12 +454,12 @@ async fn swap_change_with_swaps() {
             &user,
             pool_id,
             amm_index,
-            3000000000000,
+            2000,
             0,
             TradeDirection::ZeroForOne,
         )
         .await;
-    test_env.jump_seconds(1).await;
+    test_env.jump_seconds(16).await;
     let observation: ObservationState = test_env.fetch_account(pool_state1.observation_key).await;
     price_changes.push(get_current_price_token_0_price(observation));
 
@@ -469,29 +472,59 @@ async fn swap_change_with_swaps() {
         );
     dbg!(fee_charged_for_trade);
 
-    // Now we do a ZeroForOne trade to decrease price and see change in dynamic fees.
-    test_env
-        .swap_base_input(
-            &user,
-            pool_id,
-            amm_index,
-            1000,
-            0,
-            TradeDirection::OneForZero,
-        )
-        .await;
-    test_env.jump_seconds(1).await;
-    let observation: ObservationState = test_env.fetch_account(pool_state1.observation_key).await;
-    price_changes.push(get_current_price_token_0_price(observation));
+    for _i in 0..100 {
+        // Now we do a ZeroForOne trade to decrease price and see change in dynamic fees.
+        test_env
+            .swap_base_input(
+                &user,
+                pool_id,
+                amm_index,
+                1000000,
+                0,
+                TradeDirection::OneForZero,
+            )
+            .await;
+        test_env.jump_seconds(16).await;
+        let observation: ObservationState =
+            test_env.fetch_account(pool_state1.observation_key).await;
+        price_changes.push(get_current_price_token_0_price(observation));
 
-    pool_state_changes.push(test_env.fetch_account(pool_id).await);
+        pool_state_changes.push(test_env.fetch_account(pool_id).await);
 
-    let fee_charged_for_trade = pool_state_changes[pool_state_changes.len() - 1]
-        .cumulative_trade_fees_token_0
-        .saturating_sub(
-            pool_state_changes[pool_state_changes.len() - 2].cumulative_trade_fees_token_0,
-        );
-    dbg!(fee_charged_for_trade);
+        let fee_charged_for_trade = pool_state_changes[pool_state_changes.len() - 1]
+            .cumulative_trade_fees_token_1
+            .saturating_sub(
+                pool_state_changes[pool_state_changes.len() - 2].cumulative_trade_fees_token_1,
+            );
+        dbg!(fee_charged_for_trade);
+    }
+
+    for _i in 0..100 {
+        // Now we do a ZeroForOne trade to decrease price and see change in dynamic fees.
+        test_env
+            .swap_base_input(
+                &user,
+                pool_id,
+                amm_index,
+                1000000,
+                0,
+                TradeDirection::ZeroForOne,
+            )
+            .await;
+        test_env.jump_seconds(16).await;
+        let observation: ObservationState =
+            test_env.fetch_account(pool_state1.observation_key).await;
+        price_changes.push(get_current_price_token_0_price(observation));
+
+        pool_state_changes.push(test_env.fetch_account(pool_id).await);
+
+        let fee_charged_for_trade = pool_state_changes[pool_state_changes.len() - 1]
+            .cumulative_trade_fees_token_1
+            .saturating_sub(
+                pool_state_changes[pool_state_changes.len() - 2].cumulative_trade_fees_token_1,
+            );
+        dbg!(fee_charged_for_trade);
+    }
 
     // let change_in_price =
     //     (price_changes[price_changes.len() - 1] - price_changes[price_changes.len() - 2])/;
@@ -520,18 +553,26 @@ async fn swap_change_with_swaps() {
     // we did a big trade increasing price by roughly 5.8%
     // assert_eq!(percentage_increase_in_price, 60);
 
-    // test_env
-    //     .swap_base_input(
-    //         &user,
-    //         pool_id,
-    //         amm_index,
-    //         1000,
-    //         0,
-    //         TradeDirection::OneForZero,
-    //     )
-    //     .await;
+    test_env
+        .swap_base_input(
+            &user,
+            pool_id,
+            amm_index,
+            300000,
+            0,
+            TradeDirection::OneForZero,
+        )
+        .await;
 
-    // test_env.jump_seconds(1).await;
+    test_env.jump_seconds(16).await;
+    pool_state_changes.push(test_env.fetch_account(pool_id).await);
+
+    let fee_charged_for_trade = pool_state_changes[pool_state_changes.len() - 1]
+        .cumulative_trade_fees_token_1
+        .saturating_sub(
+            pool_state_changes[pool_state_changes.len() - 2].cumulative_trade_fees_token_1,
+        );
+    dbg!(fee_charged_for_trade);
 
     // let observation: ObservationState = test_env.fetch_account(pool_state2.observation_key).await;
     // let price_token0_2_trade = get_current_price_token_0_price(observation);

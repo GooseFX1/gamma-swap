@@ -87,7 +87,7 @@ pub mod gamma {
 
     /// Initialize swap referrals for an existing AMM config
     /// # Arguments
-    /// 
+    ///
     /// * `ctx` - The accounts needed by the instruction, including those used by cpi to the referral program
     /// * `name` - The project name, passed to the referral program. Must be less than 50 chars in length
     /// * `default_share_bps` - Percentage share of fees to referrers. Must be less than 10_000
@@ -253,8 +253,8 @@ pub mod gamma {
     ///
     pub fn swap_base_output<'c, 'info>(
         ctx: Context<'_, '_, 'c, 'info, Swap<'info>>,
-        max_amount_in: u64, 
-        amount_out: u64
+        max_amount_in: u64,
+        amount_out: u64,
     ) -> Result<()> {
         instructions::swap_base_output(ctx, max_amount_in, amount_out)
     }
