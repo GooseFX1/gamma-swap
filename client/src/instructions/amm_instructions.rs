@@ -46,6 +46,8 @@ pub fn create_config_instr(
             protocol_fee_rate,
             fund_fee_rate,
             create_pool_fee,
+            // 5 days
+            max_open_time: 5 * 86400,
         })
         .instructions()?;
     Ok(instructions)
@@ -125,7 +127,8 @@ pub fn initialize_pool_instr(
             user_pubkey.to_bytes().as_ref(),
         ],
         &program.id(),
-    ).0;
+    )
+    .0;
 
     let instructions = program
         .request()
@@ -171,19 +174,23 @@ pub fn create_referral_project_instr(
     default_share_bps: u16,
     referral_program: Pubkey,
 ) -> Instruction {
-    let project = Pubkey::find_program_address(&[b"project", amm_config.as_ref()], &referral_program).0;
+    let project =
+        Pubkey::find_program_address(&[b"project", amm_config.as_ref()], &referral_program).0;
     let data = anchor_lang::InstructionData::data(&gamma_instructions::CreateSwapReferral {
         name,
-        default_share_bps
+        default_share_bps,
     });
-    let accounts = anchor_lang::ToAccountMetas::to_account_metas(&gamma_accounts::CreateReferralProject {
-        owner: signer,
-        payer: signer,
-        amm_config,
-        project,
-        system_program: system_program::ID,
-        referral_program
-    }, None);
+    let accounts = anchor_lang::ToAccountMetas::to_account_metas(
+        &gamma_accounts::CreateReferralProject {
+            owner: signer,
+            payer: signer,
+            amm_config,
+            project,
+            system_program: system_program::ID,
+            referral_program,
+        },
+        None,
+    );
 
     Instruction::new_with_bytes(config.gamma_program, &data, accounts)
 }
@@ -218,7 +225,8 @@ pub fn deposit_instr(
             user_pubkey.to_bytes().as_ref(),
         ],
         &program.id(),
-    ).0;
+    )
+    .0;
     let instructions = program
         .request()
         .accounts(gamma_accounts::Deposit {
@@ -276,7 +284,8 @@ pub fn withdraw_instr(
             user_pubkey.to_bytes().as_ref(),
         ],
         &program.id(),
-    ).0;
+    )
+    .0;
     let instructions = program
         .request()
         .accounts(gamma_accounts::Withdraw {
@@ -414,7 +423,7 @@ pub fn init_user_pool_liquidity_instr(
     // Client.
     let client = Client::new(url, Rc::new(payer));
     let program = client.program(config.gamma_program)?;
-    
+
     let user_pool_liquidity = Pubkey::find_program_address(
         &[
             USER_POOL_LIQUIDITY_SEED.as_bytes(),
@@ -422,7 +431,8 @@ pub fn init_user_pool_liquidity_instr(
             user_pubkey.to_bytes().as_ref(),
         ],
         &program.id(),
-    ).0;
+    )
+    .0;
     let instructions = program
         .request()
         .accounts(gamma_accounts::InitUserPoolLiquidity {
@@ -431,8 +441,7 @@ pub fn init_user_pool_liquidity_instr(
             user_pool_liquidity,
             system_program: system_program::id(),
         })
-        .args(gamma_instructions::InitUserPoolLiquidity {
-        })
+        .args(gamma_instructions::InitUserPoolLiquidity {})
         .instructions()?;
     Ok(instructions)
 }

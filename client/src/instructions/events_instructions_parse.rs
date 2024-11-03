@@ -340,7 +340,7 @@ pub fn handle_program_instruction(
             impl From<instruction::UpdateAmmConfig> for UpdateAmmConfig {
                 fn from(instr: instruction::UpdateAmmConfig) -> UpdateAmmConfig {
                     UpdateAmmConfig {
-                        param: instr.param,
+                        param: instr.param as u8,
                         value: instr.value,
                     }
                 }

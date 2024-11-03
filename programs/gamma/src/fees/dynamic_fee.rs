@@ -5,15 +5,13 @@ use crate::{
 };
 use anchor_lang::prelude::*;
 use rust_decimal::prelude::*;
-use rust_decimal::Decimal;
-use rust_decimal::MathematicalOps; // For ln()
 
 // Volatility-based fee constants
 pub const MAX_FEE_VOLATILITY: u64 = 10000; // 1% max fee
 pub const VOLATILITY_WINDOW: u64 = 3600; // 1 hour window for volatility calculation
 
 const MAX_FEE: u64 = 100000; // 10% max fee
-const VOLATILITY_FACTOR: u64 = 30_000; // Adjust based on desired sensitivity
+const VOLATILITY_FACTOR: u64 = 300_000; // Adjust based on desired sensitivity
 
 pub enum FeeType {
     Volatility,
@@ -116,19 +114,29 @@ impl DynamicFee {
             return Ok(base_fees);
         }
 
-        // Convert prices to Decimal for logarithmic calculations
-        let max_price_decimal = Decimal::from_u128(max_price).ok_or(GammaError::MathOverflow)?;
-        let min_price_decimal = Decimal::from_u128(min_price).ok_or(GammaError::MathOverflow)?;
-        let twap_price_decimal = Decimal::from_u128(twap_price).ok_or(GammaError::MathOverflow)?;
+        if max_price > f64::MAX as u128
+            || min_price > f64::MAX as u128
+            || twap_price > f64::MAX as u128
+        {
+            // In real world this will never happen.
+            return Ok(base_fees);
+        }
 
         // Compute logarithms
-        let log_max_price = max_price_decimal.ln();
-        let log_min_price = min_price_decimal.ln();
-        let log_twap_price = twap_price_decimal.ln().abs();
+        let log_max_price = (max_price as f64).ln();
+        let log_min_price = (min_price as f64).ln();
+        let log_twap_price = (twap_price as f64).ln();
+        #[cfg(feature = "enable-log")]
+        msg!(
+            "log_max_price: {},log_min_price={},log_twap_price={}  ",
+            log_max_price,
+            log_min_price,
+            log_twap_price
+        );
 
         // Compute volatility numerator and denominator
         let volatility_numerator = (log_max_price - log_min_price).abs();
-        let volatility_denominator = log_twap_price;
+        let volatility_denominator = log_twap_price.to_f64().ok_or(GammaError::MathOverflow)?;
 
         // Check if volatility_denominator is zero to avoid division by zero
         if volatility_denominator.is_zero() {
@@ -136,15 +144,17 @@ impl DynamicFee {
         }
 
         // Compute volatility: volatility = volatility_numerator / volatility_denominator
-        let volatility = volatility_numerator
-            .checked_div(volatility_denominator)
-            .ok_or(GammaError::MathOverflow)?;
+        // Dividing f64 with f64. We want to know the decimals so we keep the
+        let volatility = volatility_numerator / volatility_denominator;
+        #[cfg(feature = "enable-log")]
+        msg!("volatility: {} ", volatility);
 
         // Convert volatility to u64 scaled by FEE_RATE_DENOMINATOR_VALUE
-        let scaled_volatility = (volatility
-            * Decimal::from_u64(FEE_RATE_DENOMINATOR_VALUE).ok_or(GammaError::MathOverflow)?)
-        .to_u64()
-        .ok_or(GammaError::MathOverflow)?;
+        let scaled_volatility = (volatility * FEE_RATE_DENOMINATOR_VALUE as f64)
+            .to_u64()
+            .ok_or(GammaError::MathOverflow)?;
+        #[cfg(feature = "enable-log")]
+        msg!("scaled_volatility: {} ", scaled_volatility);
 
         // Calculate volatility component
         let volatility_component_calculated = VOLATILITY_FACTOR
@@ -152,17 +162,15 @@ impl DynamicFee {
             .checked_div(FEE_RATE_DENOMINATOR_VALUE)
             .ok_or(GammaError::MathOverflow)?;
 
-        // Calculate volatility component
-        let volatility_component = std::cmp::min(
-            volatility_component_calculated,
-            MAX_FEE
-                .checked_sub(base_fees)
-                .ok_or(GammaError::MathOverflow)?,
+        #[cfg(feature = "enable-log")]
+        msg!(
+            "volatility_component_calculated: {} ",
+            volatility_component_calculated
         );
 
         // Calculate final dynamic fee
         let dynamic_fee = base_fees
-            .checked_add(volatility_component)
+            .checked_add(volatility_component_calculated)
             .ok_or(GammaError::MathOverflow)?;
         #[cfg(feature = "enable-log")]
         msg!("dynamic_fee: {}", dynamic_fee);
@@ -253,7 +261,7 @@ impl DynamicFee {
             if observation_state.observations[last_observation_index].block_timestamp == 0 {
                 continue;
             }
-            
+
             if observation_state.observations[last_observation_index].block_timestamp
                 > observation_with_index.observation.block_timestamp
             {
@@ -264,9 +272,7 @@ impl DynamicFee {
             let obs = observation_state.observations[last_observation_index];
             let next_obs = observation_with_index.observation;
 
-            let time_delta = next_obs
-                .block_timestamp
-                .saturating_sub(obs.block_timestamp) as u128;
+            let time_delta = next_obs.block_timestamp.saturating_sub(obs.block_timestamp) as u128;
 
             if time_delta == 0 {
                 continue;
@@ -322,12 +328,8 @@ impl DynamicFee {
         // To avoid rounding errors, we use:
         // x = (y * D + (D - r) - 1) / (D - r)
 
-        let dynamic_fee_rate = Self::calculate_dynamic_fee(
-            block_timestamp,
-            observation_state,
-            fee_type,
-            base_fees,
-        )?;
+        let dynamic_fee_rate =
+            Self::calculate_dynamic_fee(block_timestamp, observation_state, fee_type, base_fees)?;
         if dynamic_fee_rate == 0 {
             Ok(post_fee_amount)
         } else {

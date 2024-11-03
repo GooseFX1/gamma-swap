@@ -115,8 +115,8 @@ impl CurveCalculator {
 
         let protocol_fee = StaticFee::protocol_fee(dynamic_fee, protocol_fee_rate)
             .ok_or(GammaError::InvalidFee)?;
-        let fund_fee = StaticFee::fund_fee(dynamic_fee, fund_fee_rate)
-            .ok_or(GammaError::InvalidFee)?;
+        let fund_fee =
+            StaticFee::fund_fee(dynamic_fee, fund_fee_rate).ok_or(GammaError::InvalidFee)?;
 
         let source_amount_after_fees = source_amount_to_be_swapped
             .checked_sub(dynamic_fee)
@@ -126,6 +126,9 @@ impl CurveCalculator {
             swap_source_amount,
             swap_destination_amount,
         )?;
+
+        #[cfg(feature = "enable-log")]
+        msg!("dynamic_fee: {}", dynamic_fee);
 
         Ok(SwapResult {
             new_swap_source_amount: swap_source_amount
@@ -172,8 +175,8 @@ impl CurveCalculator {
             .ok_or(GammaError::MathOverflow)?;
         let protocol_fee = StaticFee::protocol_fee(dynamic_fee, protocol_fee_rate)
             .ok_or(GammaError::MathOverflow)?;
-        let fund_fee = StaticFee::fund_fee(dynamic_fee, fund_fee_rate)
-            .ok_or(GammaError::MathOverflow)?;
+        let fund_fee =
+            StaticFee::fund_fee(dynamic_fee, fund_fee_rate).ok_or(GammaError::MathOverflow)?;
 
         Ok(SwapResult {
             new_swap_source_amount: swap_source_amount
