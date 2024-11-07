@@ -262,7 +262,8 @@ pub fn swap_base_output<'c, 'info>(
         },
         input_transfer_fee,
         output_transfer_fee,
-        base_input: false
+        base_input: false,
+        dynamic_fee: result.dynamic_fee,
     });
     require_gte!(constant_after, constant_before);
 

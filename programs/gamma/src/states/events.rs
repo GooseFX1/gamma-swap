@@ -44,4 +44,6 @@ pub struct SwapEvent {
     // transfer fees on output token using token extensions
     pub output_transfer_fee: u64,
     pub base_input: bool,
+    // dynamic_fees after this swap
+    pub dynamic_fee: u128,
 }
