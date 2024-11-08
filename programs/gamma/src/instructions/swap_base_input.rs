@@ -328,7 +328,8 @@ pub fn swap_base_input<'c, 'info>(
         },
         input_transfer_fee,
         output_transfer_fee,
-        base_input: true
+        base_input: true,
+        dynamic_fee: result.dynamic_fee
     });
     require_gte!(constant_after, constant_before);
     transfer_from_user_to_pool_vault(
