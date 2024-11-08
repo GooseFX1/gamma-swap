@@ -344,6 +344,7 @@ async fn swap_change_with_swaps() {
         .await;
 
     ///// We make at 3 swaps to set initial observation of price. /////
+    dbg!(pool_state1.observation_key);
     let observation: ObservationState = test_env.fetch_account(pool_state1.observation_key).await;
     let pool_state1: PoolState = test_env.fetch_account(pool_id).await;
 

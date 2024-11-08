@@ -4,7 +4,7 @@ use anchor_spl::token_interface::{Mint, Token2022, TokenAccount};
 
 use crate::curve::{CurveCalculator, RoundDirection};
 use crate::states::{
-    LpChangeEvent, PoolStatusBitIndex, UserPoolLiquidity, USER_POOL_LIQUIDITY_SEED,
+    LpChangeEvent, PartnerType, PoolStatusBitIndex, UserPoolLiquidity, USER_POOL_LIQUIDITY_SEED,
 };
 use crate::utils::{get_transfer_fee, transfer_from_pool_vault_to_user};
 use crate::{error::GammaError, states::PoolState};
@@ -129,7 +129,9 @@ pub fn withdraw(
         let transfer_fee =
             get_transfer_fee(&ctx.accounts.vault_0_mint.to_account_info(), token_0_amount)?;
         (
-            token_0_amount.checked_sub(transfer_fee).ok_or(GammaError::MathOverflow)?,
+            token_0_amount
+                .checked_sub(transfer_fee)
+                .ok_or(GammaError::MathOverflow)?,
             transfer_fee,
         )
     };
@@ -143,7 +145,9 @@ pub fn withdraw(
         let transfer_fee =
             get_transfer_fee(&ctx.accounts.vault_1_mint.to_account_info(), token_1_amount)?;
         (
-            token_1_amount.checked_sub(transfer_fee).ok_or(GammaError::MathOverflow)?,
+            token_1_amount
+                .checked_sub(transfer_fee)
+                .ok_or(GammaError::MathOverflow)?,
             transfer_fee,
         )
     };
@@ -177,7 +181,10 @@ pub fn withdraw(
         return Err(GammaError::ExceededSlippage.into());
     }
 
-    pool_state.lp_supply = pool_state.lp_supply.checked_sub(lp_token_amount).ok_or(GammaError::MathOverflow)?;
+    pool_state.lp_supply = pool_state
+        .lp_supply
+        .checked_sub(lp_token_amount)
+        .ok_or(GammaError::MathOverflow)?;
     let user_pool_liquidity = &mut ctx.accounts.user_pool_liquidity;
     user_pool_liquidity.lp_tokens_owned = user_pool_liquidity
         .lp_tokens_owned
@@ -191,6 +198,20 @@ pub fn withdraw(
         .token_1_withdrawn
         .checked_add(u128::from(receive_token_1_amount))
         .ok_or(GammaError::MathOverflow)?;
+
+    if let Some(user_pool_liquidity_partner) = user_pool_liquidity.partner {
+        let mut pool_state_partners = pool_state.partners;
+        let partner: Option<&mut crate::states::PartnerInfo> = pool_state_partners
+            .iter_mut()
+            .find(|p| PartnerType::new(p.partner_id) == user_pool_liquidity_partner);
+        if let Some(partner) = partner {
+            partner.lp_token_linked_with_partner = partner
+                .lp_token_linked_with_partner
+                .checked_sub(lp_token_amount)
+                .ok_or(GammaError::MathOverflow)?;
+        }
+        pool_state.partners = pool_state_partners;
+    }
 
     transfer_from_pool_vault_to_user(
         ctx.accounts.authority.to_account_info(),

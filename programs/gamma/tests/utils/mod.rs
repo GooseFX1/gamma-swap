@@ -929,6 +929,16 @@ impl TestEnv {
     }
 
     pub async fn init_user_pool_liquidity(&mut self, user: &Keypair, pool_id: Pubkey) {
+        self.init_user_pool_liquidity_with_partner(user, pool_id, None)
+            .await;
+    }
+
+    pub async fn init_user_pool_liquidity_with_partner(
+        &mut self,
+        user: &Keypair,
+        pool_id: Pubkey,
+        partner: Option<String>,
+    ) {
         let user_pool_liquidity = Pubkey::find_program_address(
             &[
                 USER_POOL_LIQUIDITY_SEED.as_bytes(),
@@ -939,14 +949,15 @@ impl TestEnv {
         )
         .0;
 
-        let accounts = gamma::accounts::InitUserPoolLiquidity {
-            user: user.pubkey(),
-            pool_state: pool_id,
-            user_pool_liquidity,
-            system_program: system_program::ID,
-        };
+        let accounts: gamma::accounts::InitUserPoolLiquidity =
+            gamma::accounts::InitUserPoolLiquidity {
+                user: user.pubkey(),
+                pool_state: pool_id,
+                user_pool_liquidity,
+                system_program: system_program::ID,
+            };
 
-        let data = gamma::instruction::InitUserPoolLiquidity {};
+        let data = gamma::instruction::InitUserPoolLiquidity { partner };
 
         let transaction = self
             .encode_instruction_and_sign_transaction(data, accounts, user)
@@ -1075,6 +1086,7 @@ impl TestEnv {
         amm_config_index: u16,
         amount_out: u64,
         max_amount_in: u64,
+        trade_direction: TradeDirection,
     ) {
         let (authority, __bump) =
             Pubkey::find_program_address(&[AUTH_SEED.as_bytes()], &gamma::id());
@@ -1112,20 +1124,52 @@ impl TestEnv {
             &gamma::ID,
         );
 
+        let (
+            input_token_account,
+            output_token_account,
+            input_token_mint,
+            output_token_mint,
+            input_vault,
+            output_vault,
+            input_token_program,
+            output_token_program,
+        ) = match trade_direction {
+            TradeDirection::ZeroForOne => (
+                user_token_0_account,
+                user_token_1_account,
+                self.token_0_mint,
+                self.token_1_mint,
+                token_0_vault,
+                token_1_vault,
+                spl_token::id(),
+                spl_token::id(),
+            ),
+            TradeDirection::OneForZero => (
+                user_token_1_account,
+                user_token_0_account,
+                self.token_1_mint,
+                self.token_0_mint,
+                token_1_vault,
+                token_0_vault,
+                spl_token::id(),
+                spl_token::id(),
+            ),
+        };
+
         let accounts = gamma::accounts::Swap {
             payer: user.pubkey(),
             authority,
             amm_config: amm_config_key,
             pool_state: pool_id,
-            input_token_account: user_token_0_account,
-            output_token_account: user_token_1_account,
-            input_vault: token_0_vault,
-            output_vault: token_1_vault,
-            input_token_program: spl_token::id(),
-            output_token_program: spl_token::id(),
-            input_token_mint: self.token_0_mint,
-            output_token_mint: self.token_1_mint,
             observation_state: observation_key,
+            input_token_account,
+            output_token_account,
+            input_vault,
+            output_vault,
+            input_token_program,
+            output_token_program,
+            input_token_mint,
+            output_token_mint,
         };
 
         let data = gamma::instruction::SwapBaseOutput {

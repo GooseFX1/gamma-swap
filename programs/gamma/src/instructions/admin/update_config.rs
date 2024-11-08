@@ -1,6 +1,10 @@
 use anchor_lang::prelude::*;
 
-use crate::{error::GammaError, fees::FEE_RATE_DENOMINATOR_VALUE, states::AmmConfig};
+use crate::{
+    error::GammaError,
+    fees::FEE_RATE_DENOMINATOR_VALUE,
+    states::{validate_config_rates, AmmConfig},
+};
 
 #[derive(Accounts)]
 pub struct UpdateAmmConfig<'info> {
@@ -38,6 +42,8 @@ pub fn update_amm_config(ctx: Context<UpdateAmmConfig>, param: u16, value: u64) 
         7 => amm_config.max_open_time = value,
         _ => return err!(GammaError::InvalidInput),
     }
+
+    validate_config_rates(amm_config)?;
 
     Ok(())
 }

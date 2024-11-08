@@ -180,8 +180,11 @@ pub mod gamma {
         instructions::initialize(ctx, init_amount_0, init_amount_1, open_time)
     }
 
-    pub fn init_user_pool_liquidity(ctx: Context<InitUserPoolLiquidity>) -> Result<()> {
-        instructions::init_user_pool_liquidity(ctx)
+    pub fn init_user_pool_liquidity(
+        ctx: Context<InitUserPoolLiquidity>,
+        partner: Option<String>,
+    ) -> Result<()> {
+        instructions::init_user_pool_liquidity(ctx, partner)
     }
 
     /// Creates a pool for the given token pair and the initial price

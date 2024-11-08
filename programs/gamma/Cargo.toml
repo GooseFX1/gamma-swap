@@ -36,6 +36,7 @@ clmm-cpi = { workspace = true , features = ["cpi"] }
 cpmm-cpi = { workspace = true , features = ["cpi"] }
 whirlpool-cpi = { workspace = true , features = ["cpi"] }
 dlmm-cpi = { workspace = true , features = ["cpi"] }
+bytemuck={workspace=true}
 
 [dev-dependencies]
 proptest = { workspace = true }
@@ -50,7 +51,6 @@ jupiter-amm-interface = {workspace=true}
 spl-token-2022 = { workspace = true }
 anyhow ={workspace=true}
 ahash={workspace=true}
-
 
 [profile.release]
 lto = "fat"

@@ -1,7 +1,7 @@
+use crate::error::GammaError;
 use anchor_lang::prelude::*;
 use anchor_spl::token_interface::Mint;
 use std::ops::{BitAnd, BitOr, BitXor};
-use crate::error::GammaError;
 
 // Seed to derive account address and signature
 pub const POOL_SEED: &str = "pool";
@@ -20,6 +20,37 @@ pub enum PoolStatusBitIndex {
 pub enum PoolStatusBitFlag {
     Enable,
     Disable,
+}
+
+#[derive(Default, Debug, PartialEq, Eq, Clone, Copy, AnchorDeserialize, AnchorSerialize)]
+#[repr(u64)]
+pub enum PartnerType {
+    #[default]
+    AssetDash = 0,
+}
+
+impl PartnerType {
+    pub fn new(value: u64) -> Self {
+        match value {
+            0 => PartnerType::AssetDash,
+            _ => PartnerType::AssetDash,
+        }
+    }
+}
+
+#[zero_copy(unsafe)]
+#[repr(packed)]
+#[derive(Default, Debug)]
+pub struct PartnerInfo {
+    pub partner_id: u64,
+    // This stores the LP tokens that are linked with the partner, i.e owned by customers of the partner.
+    pub lp_token_linked_with_partner: u64,
+
+    // This keeps track of tvl_share * fee_we_earned_with_swap_token0
+    pub cumulative_fee_total_times_tvl_share_token_0: u64,
+
+    // This keeps track of tvl_share * fee_we_earned_with_swap_token1
+    pub cumulative_fee_total_times_tvl_share_token_1: u64,
 }
 
 #[account(zero_copy(unsafe))]
@@ -91,8 +122,11 @@ pub struct PoolState {
     pub cumulative_volume_token_1: u128,
     /// latest dynamic fee rate
     pub latest_dynamic_fee_rate: u64,
+
+    // This will store the partner information, like how much token0 and token1 they was invested from their platforms.
+    pub partners: [PartnerInfo; 1],
     /// padding
-    pub padding: [u64; 22],
+    pub padding: [u64; 18],
 }
 
 impl PoolState {
@@ -139,7 +173,9 @@ impl PoolState {
         self.cumulative_volume_token_0 = 0;
         self.cumulative_volume_token_1 = 0;
         self.latest_dynamic_fee_rate = 0;
-        self.padding = [0u64; 22];
+        self.partners = [PartnerInfo::default(); 1];
+
+        self.padding = [0u64; 18];
         Ok(())
     }
 
