@@ -1,0 +1,22 @@
+[package]
+name = "cpmm-cpi"
+version = "0.1.0"
+edition = "2021"
+
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "cpmm_cpi"
+
+[features]
+no-entrypoint = []
+no-idl = []
+no-log-ix-name = []
+cpi = ["no-entrypoint"]
+enable-log = []
+devnet = []
+
+
+[dependencies]
+anchor-gen = { workspace = true }
+anchor-lang = { workspace = true }

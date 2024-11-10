@@ -3,21 +3,21 @@ use anchor_spl::{
     token::Token,
     token_interface::{Mint, Token2022, TokenAccount},
 };
-
-use crate::states::{LpChangeEvent, PoolStatusBitIndex};
-use crate::utils::{get_transfer_inverse_fee, transfer_from_user_to_pool_vault};
 use crate::{
     curve::{CurveCalculator, RoundDirection},
-    states::{UserPoolLiquidity, USER_POOL_LIQUIDITY_SEED},
+    error::GammaError,
+    states::{
+        LpChangeEvent, PoolStatusBitIndex, PoolState, UserPoolLiquidity, USER_POOL_LIQUIDITY_SEED,
+    },
+    utils::{get_transfer_inverse_fee, transfer_from_user_to_pool_vault},
 };
-use crate::{error::GammaError, states::PoolState};
 
 #[derive(Accounts)]
 pub struct Deposit<'info> {
-    /// Pays to mint the position
+    /// Owner of the liquidity provided
     pub owner: Signer<'info>,
 
-    /// CHECK: pool vault and lp mint authority
+    /// CHECK: pool vault authority
     #[account(
         seeds = [
             crate::AUTH_SEED.as_bytes(),
@@ -95,14 +95,28 @@ pub fn deposit(
     maximum_token_0_amount: u64,
     maximum_token_1_amount: u64,
 ) -> Result<()> {
-    let pool_id = ctx.accounts.pool_state.key();
-    let pool_state = &mut ctx.accounts.pool_state.load_mut()?;
+    deposit_to_gamma_pool(
+        ctx.accounts,
+        lp_token_amount, 
+        maximum_token_0_amount, 
+        maximum_token_1_amount
+    )
+}
+
+pub fn deposit_to_gamma_pool(
+    accounts: &mut Deposit,
+    lp_token_amount: u64,
+    maximum_token_0_amount: u64,
+    maximum_token_1_amount: u64,
+) -> Result<()> {
+    let pool_id = accounts.pool_state.key();
+    let pool_state = &mut accounts.pool_state.load_mut()?;
     if !pool_state.get_status_by_bit(PoolStatusBitIndex::Deposit) {
         return err!(GammaError::NotApproved);
     }
     let (total_token_0_amount, total_token_1_amount) = pool_state.vault_amount_without_fee(
-        ctx.accounts.token_0_vault.amount,
-        ctx.accounts.token_1_vault.amount,
+        accounts.token_0_vault.amount,
+        accounts.token_1_vault.amount,
     )?;
     let results = CurveCalculator::lp_tokens_to_trading_tokens(
         u128::from(lp_token_amount),
@@ -117,7 +131,7 @@ pub fn deposit(
         .map_err(|_| GammaError::MathOverflow)?;
     let (transfer_token_0_amount, transfer_token_0_fee) = {
         let transfer_fee =
-            get_transfer_inverse_fee(&ctx.accounts.vault_0_mint.to_account_info(), token_0_amount)?;
+            get_transfer_inverse_fee(&accounts.vault_0_mint.to_account_info(), token_0_amount)?;
         (
             token_0_amount.checked_add(transfer_fee).ok_or(GammaError::MathOverflow)?,
             transfer_fee,
@@ -128,7 +142,7 @@ pub fn deposit(
         .map_err(|_| GammaError::MathOverflow)?;
     let (transfer_token_1_amount, transfer_token_1_fee) = {
         let transfer_fee =
-            get_transfer_inverse_fee(&ctx.accounts.vault_1_mint.to_account_info(), token_1_amount)?;
+            get_transfer_inverse_fee(&accounts.vault_1_mint.to_account_info(), token_1_amount)?;
         (
             token_1_amount.checked_add(transfer_fee).ok_or(GammaError::MathOverflow)?,
             transfer_fee,
@@ -165,38 +179,38 @@ pub fn deposit(
     }
 
     transfer_from_user_to_pool_vault(
-        ctx.accounts.owner.to_account_info(),
-        ctx.accounts.token_0_account.to_account_info(),
-        ctx.accounts.token_0_vault.to_account_info(),
-        ctx.accounts.vault_0_mint.to_account_info(),
-        if ctx.accounts.vault_0_mint.to_account_info().owner == ctx.accounts.token_program.key {
-            ctx.accounts.token_program.to_account_info()
+        accounts.owner.to_account_info(),
+        accounts.token_0_account.to_account_info(),
+        accounts.token_0_vault.to_account_info(),
+        accounts.vault_0_mint.to_account_info(),
+        if accounts.vault_0_mint.to_account_info().owner == accounts.token_program.key {
+            accounts.token_program.to_account_info()
         } else {
-            ctx.accounts.token_program_2022.to_account_info()
+            accounts.token_program_2022.to_account_info()
         },
         transfer_token_0_amount,
-        ctx.accounts.vault_0_mint.decimals,
+        accounts.vault_0_mint.decimals,
     )?;
 
     transfer_from_user_to_pool_vault(
-        ctx.accounts.owner.to_account_info(),
-        ctx.accounts.token_1_account.to_account_info(),
-        ctx.accounts.token_1_vault.to_account_info(),
-        ctx.accounts.vault_1_mint.to_account_info(),
-        if ctx.accounts.vault_1_mint.to_account_info().owner == ctx.accounts.token_program.key {
-            ctx.accounts.token_program.to_account_info()
+        accounts.owner.to_account_info(),
+        accounts.token_1_account.to_account_info(),
+        accounts.token_1_vault.to_account_info(),
+        accounts.vault_1_mint.to_account_info(),
+        if accounts.vault_1_mint.to_account_info().owner == accounts.token_program.key {
+            accounts.token_program.to_account_info()
         } else {
-            ctx.accounts.token_program_2022.to_account_info()
+            accounts.token_program_2022.to_account_info()
         },
         transfer_token_1_amount,
-        ctx.accounts.vault_1_mint.decimals,
+        accounts.vault_1_mint.decimals,
     )?;
 
     pool_state.lp_supply = pool_state
         .lp_supply
         .checked_add(lp_token_amount)
         .ok_or(GammaError::MathOverflow)?;
-    let user_pool_liquidity = &mut ctx.accounts.user_pool_liquidity;
+    let user_pool_liquidity = &mut accounts.user_pool_liquidity;
     user_pool_liquidity.token_0_deposited = user_pool_liquidity
         .token_0_deposited
         .checked_add(u128::from(transfer_token_0_amount))

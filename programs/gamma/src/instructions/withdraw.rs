@@ -11,10 +11,10 @@ use crate::{error::GammaError, states::PoolState};
 
 #[derive(Accounts)]
 pub struct Withdraw<'info> {
-    /// Pays to mint the position
+    /// Owner of the liquidity provided
     pub owner: Signer<'info>,
 
-    /// CHECK: pool vault and lp mint authority
+    /// CHECK: pool vault authority
     #[account(
         seeds = [
             crate::AUTH_SEED.as_bytes(),
