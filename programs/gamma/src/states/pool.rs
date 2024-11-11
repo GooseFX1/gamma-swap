@@ -89,21 +89,10 @@ pub struct PoolState {
     pub cumulative_volume_token_0: u128,
     /// Cummulative volume of token_1
     pub cumulative_volume_token_1: u128,
-    /// Filter period determine high frequency trading time window.
-    pub filter_period: u32,
-    /// Decay period determine when the volatile fee start decay / decrease.
-    pub decay_period: u32,
-    /// Reduction factor controls the volatile fee rate decrement rate.
-    pub reduction_factor: u32,
-    /// Used to scale the variable fee component depending on the dynamic of the market
-    pub variable_fee_control: u32,
-
-    pub volatility_v2_base_fee: u64,
-    pub volatility_v2_max_fee: u64,
-    pub volatility_v2_volatility_factor: u64,
-    pub volatility_v2_imbalance_factor: u64,
+    /// latest dynamic fee rate
+    pub latest_dynamic_fee_rate: u64,
     /// padding
-    pub padding: [u64; 17],
+    pub padding: [u64; 22],
 }
 
 impl PoolState {
@@ -149,15 +138,8 @@ impl PoolState {
         self.cumulative_trade_fees_token_1 = 0;
         self.cumulative_volume_token_0 = 0;
         self.cumulative_volume_token_1 = 0;
-        self.filter_period = 0;
-        self.decay_period = 0;
-        self.reduction_factor = 0;
-        self.variable_fee_control = 0;
-        self.volatility_v2_base_fee = 0;
-        self.volatility_v2_max_fee = 0;
-        self.volatility_v2_volatility_factor = 0;
-        self.volatility_v2_imbalance_factor = 0;
-        self.padding = [0u64; 17];
+        self.latest_dynamic_fee_rate = 0;
+        self.padding = [0u64; 22];
         Ok(())
     }
 
@@ -198,15 +180,5 @@ impl PoolState {
             token_1_amount as u128 * Q32 as u128 / token_0_amount as u128,
             token_0_amount as u128 * Q32 as u128 / token_1_amount as u128,
         ))
-    }
-
-    #[inline(always)]
-    pub fn get_filter_period(&self) -> u32 {
-        self.filter_period
-    }
-
-    #[inline(always)]
-    pub fn get_decay_period(&self) -> u32 {
-        self.decay_period
     }
 }

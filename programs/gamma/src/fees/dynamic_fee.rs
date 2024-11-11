@@ -43,16 +43,19 @@ impl DynamicFee {
         observation_state: &ObservationState,
         fee_type: FeeType,
         base_fees: u64,
-    ) -> Result<u128> {
+    ) -> Result<(u128, u64)> {
         let dynamic_fee_rate =
             Self::calculate_dynamic_fee(block_timestamp, observation_state, fee_type, base_fees)?;
 
-        Ok(ceil_div(
-            amount,
-            u128::from(dynamic_fee_rate),
-            u128::from(FEE_RATE_DENOMINATOR_VALUE),
-        )
-        .ok_or(GammaError::MathOverflow)?)
+        Ok((
+            ceil_div(
+                amount,
+                u128::from(dynamic_fee_rate),
+                u128::from(FEE_RATE_DENOMINATOR_VALUE),
+            )
+            .ok_or(GammaError::MathOverflow)?,
+            dynamic_fee_rate,
+        ))
     }
 
     /// Calculates the dynamic fee based on the specified fee type
@@ -296,7 +299,7 @@ impl DynamicFee {
         observation_state: &ObservationState,
         fee_type: FeeType,
         base_fees: u64,
-    ) -> Result<u128> {
+    ) -> Result<(u128, u64)> {
         // x = pre_fee_amount (has to be calculated)
         // y = post_fee_amount
         // r = trade_fee_rate
@@ -315,7 +318,7 @@ impl DynamicFee {
         let dynamic_fee_rate =
             Self::calculate_dynamic_fee(block_timestamp, observation_state, fee_type, base_fees)?;
         if dynamic_fee_rate == 0 {
-            Ok(post_fee_amount)
+            Ok((post_fee_amount, 0))
         } else {
             let numerator = post_fee_amount
                 .checked_mul(u128::from(FEE_RATE_DENOMINATOR_VALUE))
@@ -332,7 +335,7 @@ impl DynamicFee {
                 .checked_div(denominator)
                 .ok_or(GammaError::MathOverflow)?;
 
-            Ok(result)
+            Ok((result, dynamic_fee_rate))
         }
     }
 }

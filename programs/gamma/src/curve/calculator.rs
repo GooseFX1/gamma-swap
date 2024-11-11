@@ -74,6 +74,8 @@ pub struct SwapResult {
     pub protocol_fee: u128,
     /// Amount of source tokens going to protocol team
     pub fund_fee: u128,
+    /// Dynamic fee rate
+    pub dynamic_fee_rate: u64,
 }
 
 /// Concrete struct to wrap around the trait object which performs calculation.
@@ -105,7 +107,7 @@ impl CurveCalculator {
         observation_state: &ObservationState,
         // TODO: add fee type here once that is configurable on pool level/ or we can use it from pool_state
     ) -> Result<SwapResult> {
-        let dynamic_fee = DynamicFee::dynamic_fee(
+        let (dynamic_fee, dynamic_fee_rate) = DynamicFee::dynamic_fee(
             source_amount_to_be_swapped,
             block_timestamp,
             observation_state,
@@ -142,6 +144,7 @@ impl CurveCalculator {
             dynamic_fee,
             protocol_fee,
             fund_fee,
+            dynamic_fee_rate,
         })
     }
 
@@ -162,7 +165,7 @@ impl CurveCalculator {
             swap_destination_amount,
         )?;
 
-        let source_amount = DynamicFee::calculate_pre_fee_amount(
+        let (source_amount, dynamic_fee_rate) = DynamicFee::calculate_pre_fee_amount(
             block_timestamp,
             source_amount_swapped,
             observation_state,
@@ -190,6 +193,7 @@ impl CurveCalculator {
             protocol_fee,
             fund_fee,
             dynamic_fee,
+            dynamic_fee_rate,
         })
     }
 
