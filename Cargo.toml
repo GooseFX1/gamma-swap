@@ -68,6 +68,8 @@ tracing-subscriber = { version = "0.3", features = ["env-filter", "registry"] }
 uint = "0.9.1"
 url = "2"
 zstd = "0.12"
+ahash="0.8.11"
+
 
 solana-bpf-simulator = { git = "https://github.com/dovahcrow/solana-bpf-simulator" }
 

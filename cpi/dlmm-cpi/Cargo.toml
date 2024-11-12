@@ -20,3 +20,4 @@ devnet = []
 [dependencies]
 anchor-gen = { workspace = true }
 anchor-lang = { workspace = true }
+bytemuck = { version = "1.13.1", features = ["derive", "min_const_generics"] }
