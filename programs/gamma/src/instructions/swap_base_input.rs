@@ -313,7 +313,8 @@ pub fn swap_base_input<'c, 'info>(
                 .ok_or(GammaError::MathOverflow)?;
         }
     };
-
+    pool_state.latest_dynamic_fee_rate = result.dynamic_fee_rate;
+    
     emit!(SwapEvent {
         pool_id,
         input_vault_before: total_input_token_amount,
