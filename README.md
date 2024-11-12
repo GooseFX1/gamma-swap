@@ -74,3 +74,7 @@ To run the test suite:
 ```bash
 cargo test-sbf
 ```
+
+
+> Note: Do not use `cargo update`, it adds some unwanted dependency version which then causes the compilation to fail.
+At the time of writing this, it was adding multiple version of solana-sdk and borsh and then the jupiter-library and the external anchor providers we have for those the compilation was failing. If you want to check if the project is compiling its better to use `cargo check`
