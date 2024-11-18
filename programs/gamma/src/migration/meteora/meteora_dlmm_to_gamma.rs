@@ -173,6 +173,9 @@ pub fn meteora_dlmm_to_gamma(
     let cpi_ctx = CpiContext::new(ctx.accounts.dlmm_program.to_account_info(), accounts);
     dlmm_cpi::cpi::remove_liquidity(cpi_ctx, bin_liquidity_reduction)?;
 
+    ctx.accounts.gamma_token_0_account.reload()?;
+    ctx.accounts.gamma_token_1_account.reload()?;
+    
     let user_token0_balance_after = ctx.accounts.gamma_token_0_account.amount;
     let user_token1_balance_after = ctx.accounts.gamma_token_1_account.amount;
     let token_0_amount_withdrawn = user_token0_balance_before.checked_sub(user_token0_balance_after).unwrap();

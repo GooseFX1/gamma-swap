@@ -171,6 +171,9 @@ pub fn raydium_cp_swap_to_gamma<'a, 'b, 'c, 'info>(
     let cpi_context = CpiContext::new(ctx.accounts.raydium_cp_swap_program.to_account_info(), cpi_accounts);
     cpmm_cpi::cpi::withdraw(cpi_context, lp_token_amount_withdraw, minimum_token_0_amount, minimum_token_1_amount)?;
     
+    ctx.accounts.gamma_token_0_account.reload()?;
+    ctx.accounts.gamma_token_1_account.reload()?;
+    
     let user_token0_balance_after = ctx.accounts.gamma_token_0_account.amount;
     let user_token1_balance_after = ctx.accounts.gamma_token_1_account.amount;
     let token_0_amount_withdrawn = user_token0_balance_before.checked_sub(user_token0_balance_after).unwrap();

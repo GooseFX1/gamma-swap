@@ -184,6 +184,9 @@ pub fn raydium_clmm_to_gamma_v2<'a, 'b, 'c, 'info>(
         .with_remaining_accounts(ctx.remaining_accounts.to_vec());
     clmm_cpi::cpi::decrease_liquidity_v2(cpi_context, liquidity, amount_0_min, amount_1_min)?;
 
+    ctx.accounts.gamma_token_0_account.reload()?;
+    ctx.accounts.gamma_token_1_account.reload()?;
+    
     let user_token0_balance_after = ctx.accounts.gamma_token_0_account.amount;
     let user_token1_balance_after = ctx.accounts.gamma_token_1_account.amount;
     let token_0_amount_withdrawn = user_token0_balance_before.checked_sub(user_token0_balance_after).unwrap();

@@ -178,6 +178,9 @@ pub fn orca_whirlpool_to_gamma_v2<'info>(
         .with_remaining_accounts(ctx.remaining_accounts.to_vec());
     whirlpool_cpi::cpi::decrease_liquidity_v2(cpi_ctx, liquidity_amount, token_min_a, token_min_b, remaining_accounts_info)?;
 
+    ctx.accounts.gamma_token_0_account.reload()?;
+    ctx.accounts.gamma_token_1_account.reload()?;
+    
     let user_token0_balance_after = ctx.accounts.gamma_token_0_account.amount;
     let user_token1_balance_after = ctx.accounts.gamma_token_1_account.amount;
     let token_0_amount_withdrawn = user_token0_balance_before.checked_sub(user_token0_balance_after).unwrap();
