@@ -175,16 +175,12 @@ pub fn raydium_clmm_to_gamma<'a, 'b, 'c, 'info>(
     let token_0_amount_withdrawn = user_token0_balance_before.checked_sub(user_token0_balance_after).unwrap();
     let token_1_amount_withdrawn = user_token1_balance_before.checked_sub(user_token1_balance_after).unwrap();
     let pool_state = ctx.accounts.gamma_pool_state.load()?;
-    let (token_0_vault_amount_without_fee, token_1_vault_amount_without_fee) = pool_state.vault_amount_without_fee(
-        ctx.accounts.gamma_token_0_vault.amount, 
-        ctx.accounts.gamma_token_1_vault.amount,
-    )?;
     let gamma_lp_tokens = calculate_gamma_lp_tokens(
         token_0_amount_withdrawn, 
         token_1_amount_withdrawn, 
         &pool_state,
-        token_0_vault_amount_without_fee,
-        token_1_vault_amount_without_fee,
+        ctx.accounts.gamma_token_0_vault.amount,
+        ctx.accounts.gamma_token_1_vault.amount,
     )?;
 
 
