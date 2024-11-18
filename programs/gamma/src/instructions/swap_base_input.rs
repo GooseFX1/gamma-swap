@@ -17,7 +17,7 @@ pub struct Swap<'info> {
     /// The user performing the swap
     pub payer: Signer<'info>,
 
-    /// CHECK: pool vault and lp mint authority
+    /// CHECK: pool vault authority
     #[account(
         seeds = [
             crate::AUTH_SEED.as_bytes(),

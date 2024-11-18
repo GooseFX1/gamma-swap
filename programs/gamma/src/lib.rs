@@ -2,11 +2,15 @@ pub mod curve;
 pub mod error;
 pub mod fees;
 pub mod instructions;
+pub mod migration;
 pub mod states;
 pub mod utils;
 
 use anchor_lang::prelude::*;
 use instructions::*;
+use migration::*;
+
+use whirlpool_cpi::RemainingAccountsInfo;
 
 #[cfg(not(feature = "no-entrypoint"))]
 solana_security_txt::security_txt! {
@@ -49,7 +53,6 @@ pub const AUTH_SEED: &str = "vault_and_lp_mint_auth_seed";
 #[program]
 pub mod gamma {
     use crate::fees::FEE_RATE_DENOMINATOR_VALUE;
-
     use super::*;
 
     /// The configuation of AMM protocol, include trade fee and protocol fee
@@ -257,5 +260,125 @@ pub mod gamma {
         amount_out: u64,
     ) -> Result<()> {
         instructions::swap_base_output(ctx, max_amount_in, amount_out)
+    }
+
+    /********************* Migration Instructions *********************/
+
+    /// Migrate from Meteora Dlmm to Gamma
+
+    pub fn migrate_meteora_dlmm_to_gamma<'a, 'b, 'c, 'info>(
+        ctx: Context<'a, 'b, 'c, 'info, MeteoraDlmmToGamma<'info>>, 
+        bin_liquidity_reduction: Vec<dlmm_cpi::BinLiquidityReduction>,
+        maximum_token_0_amount: u64,
+        maximum_token_1_amount: u64,
+    ) -> Result<()> {
+        migration::meteora::meteora_dlmm_to_gamma(
+            ctx,
+            bin_liquidity_reduction,
+            maximum_token_0_amount,
+            maximum_token_1_amount,
+        )
+    }
+
+    /// Migrate from Orca Whirlpool to Gamma for token 2022
+
+    pub fn migrate_orca_whirlpool_to_gamma_v2<'a, 'b, 'c, 'info>(
+        ctx: Context<'a, 'b, 'c, 'info, OrcaWhirlpoolToGammaV2<'info>>,
+        liquidity_amount: u128,
+        token_min_a: u64,
+        token_min_b: u64,
+        remaining_accounts: Option<RemainingAccountsInfo>,
+        maximum_token_0_amount: u64,
+        maximum_token_1_amount: u64,
+    ) -> Result<()> {
+        migration::orca::orca_whirlpool_to_gamma_v2(
+            ctx,
+            liquidity_amount,
+            token_min_a,
+            token_min_b,
+            remaining_accounts,
+            maximum_token_0_amount,
+            maximum_token_1_amount,
+        )
+    }
+
+    /// Migrate from Orca Whirlpool to Gamma for simple spl tokens
+
+    pub fn migrate_orca_whirlpool_to_gamma<'a, 'b, 'c, 'info>(
+        ctx: Context<'a, 'b, 'c, 'info, OrcaWhirlpoolToGamma<'info>>,
+        liquidity_amount: u128,
+        token_min_a: u64,
+        token_min_b: u64,
+        maximum_token_0_amount: u64,
+        maximum_token_1_amount: u64,
+    ) -> Result<()> {
+        migration::orca::orca_whirlpool_to_gamma(
+            ctx,
+            liquidity_amount,
+            token_min_a,
+            token_min_b,
+            maximum_token_0_amount,
+            maximum_token_1_amount,
+        )
+    }
+
+    /// Migrate from Raydium Clmm to Gamma
+
+    pub fn migrate_raydium_clmm_to_gamma<'a, 'b, 'c, 'info>(
+        ctx: Context<'a, 'b, 'c, 'info, RaydiumClmmToGamma<'info>>,
+        liquidity: u128,
+        amount_0_min: u64,
+        amount_1_min: u64,
+        maximum_token_0_amount: u64,
+        maximum_token_1_amount: u64,
+    ) -> Result<()> {
+        migration::raydium::raydium_clmm_to_gamma(
+            ctx,
+            liquidity,
+            amount_0_min,
+            amount_1_min,
+            maximum_token_0_amount,
+            maximum_token_1_amount,
+        )
+    }
+
+    /// Migrate from Raydium Clmm to Gamma for token 2022
+
+    pub fn migrate_raydium_clmm_to_gamma_v2<'a, 'b, 'c, 'info>(
+        ctx: Context<'a, 'b, 'c, 'info, RaydiumClmmToGammaV2<'info>>,
+        liquidity: u128,
+        amount_0_min: u64,
+        amount_1_min: u64,
+        maximum_token_0_amount: u64,
+        maximum_token_1_amount: u64,
+    ) -> Result<()> {
+        migration::raydium::raydium_clmm_to_gamma_v2(
+            ctx,
+            liquidity,
+            amount_0_min,
+            amount_1_min,
+            maximum_token_0_amount,
+            maximum_token_1_amount,
+        )
+    }
+
+    /// Migrate from Raydium Cpmm Swap to Gamma
+
+    pub fn migrate_raydium_cp_swap_to_gamma<'a, 'b, 'c, 'info>(
+        ctx: Context<'a, 'b, 'c, 'info, RaydiumCpSwapToGamma<'info>>,
+        lp_token_amount_withdraw: u64,
+        minimum_token_0_amount: u64,
+        minimum_token_1_amount: u64,
+        maximum_token_0_amount: u64,
+        maximum_token_1_amount: u64,
+    ) -> Result<()> {
+        migration::raydium::raydium_cp_swap_to_gamma(
+            ctx,
+            lp_token_amount_withdraw,
+            minimum_token_0_amount,
+            minimum_token_1_amount,
+            maximum_token_0_amount,
+            maximum_token_1_amount,
+        )
     }
 }

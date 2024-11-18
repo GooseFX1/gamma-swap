@@ -13,7 +13,7 @@ pub struct CollectProtocolFee<'info> {
     #[account(constraint = (owner.key() == amm_config.protocol_owner || owner.key() == crate::admin::id()) @ GammaError::InvalidOwner)]
     pub owner: Signer<'info>,
 
-    /// CHECK: pool vault and lp mint authority
+    /// CHECK: pool vault authority
     #[account(
         seeds = [
             crate::AUTH_SEED.as_bytes(),

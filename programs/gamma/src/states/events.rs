@@ -47,3 +47,15 @@ pub struct SwapEvent {
     // dynamic_fees after this swap
     pub dynamic_fee: u128,
 }
+
+/// Emitted when migration
+#[event]
+#[cfg_attr(feature = "client", derive(Debug))]
+#[derive(Clone, Debug)]
+pub struct MigrationEvent {
+    pub from_pool: Pubkey,
+    pub to_pool: Pubkey,
+    pub token_0_amount_withdrawn: u64,
+    pub token_1_amount_withdrawn: u64,
+    pub lp_tokens_migrated: u128,
+}
