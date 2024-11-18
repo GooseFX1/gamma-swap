@@ -4,8 +4,10 @@ use anchor_spl::{
     token_interface::{Mint, Token2022, TokenAccount},
 };
 use crate::{
+    curve::ConstantProductCurve, 
+    error::GammaError, 
     instructions::deposit::{deposit_to_gamma_pool, Deposit}, 
-    states::{ PoolState, UserPoolLiquidity, USER_POOL_LIQUIDITY_SEED }
+    states::{ MigrationEvent, PoolState, UserPoolLiquidity, USER_POOL_LIQUIDITY_SEED },
 };
 
 #[derive(Accounts)]
@@ -154,10 +156,13 @@ pub fn raydium_clmm_to_gamma_v2<'a, 'b, 'c, 'info>(
     liquidity: u128,
     amount_0_min: u64,
     amount_1_min: u64,
-    lp_token_amount: u64,
     maximum_token_0_amount: u64,
     maximum_token_1_amount: u64,
 ) -> Result<()> {
+    let user_token0_balance_before = ctx.accounts.gamma_token_0_account.amount;
+    let user_token1_balance_before = ctx.accounts.gamma_token_1_account.amount;
+
+    // Withdraw from Raydium CLMM
     let cpi_accounts = clmm_cpi::cpi::accounts::DecreaseLiquidityV2 {
         nft_owner: ctx.accounts.raydium_clmm_nft_owner.to_account_info(),
         nft_account: ctx.accounts.raydium_clmm_nft_account.to_account_info(),
@@ -180,6 +185,31 @@ pub fn raydium_clmm_to_gamma_v2<'a, 'b, 'c, 'info>(
         .with_remaining_accounts(ctx.remaining_accounts.to_vec());
     clmm_cpi::cpi::decrease_liquidity_v2(cpi_context, liquidity, amount_0_min, amount_1_min)?;
 
+    let user_token0_balance_after = ctx.accounts.gamma_token_0_account.amount;
+    let user_token1_balance_after = ctx.accounts.gamma_token_1_account.amount;
+    let token_0_amount_withdrawn = user_token0_balance_before.checked_sub(user_token0_balance_after).unwrap();
+    let token_1_amount_withdrawn = user_token1_balance_before.checked_sub(user_token1_balance_after).unwrap();
+
+    let pool_state = ctx.accounts.gamma_pool_state.load()?;
+    let (total_token_0_amount, total_token_1_amount) = pool_state.vault_amount_without_fee(
+        ctx.accounts.gamma_token_0_vault.amount,
+        ctx.accounts.gamma_token_1_vault.amount,
+    )?;
+
+    let gamma_lp_tokens_0 = ConstantProductCurve::token_0_to_lp_tokens(
+        u128::from(token_0_amount_withdrawn),
+        u128::from(total_token_0_amount),
+        u128::from(pool_state.lp_supply),
+    ).ok_or(GammaError::InvalidLpTokenAmount)?;
+
+    let gamma_lp_tokens_1 = ConstantProductCurve::token_1_to_lp_tokens(
+        u128::from(token_1_amount_withdrawn),
+        u128::from(total_token_1_amount),
+        u128::from(pool_state.lp_supply),
+    ).ok_or(GammaError::InvalidLpTokenAmount)?;
+
+    let gamma_lp_tokens = gamma_lp_tokens_0.min(gamma_lp_tokens_1);
+
     let mut deposit_accounts = Deposit {
         owner: ctx.accounts.gamma_owner.clone(),
         authority: ctx.accounts.gamma_authority.clone(),
@@ -195,7 +225,15 @@ pub fn raydium_clmm_to_gamma_v2<'a, 'b, 'c, 'info>(
         vault_1_mint: ctx.accounts.gamma_vault_1_mint.clone(),
     };
 
-    deposit_to_gamma_pool(&mut deposit_accounts, lp_token_amount, maximum_token_0_amount, maximum_token_1_amount)?;
+    deposit_to_gamma_pool(&mut deposit_accounts, gamma_lp_tokens as u64, maximum_token_0_amount, maximum_token_1_amount)?;
+
+    emit!(MigrationEvent {
+        from_pool: ctx.accounts.raydium_clmm_pool_state.key(),
+        to_pool: ctx.accounts.gamma_pool_state.key(),
+        token_0_amount_withdrawn,
+        token_1_amount_withdrawn,
+        lp_tokens_migrated: gamma_lp_tokens,
+    });
 
     Ok(())
 }

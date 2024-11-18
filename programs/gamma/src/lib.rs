@@ -269,14 +269,12 @@ pub mod gamma {
     pub fn migrate_meteora_dlmm_to_gamma<'a, 'b, 'c, 'info>(
         ctx: Context<'a, 'b, 'c, 'info, MeteoraDlmmToGamma<'info>>, 
         bin_liquidity_reduction: Vec<dlmm_cpi::BinLiquidityReduction>,
-        lp_token_amount: u64,
         maximum_token_0_amount: u64,
         maximum_token_1_amount: u64,
     ) -> Result<()> {
         migration::meteora::meteora_dlmm_to_gamma(
             ctx,
             bin_liquidity_reduction,
-            lp_token_amount,
             maximum_token_0_amount,
             maximum_token_1_amount,
         )
@@ -290,7 +288,6 @@ pub mod gamma {
         token_min_a: u64,
         token_min_b: u64,
         remaining_accounts: Option<RemainingAccountsInfo>,
-        lp_token_amount: u64,
         maximum_token_0_amount: u64,
         maximum_token_1_amount: u64,
     ) -> Result<()> {
@@ -300,7 +297,6 @@ pub mod gamma {
             token_min_a,
             token_min_b,
             remaining_accounts,
-            lp_token_amount,
             maximum_token_0_amount,
             maximum_token_1_amount,
         )
@@ -313,7 +309,6 @@ pub mod gamma {
         liquidity_amount: u128,
         token_min_a: u64,
         token_min_b: u64,
-        lp_token_amount: u64,
         maximum_token_0_amount: u64,
         maximum_token_1_amount: u64,
     ) -> Result<()> {
@@ -322,7 +317,6 @@ pub mod gamma {
             liquidity_amount,
             token_min_a,
             token_min_b,
-            lp_token_amount,
             maximum_token_0_amount,
             maximum_token_1_amount,
         )
@@ -335,7 +329,6 @@ pub mod gamma {
         liquidity: u128,
         amount_0_min: u64,
         amount_1_min: u64,
-        lp_token_amount: u64,
         maximum_token_0_amount: u64,
         maximum_token_1_amount: u64,
     ) -> Result<()> {
@@ -344,7 +337,6 @@ pub mod gamma {
             liquidity,
             amount_0_min,
             amount_1_min,
-            lp_token_amount,
             maximum_token_0_amount,
             maximum_token_1_amount,
         )
@@ -357,7 +349,6 @@ pub mod gamma {
         liquidity: u128,
         amount_0_min: u64,
         amount_1_min: u64,
-        lp_token_amount: u64,
         maximum_token_0_amount: u64,
         maximum_token_1_amount: u64,
     ) -> Result<()> {
@@ -366,7 +357,6 @@ pub mod gamma {
             liquidity,
             amount_0_min,
             amount_1_min,
-            lp_token_amount,
             maximum_token_0_amount,
             maximum_token_1_amount,
         )
@@ -376,7 +366,7 @@ pub mod gamma {
 
     pub fn migrate_raydium_cp_swap_to_gamma<'a, 'b, 'c, 'info>(
         ctx: Context<'a, 'b, 'c, 'info, RaydiumCpSwapToGamma<'info>>,
-        lp_token_amount: u64,
+        lp_token_amount_withdraw: u64,
         minimum_token_0_amount: u64,
         minimum_token_1_amount: u64,
         maximum_token_0_amount: u64,
@@ -384,7 +374,7 @@ pub mod gamma {
     ) -> Result<()> {
         migration::raydium::raydium_cp_swap_to_gamma(
             ctx,
-            lp_token_amount,
+            lp_token_amount_withdraw,
             minimum_token_0_amount,
             minimum_token_1_amount,
             maximum_token_0_amount,

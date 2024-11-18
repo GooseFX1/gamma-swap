@@ -42,4 +42,6 @@ pub enum GammaError {
     InvalidFee,
     #[msg("Invalid open time")]
     InvalidOpenTime,
+    #[msg("Invalid lp token amount")]
+    InvalidLpTokenAmount,
 }

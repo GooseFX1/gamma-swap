@@ -105,4 +105,27 @@ impl ConstantProductCurve {
             token_1_amount,
         })
     }
+
+    /// Get the amount of lp-tokens for a given amount of trading tokens
+    pub fn token_0_to_lp_tokens(
+        trading_token_0_amount: u128,
+        total_token_0_amount: u128,
+        lp_token_supply: u128,
+    ) -> Option<u128> {
+        let lp_token_amount = trading_token_0_amount
+            .checked_mul(lp_token_supply)?
+            .checked_div(total_token_0_amount)?;
+        Some(lp_token_amount)
+    }
+
+    pub fn token_1_to_lp_tokens(
+        trading_token_1_amount: u128,
+        total_token_1_amount: u128,
+        lp_token_supply: u128,
+    ) -> Option<u128> {
+        let lp_token_amount = trading_token_1_amount
+            .checked_mul(lp_token_supply)?
+            .checked_div(total_token_1_amount)?;
+        Some(lp_token_amount)
+    }
 }

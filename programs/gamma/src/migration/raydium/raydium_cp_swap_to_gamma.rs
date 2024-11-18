@@ -4,8 +4,10 @@ use anchor_spl::{
     token_interface::{Mint, Token2022, TokenAccount},
 };
 use crate::{
+    curve::ConstantProductCurve, 
+    error::GammaError, 
     instructions::deposit::{deposit_to_gamma_pool, Deposit}, 
-    states::{ PoolState, UserPoolLiquidity, USER_POOL_LIQUIDITY_SEED }
+    states::{ MigrationEvent, PoolState, UserPoolLiquidity, USER_POOL_LIQUIDITY_SEED },
 };
 #[derive(Accounts)]
 pub struct RaydiumCpSwapToGamma<'info> {
@@ -26,13 +28,13 @@ pub struct RaydiumCpSwapToGamma<'info> {
     #[account(mut)]
     pub raydium_cp_swap_owner_lp_token: UncheckedAccount<'info>,
 
-    /// The owner's token account for receive token_0
-    #[account(mut)]
-    pub raydium_cp_swap_token_0_account: UncheckedAccount<'info>,
+    // /// The owner's token account for receive token_0
+    // #[account(mut)]
+    // pub raydium_cp_swap_token_0_account: UncheckedAccount<'info>,
 
-    /// The owner's token account for receive token_1
-    #[account(mut)]
-    pub raydium_cp_swap_token_1_account: UncheckedAccount<'info>,
+    // /// The owner's token account for receive token_1
+    // #[account(mut)]
+    // pub raydium_cp_swap_token_1_account: UncheckedAccount<'info>,
 
     /// The address that holds pool tokens for token_0
     #[account(mut)]
@@ -142,20 +144,22 @@ pub struct RaydiumCpSwapToGamma<'info> {
 
 pub fn raydium_cp_swap_to_gamma<'a, 'b, 'c, 'info>(
     ctx: Context<'a, 'b, 'c, 'info, RaydiumCpSwapToGamma<'info>>,
-    lp_token_amount: u64,
+    lp_token_amount_withdraw: u64,
     minimum_token_0_amount: u64,
     minimum_token_1_amount: u64,
     maximum_token_0_amount: u64,
     maximum_token_1_amount: u64,
 ) -> Result<()> {
-    // First, withdraw from Raydium CP Swap
+    let user_token0_balance_before = ctx.accounts.gamma_token_0_account.amount;
+    let user_token1_balance_before = ctx.accounts.gamma_token_1_account.amount;
+    // Withdraw from Raydium CPMM
     let cpi_accounts = cpmm_cpi::cpi::accounts::Withdraw {
         owner: ctx.accounts.owner.to_account_info(),
         authority: ctx.accounts.raydium_cp_swap_authority.to_account_info(),
         pool_state: ctx.accounts.raydium_cp_swap_pool_state.to_account_info(),
         owner_lp_token: ctx.accounts.raydium_cp_swap_owner_lp_token.to_account_info(),
-        token0_account: ctx.accounts.raydium_cp_swap_token_0_account.to_account_info(),
-        token1_account: ctx.accounts.raydium_cp_swap_token_1_account.to_account_info(),
+        token0_account: ctx.accounts.gamma_token_0_account.to_account_info(),
+        token1_account: ctx.accounts.gamma_token_1_account.to_account_info(),
         token0_vault: ctx.accounts.raydium_cp_swap_token_0_vault.to_account_info(),
         token1_vault: ctx.accounts.raydium_cp_swap_token_1_vault.to_account_info(),
         token_program: ctx.accounts.token_program.to_account_info(),
@@ -166,8 +170,34 @@ pub fn raydium_cp_swap_to_gamma<'a, 'b, 'c, 'info>(
         memo_program: ctx.accounts.memo_program.to_account_info(),
     };
     let cpi_context = CpiContext::new(ctx.accounts.raydium_cp_swap_program.to_account_info(), cpi_accounts);
-    cpmm_cpi::cpi::withdraw(cpi_context, lp_token_amount, minimum_token_0_amount, minimum_token_1_amount)?;
+    cpmm_cpi::cpi::withdraw(cpi_context, lp_token_amount_withdraw, minimum_token_0_amount, minimum_token_1_amount)?;
+    
+    let user_token0_balance_after = ctx.accounts.gamma_token_0_account.amount;
+    let user_token1_balance_after = ctx.accounts.gamma_token_1_account.amount;
+    let token_0_amount_withdrawn = user_token0_balance_before.checked_sub(user_token0_balance_after).unwrap();
+    let token_1_amount_withdrawn = user_token1_balance_before.checked_sub(user_token1_balance_after).unwrap();
 
+    let pool_state = ctx.accounts.gamma_pool_state.load()?;
+    let (total_token_0_amount, total_token_1_amount) = pool_state.vault_amount_without_fee(
+        ctx.accounts.gamma_token_0_vault.amount,
+        ctx.accounts.gamma_token_1_vault.amount,
+    )?;
+
+    let gamma_lp_tokens_0 = ConstantProductCurve::token_0_to_lp_tokens(
+        u128::from(token_0_amount_withdrawn),
+        u128::from(total_token_0_amount),
+        u128::from(pool_state.lp_supply),
+    ).ok_or(GammaError::InvalidLpTokenAmount)?;
+
+    let gamma_lp_tokens_1 = ConstantProductCurve::token_1_to_lp_tokens(
+        u128::from(token_1_amount_withdrawn),
+        u128::from(total_token_1_amount),
+        u128::from(pool_state.lp_supply),
+    ).ok_or(GammaError::InvalidLpTokenAmount)?;
+
+    let gamma_lp_tokens = gamma_lp_tokens_0.min(gamma_lp_tokens_1);
+    
+    // Prepare deposit accounts
     let mut deposit_accounts = Deposit {
         owner: ctx.accounts.gamma_owner.clone(),
         authority: ctx.accounts.gamma_authority.clone(),
@@ -183,7 +213,17 @@ pub fn raydium_cp_swap_to_gamma<'a, 'b, 'c, 'info>(
         vault_1_mint: ctx.accounts.gamma_vault_1_mint.clone(),
     };
 
-    deposit_to_gamma_pool(&mut deposit_accounts, lp_token_amount, maximum_token_0_amount, maximum_token_1_amount)?;
-    
+    // Deposit into Gamma pool
+    deposit_to_gamma_pool(&mut deposit_accounts, gamma_lp_tokens as u64, maximum_token_0_amount, maximum_token_1_amount)?;
+
+    // Emit event for successful migration
+    emit!(MigrationEvent {
+        from_pool: ctx.accounts.raydium_cp_swap_pool_state.key(),
+        to_pool: ctx.accounts.gamma_pool_state.key(),
+        token_0_amount_withdrawn,
+        token_1_amount_withdrawn,
+        lp_tokens_migrated: gamma_lp_tokens,
+    });
+
     Ok(())
 }
