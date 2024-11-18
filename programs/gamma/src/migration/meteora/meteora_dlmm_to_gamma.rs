@@ -4,8 +4,7 @@ use anchor_spl::{
     token_interface::{Mint, Token2022, TokenAccount},
 };
 use crate::{
-    curve::ConstantProductCurve, 
-    error::GammaError, 
+    calculate_gamma_lp_tokens, 
     instructions::deposit::{deposit_to_gamma_pool, Deposit}, 
     states::{ MigrationEvent, PoolState, UserPoolLiquidity, USER_POOL_LIQUIDITY_SEED },
 };
@@ -178,26 +177,14 @@ pub fn meteora_dlmm_to_gamma(
     let user_token1_balance_after = ctx.accounts.gamma_token_1_account.amount;
     let token_0_amount_withdrawn = user_token0_balance_before.checked_sub(user_token0_balance_after).unwrap();
     let token_1_amount_withdrawn = user_token1_balance_before.checked_sub(user_token1_balance_after).unwrap();
-
     let pool_state = ctx.accounts.gamma_pool_state.load()?;
-    let (total_token_0_amount, total_token_1_amount) = pool_state.vault_amount_without_fee(
+    let gamma_lp_tokens = calculate_gamma_lp_tokens(
+        token_0_amount_withdrawn, 
+        token_1_amount_withdrawn, 
+        &pool_state,
         ctx.accounts.gamma_token_0_vault.amount,
         ctx.accounts.gamma_token_1_vault.amount,
     )?;
-    
-    let gamma_lp_tokens_0 = ConstantProductCurve::token_0_to_lp_tokens(
-        u128::from(token_0_amount_withdrawn),
-        u128::from(total_token_0_amount),
-        u128::from(pool_state.lp_supply),
-    ).ok_or(GammaError::InvalidLpTokenAmount)?;
-
-    let gamma_lp_tokens_1 = ConstantProductCurve::token_1_to_lp_tokens(
-        u128::from(token_1_amount_withdrawn),
-        u128::from(total_token_1_amount),
-        u128::from(pool_state.lp_supply),
-    ).ok_or(GammaError::InvalidLpTokenAmount)?;
-
-    let gamma_lp_tokens = gamma_lp_tokens_0.min(gamma_lp_tokens_1);
 
     let mut deposit_accounts = Deposit {
         owner: ctx.accounts.gamma_owner.clone(),
