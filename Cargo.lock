@@ -1958,6 +1958,7 @@ dependencies = [
  "anchor-lang",
  "anchor-spl",
  "anyhow",
+ "bytemuck",
  "clmm-cpi",
  "cpmm-cpi",
  "dlmm-cpi",

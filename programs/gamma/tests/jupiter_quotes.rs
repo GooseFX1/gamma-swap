@@ -55,11 +55,11 @@ async fn jupiter_quotes() {
     test_env.jump_seconds(100).await;
 
     let pool_state0: PoolState = test_env.fetch_account(pool_id).await;
+
     assert_eq_with_copy!(pool_state0.cumulative_trade_fees_token_0, 0);
     assert_eq_with_copy!(pool_state0.cumulative_trade_fees_token_1, 0);
 
     // dummy swaps to set initial observation of price.
-
     test_env
         .swap_base_input(
             &user,

@@ -106,13 +106,13 @@ pub fn swap_base_output<'c, 'info>(
     };
 
     let constant_after = u128::from(
-            result
-                .new_swap_source_amount
-                .checked_sub(result.dynamic_fee)
-                .ok_or(GammaError::MathOverflow)?
-        )
-        .checked_mul(u128::from(result.new_swap_destination_amount))
-        .ok_or(GammaError::MathOverflow)?;
+        result
+            .new_swap_source_amount
+            .checked_sub(result.dynamic_fee)
+            .ok_or(GammaError::MathOverflow)?,
+    )
+    .checked_mul(u128::from(result.new_swap_destination_amount))
+    .ok_or(GammaError::MathOverflow)?;
 
     #[cfg(feature = "enable-log")]
     msg!(
@@ -152,22 +152,12 @@ pub fn swap_base_output<'c, 'info>(
     require_eq!(destination_amount_swapped, actual_amount_out);
     let (output_transfer_amount, output_transfer_fee) = (actual_amount_out, out_transfer_fee);
 
-    let protocol_fee = match u64::try_from(result.protocol_fee) {
-        Ok(value) => value,
-        Err(_) => return err!(GammaError::MathOverflow),
-    };
-    let fund_fee = match u64::try_from(result.fund_fee) {
-        Ok(value) => value,
-        Err(_) => return err!(GammaError::MathOverflow),
-    };
-    let mut dynamic_fee = match u64::try_from(result.dynamic_fee) {
-        Ok(value) => value,
-        Err(_) => return err!(GammaError::MathOverflow),
-    };
-    let source_amount_swapped = match u64::try_from(result.source_amount_swapped) {
-        Ok(value) => value,
-        Err(_) => return err!(GammaError::MathOverflow),
-    };
+    let protocol_fee = u64::try_from(result.protocol_fee).or(err!(GammaError::MathOverflow))?;
+    let fund_fee = u64::try_from(result.fund_fee).or(err!(GammaError::MathOverflow))?;
+    let mut dynamic_fee = u64::try_from(result.dynamic_fee).or(err!(GammaError::MathOverflow))?;
+
+    let source_amount_swapped =
+        u64::try_from(result.source_amount_swapped).or(err!(GammaError::MathOverflow))?;
 
     if let Some(info) = referral_info {
         let referral_amount = dynamic_fee
@@ -209,6 +199,41 @@ pub fn swap_base_output<'c, 'info>(
         }
     }
 
+    // Save fees metric for the pool partners.
+    let mut partners = pool_state.partners;
+    for partner in partners.iter_mut() {
+        // we multiply by 100000 to keep decimals.
+        let decimal_number = 100000;
+        let tvl_share = partner
+            .lp_token_linked_with_partner
+            .checked_mul(decimal_number)
+            .ok_or(GammaError::MathOverflow)?
+            .checked_div(pool_state.lp_supply)
+            .ok_or(GammaError::MathOverflow)?;
+
+        let partner_fee = protocol_fee
+            .checked_mul(tvl_share)
+            .ok_or(GammaError::MathOverflow)?
+            .checked_div(decimal_number)
+            .ok_or(GammaError::MathOverflow)?;
+
+        match trade_direction {
+            TradeDirection::ZeroForOne => {
+                partner.cumulative_fee_total_times_tvl_share_token_0 = partner
+                    .cumulative_fee_total_times_tvl_share_token_0
+                    .checked_add(partner_fee)
+                    .ok_or(GammaError::MathOverflow)?;
+            }
+            TradeDirection::OneForZero => {
+                partner.cumulative_fee_total_times_tvl_share_token_1 = partner
+                    .cumulative_fee_total_times_tvl_share_token_1
+                    .checked_add(partner_fee)
+                    .ok_or(GammaError::MathOverflow)?;
+            }
+        }
+    }
+    pool_state.partners = partners;
+
     match trade_direction {
         TradeDirection::ZeroForOne => {
             pool_state.protocol_fees_token_0 = pool_state
@@ -248,7 +273,7 @@ pub fn swap_base_output<'c, 'info>(
         }
     };
     pool_state.latest_dynamic_fee_rate = result.dynamic_fee_rate;
-    
+
     emit!(SwapEvent {
         pool_id,
         input_vault_before: total_input_token_amount,

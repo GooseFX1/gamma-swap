@@ -28,7 +28,7 @@ anyhow = "1"
 arrayref = "0.3.7"
 bincode = "1.3.3"
 bs58 = { version = "0.5.0"}
-bytemuck = "1.13"
+bytemuck = { version = "1.4.0", features = ["derive", "min_const_generics"]}
 clap = { version = "3", features = [ "derive", "env" ] }
 colorful = "0.2.2"
 configparser = "3.0.0"
@@ -68,7 +68,7 @@ tracing-subscriber = { version = "0.3", features = ["env-filter", "registry"] }
 uint = "0.9.1"
 url = "2"
 zstd = "0.12"
-ahash="0.8.11"
+ahash = "0.8.11"
 
 
 solana-bpf-simulator = { git = "https://github.com/dovahcrow/solana-bpf-simulator" }

@@ -4,9 +4,7 @@ use crate::{
     curve::CurveCalculator,
     error::GammaError,
     states::{
-        AmmConfig, ObservationState, PoolState, UserPoolLiquidity, 
-        OBSERVATION_SEED, POOL_SEED, POOL_VAULT_SEED, 
-        USER_POOL_LIQUIDITY_SEED,
+        AmmConfig, ObservationState,  PoolState, UserPoolLiquidity, OBSERVATION_SEED, POOL_SEED, POOL_VAULT_SEED, USER_POOL_LIQUIDITY_SEED
     },
     utils::{
         create_token_account, is_supported_mint, transfer_from_user_to_pool_vault, U128,
@@ -313,7 +311,7 @@ pub fn initialize(
     )?;
 
     let user_pool_liquidity = &mut ctx.accounts.user_pool_liquidity;
-    user_pool_liquidity.initialize(ctx.accounts.creator.key(), ctx.accounts.pool_state.key());
+    user_pool_liquidity.initialize(ctx.accounts.creator.key(), ctx.accounts.pool_state.key(), None);
     user_pool_liquidity.token_0_deposited = u128::from(init_amount_0);
     user_pool_liquidity.token_1_deposited = u128::from(init_amount_1);
     user_pool_liquidity.lp_tokens_owned = u128::from(liquidity).checked_sub(lock_lp_amount).ok_or(GammaError::MathOverflow)?;

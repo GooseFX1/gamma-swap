@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-use crate::states::{PoolState, UserPoolLiquidity, USER_POOL_LIQUIDITY_SEED};
+use crate::states::{PartnerType, PoolState, UserPoolLiquidity, USER_POOL_LIQUIDITY_SEED};
 
 #[derive(Accounts)]
 pub struct InitUserPoolLiquidity<'info> {
@@ -26,8 +26,24 @@ pub struct InitUserPoolLiquidity<'info> {
     pub system_program: Program<'info, System>,
 }
 
-pub fn init_user_pool_liquidity(ctx: Context<InitUserPoolLiquidity>) -> Result<()> {
+pub fn init_user_pool_liquidity(
+    ctx: Context<InitUserPoolLiquidity>,
+    partner: Option<String>,
+) -> Result<()> {
     let user_pool_liquidity = &mut ctx.accounts.user_pool_liquidity;
-    user_pool_liquidity.initialize(ctx.accounts.user.key(), ctx.accounts.pool_state.key());
+
+    let partner = match partner {
+        Some(partner_value) => match partner_value.as_str() {
+            "AssetDash" => Some(PartnerType::AssetDash),
+            _ => None,
+        },
+        None => None,
+    };
+    
+    user_pool_liquidity.initialize(
+        ctx.accounts.user.key(),
+        ctx.accounts.pool_state.key(),
+        partner,
+    );
     Ok(())
 }
