@@ -331,6 +331,5 @@ pub fn swap_base_output<'c, 'info>(
     )?;
     pool_state.recent_epoch = Clock::get()?.epoch;
 
-    msg!("Observation state {}", ctx.accounts.observation_state.key());
     Ok(())
 }
