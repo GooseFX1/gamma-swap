@@ -152,22 +152,12 @@ pub fn swap_base_output<'c, 'info>(
     require_eq!(destination_amount_swapped, actual_amount_out);
     let (output_transfer_amount, output_transfer_fee) = (actual_amount_out, out_transfer_fee);
 
-    let protocol_fee = match u64::try_from(result.protocol_fee) {
-        Ok(value) => value,
-        Err(_) => return err!(GammaError::MathOverflow),
-    };
-    let fund_fee = match u64::try_from(result.fund_fee) {
-        Ok(value) => value,
-        Err(_) => return err!(GammaError::MathOverflow),
-    };
-    let mut dynamic_fee = match u64::try_from(result.dynamic_fee) {
-        Ok(value) => value,
-        Err(_) => return err!(GammaError::MathOverflow),
-    };
-    let source_amount_swapped = match u64::try_from(result.source_amount_swapped) {
-        Ok(value) => value,
-        Err(_) => return err!(GammaError::MathOverflow),
-    };
+    let protocol_fee = u64::try_from(result.protocol_fee).or(err!(GammaError::MathOverflow))?;
+    let fund_fee = u64::try_from(result.fund_fee).or(err!(GammaError::MathOverflow))?;
+    let mut dynamic_fee = u64::try_from(result.dynamic_fee).or(err!(GammaError::MathOverflow))?;
+
+    let source_amount_swapped =
+        u64::try_from(result.source_amount_swapped).or(err!(GammaError::MathOverflow))?;
 
     if let Some(info) = referral_info {
         let referral_amount = dynamic_fee
