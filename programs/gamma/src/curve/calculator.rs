@@ -2,7 +2,7 @@
 
 use crate::error::GammaError;
 use crate::fees::{DynamicFee, FeeType};
-use crate::states::ObservationState;
+use crate::states::{AmmConfig, ObservationState, PoolState};
 use crate::{curve::constant_product::ConstantProductCurve, fees::StaticFee};
 use anchor_lang::prelude::*;
 use std::fmt::Debug;
@@ -100,9 +100,8 @@ impl CurveCalculator {
         source_amount_to_be_swapped: u128,
         swap_source_amount: u128,
         swap_destination_amount: u128,
-        trade_fee_rate: u64,
-        protocol_fee_rate: u64,
-        fund_fee_rate: u64,
+        amm_config: &AmmConfig,
+        pool_state: &PoolState,
         block_timestamp: u64,
         observation_state: &ObservationState,
         // TODO: add fee type here once that is configurable on pool level/ or we can use it from pool_state
@@ -112,13 +111,14 @@ impl CurveCalculator {
             block_timestamp,
             observation_state,
             FeeType::Volatility,
-            trade_fee_rate,
+            amm_config.trade_fee_rate,
+            pool_state,
         )?;
 
-        let protocol_fee = StaticFee::protocol_fee(dynamic_fee, protocol_fee_rate)
+        let protocol_fee = StaticFee::protocol_fee(dynamic_fee, amm_config.protocol_fee_rate)
             .ok_or(GammaError::InvalidFee)?;
-        let fund_fee =
-            StaticFee::fund_fee(dynamic_fee, fund_fee_rate).ok_or(GammaError::InvalidFee)?;
+        let fund_fee = StaticFee::fund_fee(dynamic_fee, amm_config.fund_fee_rate)
+            .ok_or(GammaError::InvalidFee)?;
 
         let source_amount_after_fees = source_amount_to_be_swapped
             .checked_sub(dynamic_fee)
@@ -153,9 +153,8 @@ impl CurveCalculator {
         destination_amount_to_be_swapped: u128,
         swap_source_amount: u128,
         swap_destination_amount: u128,
-        trade_fee_rate: u64,
-        protocol_fee_rate: u64,
-        fund_fee_rate: u64,
+        amm_config: &AmmConfig,
+        pool_state: &PoolState,
         block_timestamp: u64,
         observation_state: &ObservationState,
     ) -> Result<SwapResult> {
@@ -170,16 +169,17 @@ impl CurveCalculator {
             source_amount_swapped,
             observation_state,
             FeeType::Volatility,
-            trade_fee_rate,
+            amm_config.trade_fee_rate,
+            pool_state,
         )?;
 
         let dynamic_fee = source_amount
             .checked_sub(source_amount_swapped)
             .ok_or(GammaError::MathOverflow)?;
-        let protocol_fee = StaticFee::protocol_fee(dynamic_fee, protocol_fee_rate)
+        let protocol_fee = StaticFee::protocol_fee(dynamic_fee, amm_config.protocol_fee_rate)
             .ok_or(GammaError::MathOverflow)?;
-        let fund_fee =
-            StaticFee::fund_fee(dynamic_fee, fund_fee_rate).ok_or(GammaError::MathOverflow)?;
+        let fund_fee = StaticFee::fund_fee(dynamic_fee, amm_config.fund_fee_rate)
+            .ok_or(GammaError::MathOverflow)?;
 
         Ok(SwapResult {
             new_swap_source_amount: swap_source_amount

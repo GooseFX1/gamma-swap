@@ -725,6 +725,8 @@ impl TestEnv {
             init_amount_0,
             init_amount_1,
             open_time,
+            max_trade_fee_rate: 0,
+            volatility_factor: 0,
         };
 
         let transaction = self

@@ -162,6 +162,8 @@ pub fn initialize(
     init_amount_0: u64,
     init_amount_1: u64,
     mut open_time: u64,
+    max_trade_fee_rate: u64,
+    volatility_factor: u64,
 ) -> Result<()> {
     if !(is_supported_mint(&ctx.accounts.token_0_mint)?
         && is_supported_mint(&ctx.accounts.token_1_mint)?)
@@ -301,6 +303,8 @@ pub fn initialize(
         ctx.bumps.authority,
         liquidity,
         open_time,
+        max_trade_fee_rate,
+        volatility_factor,
         ctx.accounts.creator.key(),
         ctx.accounts.amm_config.key(),
         ctx.accounts.token_0_vault.key(),

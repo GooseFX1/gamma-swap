@@ -123,10 +123,16 @@ pub struct PoolState {
     /// latest dynamic fee rate
     pub latest_dynamic_fee_rate: u64,
 
+    // if zero then default of 10%(100000) is used
+    pub max_trade_fee_rate: u64,
+
+    // if zero then default of 300_000 is used
+    pub volatility_factor: u64,
+
     // This will store the partner information, like how much token0 and token1 they was invested from their platforms.
     pub partners: [PartnerInfo; 1],
     /// padding
-    pub padding: [u64; 18],
+    pub padding: [u64; 16],
 }
 
 impl PoolState {
@@ -137,6 +143,8 @@ impl PoolState {
         auth_bump: u8,
         lp_supply: u64,
         open_time: u64,
+        max_trade_fee_rate: u64,
+        volatility_factor: u64,
         pool_creator: Pubkey,
         amm_config: Pubkey,
         token_0_vault: Pubkey,
@@ -173,9 +181,12 @@ impl PoolState {
         self.cumulative_volume_token_0 = 0;
         self.cumulative_volume_token_1 = 0;
         self.latest_dynamic_fee_rate = 0;
+        self.max_trade_fee_rate = max_trade_fee_rate;
+        self.volatility_factor = volatility_factor;
+
         self.partners = [PartnerInfo::default(); 1];
 
-        self.padding = [0u64; 18];
+        self.padding = [0u64; 16];
         Ok(())
     }
 
