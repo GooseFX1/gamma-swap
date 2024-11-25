@@ -13,6 +13,7 @@ pub enum GammaError {
     #[msg("Input token account empty")]
     EmptySupply,
     /// The input token is invalid for swap.
+    /// Or invalid input for pool/config updates.
     #[msg("InvalidInput")]
     InvalidInput,
     /// Address of the provided pool token mint is incorrect
