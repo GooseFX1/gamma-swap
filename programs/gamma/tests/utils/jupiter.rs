@@ -239,9 +239,8 @@ impl Amm for Gamma {
             } else {
                 total_token_0_amount.into()
             },
-            amm_config.trade_fee_rate,
-            amm_config.protocol_fee_rate,
-            amm_config.fund_fee_rate,
+            &amm_config,
+            &self.pool_state,
             self.timestamp.load(std::sync::atomic::Ordering::Relaxed) as u64,
             self.observation_state
                 .as_ref()

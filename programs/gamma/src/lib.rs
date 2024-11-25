@@ -52,8 +52,8 @@ pub const AUTH_SEED: &str = "vault_and_lp_mint_auth_seed";
 
 #[program]
 pub mod gamma {
-    use crate::fees::FEE_RATE_DENOMINATOR_VALUE;
     use super::*;
+    use crate::fees::FEE_RATE_DENOMINATOR_VALUE;
 
     /// The configuation of AMM protocol, include trade fee and protocol fee
     /// # Arguments
@@ -170,14 +170,25 @@ pub mod gamma {
     /// * `init_amount_0` - the initial amount_0 to deposit
     /// * `init_amount_1` - the initial amount_1 to deposit
     /// * `open_time` - the timestamp allowed for swap
+    /// * `max_trade_fee_rate` - The maximum trade fee that can be charged on swaps
+    /// * `volatility_factor` - The volatility factor of the pool to determine the trade fee
     ///
     pub fn initialize(
         ctx: Context<Initialize>,
         init_amount_0: u64,
         init_amount_1: u64,
         open_time: u64,
+        max_trade_fee_rate: u64,
+        volatility_factor: u64,
     ) -> Result<()> {
-        instructions::initialize(ctx, init_amount_0, init_amount_1, open_time)
+        instructions::initialize(
+            ctx,
+            init_amount_0,
+            init_amount_1,
+            open_time,
+            max_trade_fee_rate,
+            volatility_factor,
+        )
     }
 
     pub fn init_user_pool_liquidity(
@@ -270,7 +281,7 @@ pub mod gamma {
     /// Migrate from Meteora Dlmm to Gamma
 
     pub fn migrate_meteora_dlmm_to_gamma<'a, 'b, 'c, 'info>(
-        ctx: Context<'a, 'b, 'c, 'info, MeteoraDlmmToGamma<'info>>, 
+        ctx: Context<'a, 'b, 'c, 'info, MeteoraDlmmToGamma<'info>>,
         bin_liquidity_reduction: Vec<dlmm_cpi::BinLiquidityReduction>,
         maximum_token_0_amount: u64,
         maximum_token_1_amount: u64,

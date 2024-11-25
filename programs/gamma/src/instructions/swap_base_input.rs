@@ -165,9 +165,8 @@ pub fn swap_base_input<'c, 'info>(
         u128::from(actual_amount_in),
         u128::from(total_input_token_amount),
         u128::from(total_output_token_amount),
-        ctx.accounts.amm_config.trade_fee_rate,
-        ctx.accounts.amm_config.protocol_fee_rate,
-        ctx.accounts.amm_config.fund_fee_rate,
+        &ctx.accounts.amm_config,
+        &pool_state,
         block_timestamp,
         &observation_state,
     ) {

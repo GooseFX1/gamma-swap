@@ -1,7 +1,7 @@
 use super::{ceil_div, FEE_RATE_DENOMINATOR_VALUE};
 use crate::{
     error::GammaError,
-    states::{Observation, ObservationState, OBSERVATION_NUM},
+    states::{Observation, ObservationState, PoolState, OBSERVATION_NUM},
 };
 use anchor_lang::prelude::*;
 use rust_decimal::prelude::*;
@@ -10,8 +10,8 @@ use rust_decimal::prelude::*;
 pub const MAX_FEE_VOLATILITY: u64 = 10000; // 1% max fee
 pub const VOLATILITY_WINDOW: u64 = 3600; // 1 hour window for volatility calculation
 
-const MAX_FEE: u64 = 100000; // 10% max fee
-const VOLATILITY_FACTOR: u64 = 300_000; // Adjust based on desired sensitivity
+const DEFAULT_MAX_FEE: u64 = 100000; // 10% max fee
+const DEFAULT_VOLATILITY_FACTOR: u64 = 300_000; // Adjust based on desired sensitivity
 
 pub enum FeeType {
     Volatility,
@@ -43,9 +43,15 @@ impl DynamicFee {
         observation_state: &ObservationState,
         fee_type: FeeType,
         base_fees: u64,
+        pool_state: &PoolState,
     ) -> Result<(u128, u64)> {
-        let dynamic_fee_rate =
-            Self::calculate_dynamic_fee(block_timestamp, observation_state, fee_type, base_fees)?;
+        let dynamic_fee_rate = Self::calculate_dynamic_fee(
+            block_timestamp,
+            observation_state,
+            fee_type,
+            base_fees,
+            pool_state,
+        )?;
 
         Ok((
             ceil_div(
@@ -74,11 +80,15 @@ impl DynamicFee {
         observation_state: &ObservationState,
         fee_type: FeeType,
         base_fees: u64,
+        pool_state: &PoolState,
     ) -> Result<u64> {
         match fee_type {
-            FeeType::Volatility => {
-                Self::calculate_volatile_fee(block_timestamp, observation_state, base_fees)
-            }
+            FeeType::Volatility => Self::calculate_volatile_fee(
+                block_timestamp,
+                observation_state,
+                base_fees,
+                pool_state,
+            ),
         }
     }
 
@@ -95,6 +105,7 @@ impl DynamicFee {
         block_timestamp: u64,
         observation_state: &ObservationState,
         base_fees: u64,
+        pool_state: &PoolState,
     ) -> Result<u64> {
         // 1. Price volatility calculation:
         //    - Get min, max and TWAP (Time-Weighted Average Price) over the volatility window
@@ -145,8 +156,14 @@ impl DynamicFee {
         #[cfg(feature = "enable-log")]
         msg!("volatility: {} ", volatility);
 
+        let volatility_factor = if pool_state.volatility_factor == 0 {
+            DEFAULT_VOLATILITY_FACTOR
+        } else {
+            pool_state.volatility_factor
+        };
+
         // Calculate volatility component
-        let volatility_component_calculated = (VOLATILITY_FACTOR as f64 * volatility)
+        let volatility_component_calculated = (volatility_factor as f64 * volatility)
             .to_u64()
             .ok_or(GammaError::MathOverflow)?;
         #[cfg(feature = "enable-log")]
@@ -159,9 +176,16 @@ impl DynamicFee {
         let dynamic_fee = base_fees
             .checked_add(volatility_component_calculated)
             .ok_or(GammaError::MathOverflow)?;
+
+        let max_fee = if pool_state.max_trade_fee_rate == 0 {
+            DEFAULT_MAX_FEE
+        } else {
+            pool_state.max_trade_fee_rate
+        };
+
         #[cfg(feature = "enable-log")]
         msg!("dynamic_fee: {}", dynamic_fee);
-        Ok(std::cmp::min(dynamic_fee, MAX_FEE))
+        Ok(std::cmp::min(dynamic_fee, max_fee))
     }
 
     /// Gets the price range within a specified time window and computes TWAP
@@ -299,6 +323,7 @@ impl DynamicFee {
         observation_state: &ObservationState,
         fee_type: FeeType,
         base_fees: u64,
+        pool_state: &PoolState,
     ) -> Result<(u128, u64)> {
         // x = pre_fee_amount (has to be calculated)
         // y = post_fee_amount
@@ -315,8 +340,13 @@ impl DynamicFee {
         // To avoid rounding errors, we use:
         // x = (y * D + (D - r) - 1) / (D - r)
 
-        let dynamic_fee_rate =
-            Self::calculate_dynamic_fee(block_timestamp, observation_state, fee_type, base_fees)?;
+        let dynamic_fee_rate = Self::calculate_dynamic_fee(
+            block_timestamp,
+            observation_state,
+            fee_type,
+            base_fees,
+            pool_state,
+        )?;
         if dynamic_fee_rate == 0 {
             Ok((post_fee_amount, 0))
         } else {
