@@ -406,7 +406,10 @@ async fn swap_change_with_swaps() {
     // change of price before this trade
 
     let observation: ObservationState = test_env.fetch_account(pool_state1.observation_key).await;
-    dbg!(observation);
+    #[cfg(feature = "test-sbf")]
+    {
+        dbg!(observation);
+    }
     price_changes.push(get_current_price_token_0_price(observation));
 
     pool_state_changes.push(test_env.fetch_account(pool_id).await);

@@ -30,3 +30,9 @@ dependencies = ["build_program"]
 
 [tasks.deploy_all]
 dependencies = ["build_all", "install_client", "deploy_program"]
+
+[tasks.test]
+script="""
+cd programs/gamma
+cargo test-sbf --features test-sbf
+"""
