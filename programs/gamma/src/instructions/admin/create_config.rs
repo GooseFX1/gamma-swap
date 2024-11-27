@@ -1,4 +1,5 @@
 use std::ops::DerefMut;
+use std::mem::size_of;
 
 use crate::{
     error::GammaError,
@@ -25,7 +26,7 @@ pub struct CreateAmmConfig<'info> {
         ],
         bump,
         payer = owner,
-        space = AmmConfig::LEN
+        space = 8 + size_of::<AmmConfig>()
     )]
     pub amm_config: Account<'info, AmmConfig>,
 

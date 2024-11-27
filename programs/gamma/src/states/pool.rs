@@ -96,8 +96,6 @@ pub struct PoolState {
 }
 
 impl PoolState {
-    pub const LEN: usize = 8 + 10 * 32 + 5 * 1 + 7 * 8 + 16 * 4 + 23 * 8;
-
     pub fn initialize(
         &mut self,
         auth_bump: u8,

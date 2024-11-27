@@ -16,8 +16,6 @@ pub struct UserPoolLiquidity {
 }
 
 impl UserPoolLiquidity {
-    pub const LEN: usize = 8 + 32 * 2 + 16 * 5 + 32;
-
     pub fn initialize(&mut self, user: Pubkey, pool_state: Pubkey) {
         self.user = user;
         self.pool_state = pool_state;

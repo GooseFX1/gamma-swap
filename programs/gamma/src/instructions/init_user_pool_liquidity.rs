@@ -1,4 +1,5 @@
 use anchor_lang::prelude::*;
+use std::mem::size_of;
 
 use crate::states::{PoolState, UserPoolLiquidity, USER_POOL_LIQUIDITY_SEED};
 
@@ -18,7 +19,7 @@ pub struct InitUserPoolLiquidity<'info> {
         ],
         bump,
         payer = user,
-        space = UserPoolLiquidity::LEN,
+        space = 8 + size_of::<UserPoolLiquidity>(),
     )]
     pub user_pool_liquidity: Box<Account<'info, UserPoolLiquidity>>,
 

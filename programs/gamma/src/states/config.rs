@@ -31,7 +31,3 @@ pub struct AmmConfig {
     /// padding
     pub padding: [u64; 11],
 }
-
-impl AmmConfig {
-    pub const LEN: usize = 8 + 1 + 1 + 2 + 4 * 8 + 2 * 32 + 8 * 16;
-}

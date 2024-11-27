@@ -22,9 +22,6 @@ pub struct Observation {
     /// The cumulative of token1 price during the duration time, Q32.32, the remaining 64 bit for overflow
     pub cumulative_token_1_price_x32: u128,
 }
-impl Observation {
-    pub const LEN: usize = 8 + 16 + 16;
-}
 
 #[account(zero_copy(unsafe))]
 #[repr(packed)]
@@ -55,8 +52,6 @@ impl Default for ObservationState {
 }
 
 impl ObservationState {
-    pub const LEN: usize = 8 + 1 + 2 + 32 + (OBSERVATION_NUM * Observation::LEN) + 4 * 8;
-
     // Writes an oracle observation to the account, returning the next observation_index.
     /// Writable at most once per 15 seconds. Index represents the most recently written element.
     /// If the index is at the end of the allowable array length (100 - 1), the next index will turn to 0.

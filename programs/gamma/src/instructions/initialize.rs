@@ -1,4 +1,5 @@
 use std::ops::Deref;
+use std::mem::size_of;
 
 use crate::{
     curve::CurveCalculator,
@@ -55,7 +56,7 @@ pub struct Initialize<'info> {
         ],
         bump,
         payer = creator,
-        space = PoolState::LEN,
+        space = 8 + size_of::<PoolState>(),
     )]
     pub pool_state: AccountLoader<'info, PoolState>,
 
@@ -68,7 +69,7 @@ pub struct Initialize<'info> {
         ],
         bump,
         payer = creator,
-        space = UserPoolLiquidity::LEN,
+        space = 8 + size_of::<UserPoolLiquidity>(),
     )]
     pub user_pool_liquidity: Account<'info, UserPoolLiquidity>,
 
@@ -141,7 +142,7 @@ pub struct Initialize<'info> {
         ],
         bump,
         payer = creator,
-        space = ObservationState::LEN,
+        space = 8 + size_of::<ObservationState>(),
     )]
     pub observation_state: AccountLoader<'info, ObservationState>,
 
