@@ -16,35 +16,26 @@ use whirlpool_cpi::RemainingAccountsInfo;
 solana_security_txt::security_txt! {
     name: "gamma",
     project_url: "https://goosefx.io",
-    contacts: "TODO://",
-    policy: "TODO://",
+    contacts: "https://docs.goosefx.io/",
+    policy: "https://docs.goosefx.io/",
     source_code: "https://github.com/GooseFX1/gamma",
     preferred_languages: "en",
-    auditors: "TODO://"
+    auditors: "https://docs.goosefx.io/goosefx-amm/gamma/audit"
 }
 
-#[cfg(feature = "devnet")]
-declare_id!("DGmWUbYXnyN6YU4a4jy1CJYoPqAnNmZw7DYv32NJB3mX");
-#[cfg(not(feature = "devnet"))]
 declare_id!("GAMMA7meSFWaBXF25oSUgmGRwaW6sCMFLmBNiMSdbHVT");
 
 pub mod admin {
     use anchor_lang::prelude::declare_id;
-    #[cfg(feature = "devnet")]
-    //TODO: change this to the correct id
-    declare_id!("GAUT8jcHoYoiygCQV5MQHYceGCxc9NKMhQsDs4t9jJed");
+
     #[cfg(feature = "test-sbf")]
     declare_id!("CixMbUaUgLUg9REWvnwKDi1pqPMCT2oFfQ2SG4BMeBkZ");
-    #[cfg(all(not(feature = "devnet"), not(feature = "test-sbf")))]
-    //TODO: change this to the correct id
+    #[cfg(not(feature = "test-sbf"))]
     declare_id!("9QcHinaHcJFdzSHeiF1yGchcuQk3qPFNV13q6dZJbAny");
 }
 
 pub mod create_pool_fee_reveiver {
     use anchor_lang::prelude::declare_id;
-    #[cfg(feature = "devnet")]
-    declare_id!("2EGutuSu6BMjw2fKuU5q5fVTH1S5c4tsTgEwQZDn1N45");
-    #[cfg(not(feature = "devnet"))]
     declare_id!("8PhehuioLjhJ35A5eavazJSwoXcA4J7WwzgoWDBDFSuY");
 }
 
