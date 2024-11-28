@@ -5,9 +5,7 @@ use crate::{
     curve::CurveCalculator,
     error::GammaError,
     states::{
-        AmmConfig, ObservationState, PoolState, UserPoolLiquidity, 
-        OBSERVATION_SEED, POOL_SEED, POOL_VAULT_SEED, 
-        USER_POOL_LIQUIDITY_SEED,
+        AmmConfig, ObservationState,  PoolState, UserPoolLiquidity, OBSERVATION_SEED, POOL_SEED, POOL_VAULT_SEED, USER_POOL_LIQUIDITY_SEED
     },
     utils::{
         create_token_account, is_supported_mint, transfer_from_user_to_pool_vault, U128,
@@ -165,6 +163,8 @@ pub fn initialize(
     init_amount_0: u64,
     init_amount_1: u64,
     mut open_time: u64,
+    max_trade_fee_rate: u64,
+    volatility_factor: u64,
 ) -> Result<()> {
     if !(is_supported_mint(&ctx.accounts.token_0_mint)?
         && is_supported_mint(&ctx.accounts.token_1_mint)?)
@@ -304,6 +304,8 @@ pub fn initialize(
         ctx.bumps.authority,
         liquidity,
         open_time,
+        max_trade_fee_rate,
+        volatility_factor,
         ctx.accounts.creator.key(),
         ctx.accounts.amm_config.key(),
         ctx.accounts.token_0_vault.key(),
@@ -314,7 +316,7 @@ pub fn initialize(
     )?;
 
     let user_pool_liquidity = &mut ctx.accounts.user_pool_liquidity;
-    user_pool_liquidity.initialize(ctx.accounts.creator.key(), ctx.accounts.pool_state.key());
+    user_pool_liquidity.initialize(ctx.accounts.creator.key(), ctx.accounts.pool_state.key(), None);
     user_pool_liquidity.token_0_deposited = u128::from(init_amount_0);
     user_pool_liquidity.token_1_deposited = u128::from(init_amount_1);
     user_pool_liquidity.lp_tokens_owned = u128::from(liquidity).checked_sub(lock_lp_amount).ok_or(GammaError::MathOverflow)?;

@@ -3,7 +3,7 @@ use std::mem::size_of;
 
 use crate::{
     error::GammaError,
-    states::{AmmConfig, AMM_CONFIG_SEED},
+    states::{validate_config_rates, AmmConfig, AMM_CONFIG_SEED},
 };
 use anchor_lang::prelude::*;
 
@@ -54,5 +54,8 @@ pub fn create_amm_config(
     amm_config.fund_owner = ctx.accounts.owner.key();
     amm_config.referral_project = Pubkey::default();
     amm_config.max_open_time = max_open_time;
+
+    validate_config_rates(amm_config)?;
+
     Ok(())
 }

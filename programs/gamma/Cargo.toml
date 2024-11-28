@@ -13,9 +13,8 @@ no-entrypoint = []
 no-idl = []
 no-log-ix-name = []
 cpi = ["no-entrypoint"]
-default = ["test-sbf"]
+default = []
 enable-log = []
-devnet = []
 client = []
 jupiter-cpi = ["no-entrypoint"]
 test-sbf=[]
@@ -32,6 +31,11 @@ spl-math = { workspace = true }
 spl-memo = { workspace = true }
 spl-token = { workspace = true }
 uint = { workspace = true }
+clmm-cpi = { workspace = true , features = ["cpi"] }
+cpmm-cpi = { workspace = true , features = ["cpi"] }
+whirlpool-cpi = { workspace = true , features = ["cpi"] }
+dlmm-cpi = { workspace = true , features = ["cpi"] }
+bytemuck={workspace=true}
 
 [dev-dependencies]
 proptest = { workspace = true }
@@ -40,11 +44,12 @@ rand = { workspace = true }
 solana-sdk = {workspace=true}
 solana-program-test= {workspace=true}
 solana-program-runtime={workspace=true}
-static_init = "1.0.3"
+static_init = {workspace=true}
 rust_decimal= {workspace=true}
 jupiter-amm-interface = {workspace=true}
 spl-token-2022 = { workspace = true }
 anyhow ={workspace=true}
+ahash={workspace=true}
 
 [profile.release]
 lto = "fat"

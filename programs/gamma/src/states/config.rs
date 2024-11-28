@@ -1,5 +1,7 @@
 use anchor_lang::prelude::*;
 
+use crate::fees::FEE_RATE_DENOMINATOR_VALUE;
+
 pub const AMM_CONFIG_SEED: &str = "amm_config";
 
 #[account]
@@ -30,4 +32,17 @@ pub struct AmmConfig {
     pub max_open_time: u64,
     /// padding
     pub padding: [u64; 11],
+}
+
+// require all rates to be less than 1 (100%)
+pub fn validate_config_rates(amm_config: &AmmConfig) -> Result<()> {
+    require_gt!(FEE_RATE_DENOMINATOR_VALUE, amm_config.trade_fee_rate);
+    require_gt!(FEE_RATE_DENOMINATOR_VALUE, amm_config.protocol_fee_rate);
+    require_gt!(FEE_RATE_DENOMINATOR_VALUE, amm_config.fund_fee_rate);
+    require_gt!(
+        FEE_RATE_DENOMINATOR_VALUE,
+        amm_config.fund_fee_rate + amm_config.protocol_fee_rate
+    );
+
+    Ok(())
 }

@@ -1,0 +1,23 @@
+[package]
+name = "dlmm-cpi"
+version = "0.1.0"
+edition = "2021"
+
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "dlmm_cpi"
+
+[features]
+no-entrypoint = []
+no-idl = []
+no-log-ix-name = []
+cpi = ["no-entrypoint"]
+enable-log = []
+devnet = []
+
+
+[dependencies]
+anchor-gen = { workspace = true }
+anchor-lang = { workspace = true }
+bytemuck = { version = "1.13.1", features = ["derive", "min_const_generics"] }

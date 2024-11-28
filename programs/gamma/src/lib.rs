@@ -2,45 +2,40 @@ pub mod curve;
 pub mod error;
 pub mod fees;
 pub mod instructions;
+pub mod migration;
 pub mod states;
 pub mod utils;
 
 use anchor_lang::prelude::*;
 use instructions::*;
+use migration::*;
+
+use whirlpool_cpi::RemainingAccountsInfo;
 
 #[cfg(not(feature = "no-entrypoint"))]
 solana_security_txt::security_txt! {
     name: "gamma",
     project_url: "https://goosefx.io",
-    contacts: "TODO://",
-    policy: "TODO://",
+    contacts: "https://docs.goosefx.io/",
+    policy: "https://docs.goosefx.io/",
     source_code: "https://github.com/GooseFX1/gamma",
     preferred_languages: "en",
-    auditors: "TODO://"
+    auditors: "https://docs.goosefx.io/goosefx-amm/gamma/audit"
 }
 
-#[cfg(feature = "devnet")]
-declare_id!("DGmWUbYXnyN6YU4a4jy1CJYoPqAnNmZw7DYv32NJB3mX");
-#[cfg(not(feature = "devnet"))]
 declare_id!("GAMMA7meSFWaBXF25oSUgmGRwaW6sCMFLmBNiMSdbHVT");
 
 pub mod admin {
     use anchor_lang::prelude::declare_id;
-    #[cfg(feature = "devnet")]
-    //TODO: change this to the correct id
-    declare_id!("GAUT8jcHoYoiygCQV5MQHYceGCxc9NKMhQsDs4t9jJed");
+
     #[cfg(feature = "test-sbf")]
     declare_id!("CixMbUaUgLUg9REWvnwKDi1pqPMCT2oFfQ2SG4BMeBkZ");
-    #[cfg(all(not(feature = "devnet"), not(feature = "test-sbf")))]
-    //TODO: change this to the correct id
+    #[cfg(not(feature = "test-sbf"))]
     declare_id!("9QcHinaHcJFdzSHeiF1yGchcuQk3qPFNV13q6dZJbAny");
 }
 
 pub mod create_pool_fee_reveiver {
     use anchor_lang::prelude::declare_id;
-    #[cfg(feature = "devnet")]
-    declare_id!("2EGutuSu6BMjw2fKuU5q5fVTH1S5c4tsTgEwQZDn1N45");
-    #[cfg(not(feature = "devnet"))]
     declare_id!("8PhehuioLjhJ35A5eavazJSwoXcA4J7WwzgoWDBDFSuY");
 }
 
@@ -48,9 +43,8 @@ pub const AUTH_SEED: &str = "vault_and_lp_mint_auth_seed";
 
 #[program]
 pub mod gamma {
-    use crate::fees::FEE_RATE_DENOMINATOR_VALUE;
-
     use super::*;
+    use crate::fees::FEE_RATE_DENOMINATOR_VALUE;
 
     /// The configuation of AMM protocol, include trade fee and protocol fee
     /// # Arguments
@@ -121,10 +115,11 @@ pub mod gamma {
     /// # Arguments
     ///
     /// * `ctx`- The context of accounts
-    /// * `status` - The vaule of status
+    /// * `param`- The param of pool status
+    /// * `status` - The value
     ///
-    pub fn update_pool_status(ctx: Context<UpdatePoolStatus>, status: u8) -> Result<()> {
-        instructions::update_pool_status(ctx, status)
+    pub fn update_pool_(ctx: Context<UpdatePool>, param: u32, value: u64) -> Result<()> {
+        instructions::update_pool(ctx, param, value)
     }
 
     /// Collect the protocol fee accrued to the pool
@@ -167,18 +162,32 @@ pub mod gamma {
     /// * `init_amount_0` - the initial amount_0 to deposit
     /// * `init_amount_1` - the initial amount_1 to deposit
     /// * `open_time` - the timestamp allowed for swap
+    /// * `max_trade_fee_rate` - The maximum trade fee that can be charged on swaps
+    /// * `volatility_factor` - The volatility factor of the pool to determine the trade fee
     ///
     pub fn initialize(
         ctx: Context<Initialize>,
         init_amount_0: u64,
         init_amount_1: u64,
         open_time: u64,
+        max_trade_fee_rate: u64,
+        volatility_factor: u64,
     ) -> Result<()> {
-        instructions::initialize(ctx, init_amount_0, init_amount_1, open_time)
+        instructions::initialize(
+            ctx,
+            init_amount_0,
+            init_amount_1,
+            open_time,
+            max_trade_fee_rate,
+            volatility_factor,
+        )
     }
 
-    pub fn init_user_pool_liquidity(ctx: Context<InitUserPoolLiquidity>) -> Result<()> {
-        instructions::init_user_pool_liquidity(ctx)
+    pub fn init_user_pool_liquidity(
+        ctx: Context<InitUserPoolLiquidity>,
+        partner: Option<String>,
+    ) -> Result<()> {
+        instructions::init_user_pool_liquidity(ctx, partner)
     }
 
     /// Creates a pool for the given token pair and the initial price
@@ -257,5 +266,125 @@ pub mod gamma {
         amount_out: u64,
     ) -> Result<()> {
         instructions::swap_base_output(ctx, max_amount_in, amount_out)
+    }
+
+    /********************* Migration Instructions *********************/
+
+    /// Migrate from Meteora Dlmm to Gamma
+
+    pub fn migrate_meteora_dlmm_to_gamma<'a, 'b, 'c, 'info>(
+        ctx: Context<'a, 'b, 'c, 'info, MeteoraDlmmToGamma<'info>>,
+        bin_liquidity_reduction: Vec<dlmm_cpi::BinLiquidityReduction>,
+        maximum_token_0_amount: u64,
+        maximum_token_1_amount: u64,
+    ) -> Result<()> {
+        migration::meteora::meteora_dlmm_to_gamma(
+            ctx,
+            bin_liquidity_reduction,
+            maximum_token_0_amount,
+            maximum_token_1_amount,
+        )
+    }
+
+    /// Migrate from Orca Whirlpool to Gamma for token 2022
+
+    pub fn migrate_orca_whirlpool_to_gamma_v2<'a, 'b, 'c, 'info>(
+        ctx: Context<'a, 'b, 'c, 'info, OrcaWhirlpoolToGammaV2<'info>>,
+        liquidity_amount: u128,
+        token_min_a: u64,
+        token_min_b: u64,
+        remaining_accounts: Option<RemainingAccountsInfo>,
+        maximum_token_0_amount: u64,
+        maximum_token_1_amount: u64,
+    ) -> Result<()> {
+        migration::orca::orca_whirlpool_to_gamma_v2(
+            ctx,
+            liquidity_amount,
+            token_min_a,
+            token_min_b,
+            remaining_accounts,
+            maximum_token_0_amount,
+            maximum_token_1_amount,
+        )
+    }
+
+    /// Migrate from Orca Whirlpool to Gamma for simple spl tokens
+
+    pub fn migrate_orca_whirlpool_to_gamma<'a, 'b, 'c, 'info>(
+        ctx: Context<'a, 'b, 'c, 'info, OrcaWhirlpoolToGamma<'info>>,
+        liquidity_amount: u128,
+        token_min_a: u64,
+        token_min_b: u64,
+        maximum_token_0_amount: u64,
+        maximum_token_1_amount: u64,
+    ) -> Result<()> {
+        migration::orca::orca_whirlpool_to_gamma(
+            ctx,
+            liquidity_amount,
+            token_min_a,
+            token_min_b,
+            maximum_token_0_amount,
+            maximum_token_1_amount,
+        )
+    }
+
+    /// Migrate from Raydium Clmm to Gamma
+
+    pub fn migrate_raydium_clmm_to_gamma<'a, 'b, 'c, 'info>(
+        ctx: Context<'a, 'b, 'c, 'info, RaydiumClmmToGamma<'info>>,
+        liquidity: u128,
+        amount_0_min: u64,
+        amount_1_min: u64,
+        maximum_token_0_amount: u64,
+        maximum_token_1_amount: u64,
+    ) -> Result<()> {
+        migration::raydium::raydium_clmm_to_gamma(
+            ctx,
+            liquidity,
+            amount_0_min,
+            amount_1_min,
+            maximum_token_0_amount,
+            maximum_token_1_amount,
+        )
+    }
+
+    /// Migrate from Raydium Clmm to Gamma for token 2022
+
+    pub fn migrate_raydium_clmm_to_gamma_v2<'a, 'b, 'c, 'info>(
+        ctx: Context<'a, 'b, 'c, 'info, RaydiumClmmToGammaV2<'info>>,
+        liquidity: u128,
+        amount_0_min: u64,
+        amount_1_min: u64,
+        maximum_token_0_amount: u64,
+        maximum_token_1_amount: u64,
+    ) -> Result<()> {
+        migration::raydium::raydium_clmm_to_gamma_v2(
+            ctx,
+            liquidity,
+            amount_0_min,
+            amount_1_min,
+            maximum_token_0_amount,
+            maximum_token_1_amount,
+        )
+    }
+
+    /// Migrate from Raydium Cpmm Swap to Gamma
+
+    pub fn migrate_raydium_cp_swap_to_gamma<'a, 'b, 'c, 'info>(
+        ctx: Context<'a, 'b, 'c, 'info, RaydiumCpSwapToGamma<'info>>,
+        lp_token_amount_withdraw: u64,
+        minimum_token_0_amount: u64,
+        minimum_token_1_amount: u64,
+        maximum_token_0_amount: u64,
+        maximum_token_1_amount: u64,
+    ) -> Result<()> {
+        migration::raydium::raydium_cp_swap_to_gamma(
+            ctx,
+            lp_token_amount_withdraw,
+            minimum_token_0_amount,
+            minimum_token_1_amount,
+            maximum_token_0_amount,
+            maximum_token_1_amount,
+        )
     }
 }

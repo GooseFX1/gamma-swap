@@ -1,16 +1,9 @@
 use std::collections::HashMap;
 
 use anchor_spl::token::TokenAccount;
-use gamma::{
-    curve::TradeDirection,
-    states::{ObservationState, PoolState},
-};
+use gamma::{curve::TradeDirection, states::PoolState};
 use solana_program_test::tokio;
-use solana_sdk::{
-    clock::{self, Clock},
-    signature::Keypair,
-    signer::Signer,
-};
+use solana_sdk::{clock::Clock, signature::Keypair, signer::Signer};
 mod utils;
 use jupiter_amm_interface::{AccountMap, Amm, AmmContext, ClockRef, KeyedAccount, SwapMode};
 use utils::jupiter;
@@ -62,13 +55,11 @@ async fn jupiter_quotes() {
     test_env.jump_seconds(100).await;
 
     let pool_state0: PoolState = test_env.fetch_account(pool_id).await;
+
     assert_eq_with_copy!(pool_state0.cumulative_trade_fees_token_0, 0);
     assert_eq_with_copy!(pool_state0.cumulative_trade_fees_token_1, 0);
 
     // dummy swaps to set initial observation of price.
-
-    let pool_state1: PoolState = test_env.fetch_account(pool_id).await;
-
     test_env
         .swap_base_input(
             &user,
@@ -133,7 +124,8 @@ async fn jupiter_quotes() {
         .get_or_create_associated_token_account(user.pubkey(), test_env.token_1_mint, &user)
         .await;
 
-    let mut account_map: AccountMap = HashMap::new();
+    let hasher = ahash::RandomState::new();
+    let mut account_map: AccountMap = HashMap::with_hasher(hasher);
 
     ////////////////// Actual test start here /////////////
     for _ in 0..100 {
