@@ -122,6 +122,12 @@ pub struct RaydiumCpSwapToGamma<'info> {
     )]
     pub gamma_token_1_vault: Box<InterfaceAccount<'info, TokenAccount>>,
 
+    /// token Program
+    pub token_program: Program<'info, Token>,
+
+    /// Token program 2022
+    pub token_program_2022: Program<'info, Token2022>,
+    
     /// The mint of token_0 vault
     #[account(
         address = gamma_token_0_vault.mint
@@ -134,11 +140,6 @@ pub struct RaydiumCpSwapToGamma<'info> {
     )]
     pub gamma_vault_1_mint: Box<InterfaceAccount<'info, Mint>>,
     
-    /// token Program
-    pub token_program: Program<'info, Token>,
-
-    /// Token program 2022
-    pub token_program_2022: Program<'info, Token2022>,
 }
 
 pub fn raydium_cp_swap_to_gamma<'a, 'b, 'c, 'info>(

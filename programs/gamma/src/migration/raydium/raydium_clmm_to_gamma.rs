@@ -109,6 +109,12 @@ pub struct RaydiumClmmToGamma<'info> {
         constraint = gamma_token_1_vault.key() == gamma_pool_state.load()?.token_1_vault
     )]
     pub gamma_token_1_vault: Box<InterfaceAccount<'info, TokenAccount>>,
+    
+    /// token Program
+    pub token_program: Program<'info, Token>,
+
+    /// Token program 2022
+    pub token_program_2022: Program<'info, Token2022>,
 
     /// The mint of token_0 vault
     #[account(
@@ -121,12 +127,6 @@ pub struct RaydiumClmmToGamma<'info> {
         address = gamma_token_1_vault.mint
     )]
     pub gamma_vault_1_mint: Box<InterfaceAccount<'info, Mint>>,
-    
-    /// token Program
-    pub token_program: Program<'info, Token>,
-
-    /// Token program 2022
-    pub token_program_2022: Program<'info, Token2022>,
 
     // remaining account
     // #[account(
