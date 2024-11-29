@@ -113,7 +113,12 @@ pub struct RaydiumClmmToGammaV2<'info> {
         constraint = gamma_token_1_vault.key() == gamma_pool_state.load()?.token_1_vault
     )]
     pub gamma_token_1_vault: Box<InterfaceAccount<'info, TokenAccount>>,
+    
+    /// token Program
+    pub token_program: Program<'info, Token>,
 
+    /// Token program 2022
+    pub token_program_2022: Program<'info, Token2022>,
 
     // /// CHECK: The mint of token vault 0
     // pub raydium_vault_0_mint: UncheckedAccount<'info>,
@@ -123,7 +128,6 @@ pub struct RaydiumClmmToGammaV2<'info> {
     )]
     pub gamma_vault_0_mint: Box<InterfaceAccount<'info, Mint>>,
 
-
     // /// CHECK: The mint of token vault 1
     // pub raydium_vault_1_mint: UncheckedAccount<'info>,
     /// The mint of token_1 vault
@@ -131,12 +135,6 @@ pub struct RaydiumClmmToGammaV2<'info> {
         address = gamma_token_1_vault.mint
     )]
     pub gamma_vault_1_mint: Box<InterfaceAccount<'info, Mint>>,
-    
-    /// token Program
-    pub token_program: Program<'info, Token>,
-
-    /// Token program 2022
-    pub token_program_2022: Program<'info, Token2022>,
 
     // remaining account
     // #[account(

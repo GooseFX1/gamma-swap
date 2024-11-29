@@ -19,19 +19,6 @@ pub struct OrcaWhirlpoolToGamma<'info> {
     /// CHECK: Whirlpool
     pub whirlpool: UncheckedAccount<'info>,
 
-    #[account(address = *gamma_vault_0_mint.to_account_info().owner)]
-    /// CHECK: Token program of mint A
-    pub token_program_a: UncheckedAccount<'info>,
-    #[account(address = *gamma_vault_1_mint.to_account_info().owner)]
-    /// CHECK: Token program of mint B
-    pub token_program_b: UncheckedAccount<'info>,
-
-    /// CHECK: Memo program
-    #[account(
-        address = spl_memo::id()
-    )]
-    pub memo_program: UncheckedAccount<'info>,
-
     #[account(mut)]
     /// CHECK: Position
     pub whirlpool_position: UncheckedAccount<'info>,
