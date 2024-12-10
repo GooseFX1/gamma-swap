@@ -118,7 +118,7 @@ pub mod gamma {
     /// * `param`- The param of pool status
     /// * `status` - The value
     ///
-    pub fn update_pool_(ctx: Context<UpdatePool>, param: u32, value: u64) -> Result<()> {
+    pub fn update_pool(ctx: Context<UpdatePool>, param: u32, value: u64) -> Result<()> {
         instructions::update_pool(ctx, param, value)
     }
 

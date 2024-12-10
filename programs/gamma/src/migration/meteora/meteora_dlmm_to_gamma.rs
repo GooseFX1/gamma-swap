@@ -1,12 +1,12 @@
+use crate::{
+    calculate_gamma_lp_tokens,
+    instructions::deposit::{deposit_to_gamma_pool, Deposit},
+    states::{MigrationEvent, PoolState, UserPoolLiquidity, USER_POOL_LIQUIDITY_SEED},
+};
 use anchor_lang::prelude::*;
 use anchor_spl::{
     token::Token,
     token_interface::{Mint, Token2022, TokenAccount},
-};
-use crate::{
-    calculate_gamma_lp_tokens, 
-    instructions::deposit::{deposit_to_gamma_pool, Deposit}, 
-    states::{ MigrationEvent, PoolState, UserPoolLiquidity, USER_POOL_LIQUIDITY_SEED },
 };
 use dlmm_cpi::BinLiquidityReduction;
 
@@ -54,7 +54,7 @@ pub struct MeteoraDlmmToGamma<'info> {
     // pub dlmm_sender: Signer<'info>,
     /// The owner LP Position in Gamma pool
     pub gamma_owner: Signer<'info>,
-    
+
     /// CHECK: pool vault authority
     #[account(
         seeds = [
@@ -73,7 +73,7 @@ pub struct MeteoraDlmmToGamma<'info> {
         seeds = [
             USER_POOL_LIQUIDITY_SEED.as_bytes(),
             gamma_pool_state.key().as_ref(),
-            gamma_owner.key().as_ref(), 
+            gamma_owner.key().as_ref(),
         ],
         bump,
     )]
@@ -114,7 +114,7 @@ pub struct MeteoraDlmmToGamma<'info> {
         constraint = gamma_token_1_vault.key() == gamma_pool_state.load()?.token_1_vault
     )]
     pub gamma_token_1_vault: Box<InterfaceAccount<'info, TokenAccount>>,
-    
+
     /// token Program
     pub token_program: Program<'info, Token>,
 
@@ -150,7 +150,9 @@ pub fn meteora_dlmm_to_gamma(
     let accounts = dlmm_cpi::cpi::accounts::RemoveLiquidity {
         position: ctx.accounts.dlmm_position.to_account_info(),
         lb_pair: ctx.accounts.dlmm_lb_pair.to_account_info(),
-        bin_array_bitmap_extension: if let Some(bin_array_bitmap_extension) = &ctx.accounts.dlmm_bin_array_bitmap_extension {
+        bin_array_bitmap_extension: if let Some(bin_array_bitmap_extension) =
+            &ctx.accounts.dlmm_bin_array_bitmap_extension
+        {
             bin_array_bitmap_extension.to_account_info()
         } else {
             ctx.accounts.dlmm_program.to_account_info()
@@ -175,18 +177,20 @@ pub fn meteora_dlmm_to_gamma(
 
     ctx.accounts.gamma_token_0_account.reload()?;
     ctx.accounts.gamma_token_1_account.reload()?;
-    
+
     let user_token0_balance_after = ctx.accounts.gamma_token_0_account.amount;
     let user_token1_balance_after = ctx.accounts.gamma_token_1_account.amount;
-    let token_0_amount_withdrawn = user_token0_balance_before.checked_sub(user_token0_balance_after).unwrap();
-    let token_1_amount_withdrawn = user_token1_balance_before.checked_sub(user_token1_balance_after).unwrap();
+    let token_0_amount_withdrawn = user_token0_balance_before
+        .checked_sub(user_token0_balance_after)
+        .unwrap();
+    let token_1_amount_withdrawn = user_token1_balance_before
+        .checked_sub(user_token1_balance_after)
+        .unwrap();
     let pool_state = ctx.accounts.gamma_pool_state.load()?;
     let gamma_lp_tokens = calculate_gamma_lp_tokens(
-        token_0_amount_withdrawn, 
-        token_1_amount_withdrawn, 
+        token_0_amount_withdrawn,
+        token_1_amount_withdrawn,
         &pool_state,
-        ctx.accounts.gamma_token_0_vault.amount,
-        ctx.accounts.gamma_token_1_vault.amount,
     )?;
 
     let mut deposit_accounts = Deposit {
@@ -204,7 +208,12 @@ pub fn meteora_dlmm_to_gamma(
         vault_1_mint: ctx.accounts.gamma_vault_1_mint.clone(),
     };
 
-    deposit_to_gamma_pool(&mut deposit_accounts, gamma_lp_tokens as u64, maximum_token_0_amount, maximum_token_1_amount)?;
+    deposit_to_gamma_pool(
+        &mut deposit_accounts,
+        gamma_lp_tokens as u64,
+        maximum_token_0_amount,
+        maximum_token_1_amount,
+    )?;
 
     emit!(MigrationEvent {
         from_pool: ctx.accounts.dlmm_lb_pair.key(),
@@ -213,6 +222,6 @@ pub fn meteora_dlmm_to_gamma(
         token_1_amount_withdrawn,
         lp_tokens_migrated: gamma_lp_tokens,
     });
-    
+
     Ok(())
 }

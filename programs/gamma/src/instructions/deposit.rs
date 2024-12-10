@@ -1,15 +1,16 @@
-use anchor_lang::prelude::*;
-use anchor_spl::{
-    token::Token,
-    token_interface::{Mint, Token2022, TokenAccount},
-};
 use crate::{
     curve::{CurveCalculator, RoundDirection},
     error::GammaError,
     states::{
-        LpChangeEvent, PartnerType, PoolState, PoolStatusBitIndex, UserPoolLiquidity, USER_POOL_LIQUIDITY_SEED
+        LpChangeEvent, PartnerType, PoolState, PoolStatusBitIndex, UserPoolLiquidity,
+        USER_POOL_LIQUIDITY_SEED,
     },
     utils::{get_transfer_inverse_fee, transfer_from_user_to_pool_vault},
+};
+use anchor_lang::prelude::*;
+use anchor_spl::{
+    token::Token,
+    token_interface::{Mint, Token2022, TokenAccount},
 };
 
 #[derive(Accounts)]
@@ -35,7 +36,7 @@ pub struct Deposit<'info> {
         seeds = [
             USER_POOL_LIQUIDITY_SEED.as_bytes(),
             pool_state.key().as_ref(),
-            owner.key().as_ref(), 
+            owner.key().as_ref(),
         ],
         bump,
     )]
@@ -97,9 +98,9 @@ pub fn deposit(
 ) -> Result<()> {
     deposit_to_gamma_pool(
         ctx.accounts,
-        lp_token_amount, 
-        maximum_token_0_amount, 
-        maximum_token_1_amount
+        lp_token_amount,
+        maximum_token_0_amount,
+        maximum_token_1_amount,
     )
 }
 
@@ -114,10 +115,7 @@ pub fn deposit_to_gamma_pool(
     if !pool_state.get_status_by_bit(PoolStatusBitIndex::Deposit) {
         return err!(GammaError::NotApproved);
     }
-    let (total_token_0_amount, total_token_1_amount) = pool_state.vault_amount_without_fee(
-        accounts.token_0_vault.amount,
-        accounts.token_1_vault.amount,
-    )?;
+    let (total_token_0_amount, total_token_1_amount) = pool_state.vault_amount_without_fee()?;
     let results = CurveCalculator::lp_tokens_to_trading_tokens(
         u128::from(lp_token_amount),
         u128::from(pool_state.lp_supply),
@@ -127,24 +125,28 @@ pub fn deposit_to_gamma_pool(
     )
     .ok_or(GammaError::ZeroTradingTokens)?;
 
-    let token_0_amount = u64::try_from(results.token_0_amount)
-        .map_err(|_| GammaError::MathOverflow)?;
+    let token_0_amount =
+        u64::try_from(results.token_0_amount).map_err(|_| GammaError::MathOverflow)?;
     let (transfer_token_0_amount, transfer_token_0_fee) = {
         let transfer_fee =
             get_transfer_inverse_fee(&accounts.vault_0_mint.to_account_info(), token_0_amount)?;
         (
-            token_0_amount.checked_add(transfer_fee).ok_or(GammaError::MathOverflow)?,
+            token_0_amount
+                .checked_add(transfer_fee)
+                .ok_or(GammaError::MathOverflow)?,
             transfer_fee,
         )
     };
 
-    let token_1_amount = u64::try_from(results.token_1_amount)
-        .map_err(|_| GammaError::MathOverflow)?;
+    let token_1_amount =
+        u64::try_from(results.token_1_amount).map_err(|_| GammaError::MathOverflow)?;
     let (transfer_token_1_amount, transfer_token_1_fee) = {
         let transfer_fee =
             get_transfer_inverse_fee(&accounts.vault_1_mint.to_account_info(), token_1_amount)?;
         (
-            token_1_amount.checked_add(transfer_fee).ok_or(GammaError::MathOverflow)?,
+            token_1_amount
+                .checked_add(transfer_fee)
+                .ok_or(GammaError::MathOverflow)?,
             transfer_fee,
         )
     };
@@ -206,6 +208,15 @@ pub fn deposit_to_gamma_pool(
         accounts.vault_1_mint.decimals,
     )?;
 
+    pool_state.token_0_vault_amount = pool_state
+        .token_0_vault_amount
+        .checked_add(token_0_amount)
+        .ok_or(GammaError::MathOverflow)?;
+    pool_state.token_1_vault_amount = pool_state
+        .token_1_vault_amount
+        .checked_add(token_1_amount)
+        .ok_or(GammaError::MathOverflow)?;
+
     pool_state.lp_supply = pool_state
         .lp_supply
         .checked_add(lp_token_amount)
@@ -213,11 +224,11 @@ pub fn deposit_to_gamma_pool(
     let user_pool_liquidity = &mut accounts.user_pool_liquidity;
     user_pool_liquidity.token_0_deposited = user_pool_liquidity
         .token_0_deposited
-        .checked_add(u128::from(transfer_token_0_amount))
+        .checked_add(u128::from(token_0_amount))
         .ok_or(GammaError::MathOverflow)?;
     user_pool_liquidity.token_1_deposited = user_pool_liquidity
         .token_1_deposited
-        .checked_add(u128::from(transfer_token_1_amount))
+        .checked_add(u128::from(token_1_amount))
         .ok_or(GammaError::MathOverflow)?;
     user_pool_liquidity.lp_tokens_owned = user_pool_liquidity
         .lp_tokens_owned
@@ -225,11 +236,16 @@ pub fn deposit_to_gamma_pool(
         .ok_or(GammaError::MathOverflow)?;
     pool_state.recent_epoch = Clock::get()?.epoch;
 
-    if let Some(user_pool_liquidity_partner) = user_pool_liquidity.partner{
+    if let Some(user_pool_liquidity_partner) = user_pool_liquidity.partner {
         let mut pool_state_partners = pool_state.partners;
-        let partner: Option<&mut crate::states::PartnerInfo> =  pool_state_partners.iter_mut().find(|p| PartnerType::new(p.partner_id) == user_pool_liquidity_partner);
+        let partner: Option<&mut crate::states::PartnerInfo> = pool_state_partners
+            .iter_mut()
+            .find(|p| PartnerType::new(p.partner_id) == user_pool_liquidity_partner);
         if let Some(partner) = partner {
-            partner.lp_token_linked_with_partner = partner.lp_token_linked_with_partner.checked_add(lp_token_amount).ok_or(GammaError::MathOverflow)?;
+            partner.lp_token_linked_with_partner = partner
+                .lp_token_linked_with_partner
+                .checked_add(lp_token_amount)
+                .ok_or(GammaError::MathOverflow)?;
         }
         pool_state.partners = pool_state_partners;
     }

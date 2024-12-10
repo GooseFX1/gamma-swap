@@ -1,12 +1,12 @@
+use crate::{
+    calculate_gamma_lp_tokens,
+    instructions::deposit::{deposit_to_gamma_pool, Deposit},
+    states::{MigrationEvent, PoolState, UserPoolLiquidity, USER_POOL_LIQUIDITY_SEED},
+};
 use anchor_lang::prelude::*;
 use anchor_spl::{
     token::Token,
-    token_interface::{ Mint, Token2022, TokenAccount},
-};
-use crate::{
-    calculate_gamma_lp_tokens,
-    instructions::deposit::{ deposit_to_gamma_pool, Deposit }, 
-    states::{ MigrationEvent, PoolState, UserPoolLiquidity, USER_POOL_LIQUIDITY_SEED },
+    token_interface::{Mint, Token2022, TokenAccount},
 };
 
 #[derive(Accounts)]
@@ -57,7 +57,7 @@ pub struct OrcaWhirlpoolToGamma<'info> {
     // pub whirlpool_position_authority: Signer<'info>,
     /// The owner LP Position in Gamma pool
     pub gamma_owner: Signer<'info>,
-    
+
     /// CHECK: pool vault authority
     #[account(
         seeds = [
@@ -76,7 +76,7 @@ pub struct OrcaWhirlpoolToGamma<'info> {
         seeds = [
             USER_POOL_LIQUIDITY_SEED.as_bytes(),
             gamma_pool_state.key().as_ref(),
-            gamma_owner.key().as_ref(), 
+            gamma_owner.key().as_ref(),
         ],
         bump,
     )]
@@ -142,7 +142,6 @@ pub struct OrcaWhirlpoolToGamma<'info> {
     // - accounts for transfer hook program of token_mint_b
 }
 
-
 pub fn orca_whirlpool_to_gamma<'info>(
     ctx: Context<'_, '_, '_, 'info, OrcaWhirlpoolToGamma<'info>>,
     liquidity_amount: u128,
@@ -150,7 +149,7 @@ pub fn orca_whirlpool_to_gamma<'info>(
     token_min_b: u64,
     maximum_token_0_amount: u64,
     maximum_token_1_amount: u64,
-) -> Result<()> { 
+) -> Result<()> {
     let user_token0_balance_before = ctx.accounts.gamma_token_0_account.amount;
     let user_token1_balance_before = ctx.accounts.gamma_token_1_account.amount;
 
@@ -160,7 +159,10 @@ pub fn orca_whirlpool_to_gamma<'info>(
         token_program: ctx.accounts.token_program.to_account_info(),
         position_authority: ctx.accounts.gamma_owner.to_account_info(),
         position: ctx.accounts.whirlpool_position.to_account_info(),
-        position_token_account: ctx.accounts.whirlpool_position_token_account.to_account_info(),
+        position_token_account: ctx
+            .accounts
+            .whirlpool_position_token_account
+            .to_account_info(),
         token_owner_account_a: ctx.accounts.gamma_token_0_account.to_account_info(),
         token_owner_account_b: ctx.accounts.gamma_token_1_account.to_account_info(),
         token_vault_a: ctx.accounts.whirlpool_token_vault_a.to_account_info(),
@@ -171,21 +173,23 @@ pub fn orca_whirlpool_to_gamma<'info>(
 
     let cpi_ctx = CpiContext::new(ctx.accounts.whirlpool_program.to_account_info(), accounts);
     whirlpool_cpi::cpi::decrease_liquidity(cpi_ctx, liquidity_amount, token_min_a, token_min_b)?;
-    
+
     ctx.accounts.gamma_token_0_account.reload()?;
     ctx.accounts.gamma_token_1_account.reload()?;
-    
+
     let user_token0_balance_after = ctx.accounts.gamma_token_0_account.amount;
     let user_token1_balance_after = ctx.accounts.gamma_token_1_account.amount;
-    let token_0_amount_withdrawn = user_token0_balance_before.checked_sub(user_token0_balance_after).unwrap();
-    let token_1_amount_withdrawn = user_token1_balance_before.checked_sub(user_token1_balance_after).unwrap();
+    let token_0_amount_withdrawn = user_token0_balance_before
+        .checked_sub(user_token0_balance_after)
+        .unwrap();
+    let token_1_amount_withdrawn = user_token1_balance_before
+        .checked_sub(user_token1_balance_after)
+        .unwrap();
     let pool_state = ctx.accounts.gamma_pool_state.load()?;
     let gamma_lp_tokens = calculate_gamma_lp_tokens(
-        token_0_amount_withdrawn, 
-        token_1_amount_withdrawn, 
+        token_0_amount_withdrawn,
+        token_1_amount_withdrawn,
         &pool_state,
-        ctx.accounts.gamma_token_0_vault.amount,
-        ctx.accounts.gamma_token_1_vault.amount,
     )?;
 
     let mut deposit_accounts = Deposit {
@@ -203,8 +207,13 @@ pub fn orca_whirlpool_to_gamma<'info>(
         vault_1_mint: ctx.accounts.gamma_vault_1_mint.clone(),
     };
 
-    deposit_to_gamma_pool(&mut deposit_accounts, gamma_lp_tokens as u64, maximum_token_0_amount, maximum_token_1_amount)?;
-    
+    deposit_to_gamma_pool(
+        &mut deposit_accounts,
+        gamma_lp_tokens as u64,
+        maximum_token_0_amount,
+        maximum_token_1_amount,
+    )?;
+
     emit!(MigrationEvent {
         from_pool: ctx.accounts.whirlpool.key(),
         to_pool: ctx.accounts.gamma_pool_state.key(),
@@ -212,6 +221,6 @@ pub fn orca_whirlpool_to_gamma<'info>(
         token_1_amount_withdrawn,
         lp_tokens_migrated: gamma_lp_tokens,
     });
-    
+
     Ok(())
 }

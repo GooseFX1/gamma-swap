@@ -92,6 +92,7 @@ async fn should_track_cumulative_rates_correctly() {
     test_env.jump_seconds(100).await;
 
     let pool_state: PoolState = test_env.fetch_account(pool_id).await;
+    dbg!(1, pool_state.token_0_vault_amount, pool_state.token_1_vault_amount);
 
     assert_eq_with_copy!(pool_state.cumulative_trade_fees_token_0, 0);
     assert_eq_with_copy!(pool_state.cumulative_trade_fees_token_1, 0);
@@ -133,6 +134,8 @@ async fn should_track_cumulative_rates_correctly() {
         .await;
 
     let pool_state: PoolState = test_env.fetch_account(pool_id).await;
+    dbg!(2, pool_state.token_0_vault_amount, pool_state.token_1_vault_amount);
+
 
     assert_eq_with_copy!(
         pool_state.partners[0].lp_token_linked_with_partner,
@@ -160,6 +163,7 @@ async fn should_track_cumulative_rates_correctly() {
         .await;
 
     let pool_state: PoolState = test_env.fetch_account(pool_id).await;
+    dbg!(3, pool_state.token_0_vault_amount, pool_state.token_1_vault_amount);
 
     assert_eq_with_copy!(
         pool_state.partners[0].lp_token_linked_with_partner,
@@ -186,6 +190,7 @@ async fn should_track_cumulative_rates_correctly() {
         .await;
 
     let pool_state: PoolState = test_env.fetch_account(pool_id).await;
+    dbg!(4, pool_state.token_0_vault_amount, pool_state.token_1_vault_amount);
 
     assert_eq_with_copy!(
         pool_state.partners[0].lp_token_linked_with_partner,
@@ -213,6 +218,7 @@ async fn should_track_cumulative_rates_correctly() {
         .await;
 
     let pool_state: PoolState = test_env.fetch_account(pool_id).await;
+    dbg!(5, pool_state.token_0_vault_amount, pool_state.token_1_vault_amount);
 
     assert_eq_with_copy!(
         pool_state.partners[0].lp_token_linked_with_partner,
@@ -243,6 +249,7 @@ async fn should_track_cumulative_rates_correctly() {
         .await;
 
     let pool_state: PoolState = test_env.fetch_account(pool_id).await;
+    dbg!(6, pool_state.token_0_vault_amount, pool_state.token_1_vault_amount);
 
     assert_eq_with_copy!(
         pool_state.partners[0].lp_token_linked_with_partner,
@@ -271,6 +278,7 @@ async fn should_track_cumulative_rates_correctly() {
         .await;
 
     let pool_state: PoolState = test_env.fetch_account(pool_id).await;
+    dbg!(7, pool_state.token_0_vault_amount, pool_state.token_1_vault_amount);
 
     assert_eq_with_copy!(
         pool_state.partners[0].lp_token_linked_with_partner,

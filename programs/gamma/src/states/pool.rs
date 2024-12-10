@@ -129,10 +129,19 @@ pub struct PoolState {
     // if zero then default of 300_000 is used
     pub volatility_factor: u64,
 
+    // excluding the fund fees and protocol fees
+    // The current balance of token0 and token1 in the vault
+    pub token_0_vault_amount: u64,
+    pub token_1_vault_amount: u64,
+
+    // Max percentage after dividing by 1_000_000, that can be shared with the partner for extra yeild generation.
+    pub max_shared_token0: u64,
+    pub max_shared_token1: u64,
+
     // This will store the partner information, like how much token0 and token1 they was invested from their platforms.
     pub partners: [PartnerInfo; 1],
     /// padding
-    pub padding: [u64; 16],
+    pub padding: [u64; 12],
 }
 
 impl PoolState {
@@ -140,6 +149,8 @@ impl PoolState {
 
     pub fn initialize(
         &mut self,
+        token_0_vault_amount: u64,
+        token_1_vault_amount: u64,
         auth_bump: u8,
         lp_supply: u64,
         open_time: u64,
@@ -183,10 +194,14 @@ impl PoolState {
         self.latest_dynamic_fee_rate = 0;
         self.max_trade_fee_rate = max_trade_fee_rate;
         self.volatility_factor = volatility_factor;
+        self.token_0_vault_amount = token_0_vault_amount;
+        self.token_1_vault_amount = token_1_vault_amount;
+        self.max_shared_token0 = 0;
+        self.max_shared_token1 = 0;
 
         self.partners = [PartnerInfo::default(); 1];
 
-        self.padding = [0u64; 16];
+        self.padding = [0u64; 12];
         Ok(())
     }
 
@@ -210,19 +225,12 @@ impl PoolState {
         self.status.bitand(status) == 0
     }
 
-    pub fn vault_amount_without_fee(&self, vault_0: u64, vault_1: u64) -> Result<(u64, u64)> {
-        Ok((
-            vault_0
-                .checked_sub(self.protocol_fees_token_0 + self.fund_fees_token_0)
-                .ok_or(GammaError::MathOverflow)?,
-            vault_1
-                .checked_sub(self.protocol_fees_token_1 + self.fund_fees_token_1)
-                .ok_or(GammaError::MathOverflow)?,
-        ))
+    pub fn vault_amount_without_fee(&self) -> Result<(u64, u64)> {
+        Ok((self.token_0_vault_amount, self.token_1_vault_amount))
     }
 
-    pub fn token_price_x32(&self, vault_0: u64, vault_1: u64) -> Result<(u128, u128)> {
-        let (token_0_amount, token_1_amount) = self.vault_amount_without_fee(vault_0, vault_1)?;
+    pub fn token_price_x32(&self) -> Result<(u128, u128)> {
+        let (token_0_amount, token_1_amount) = self.vault_amount_without_fee()?;
         Ok((
             token_1_amount as u128 * Q32 as u128 / token_0_amount as u128,
             token_0_amount as u128 * Q32 as u128 / token_1_amount as u128,

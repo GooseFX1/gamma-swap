@@ -1,15 +1,15 @@
-use std::str::FromStr;
-use solana_sdk::pubkey::Pubkey;
+use crate::{deserialize_anchor_account, ClientConfig};
+use anyhow::Result;
+use arrayref::array_ref;
 use solana_client::rpc_client::RpcClient;
+use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::read_keypair_file;
 use solana_sdk::signer::Signer;
 use spl_associated_token_account::get_associated_token_address;
-use spl_token_2022::state::{Account as TokenAccount, Mint};
 use spl_token_2022::extension::StateWithExtensionsMut;
-use anyhow::Result;
-use arrayref::array_ref;
-use crate::{deserialize_anchor_account, ClientConfig};
+use spl_token_2022::state::{Account as TokenAccount, Mint};
 use std::process::Command;
+use std::str::FromStr;
 
 const POOL_ID: &str = "Fc9eSn5QpAiPAmT3UFpDd6ExTeQ4MP7X8R3qcfUCFG1T";
 const N4_MINT: &str = "N4CdHcZYMj7DufSu89m1gi3RFxt8NiJQ9PmfNg8kc8P";
@@ -56,8 +56,9 @@ fn get_pool_state(client: &RpcClient, pool_id: &Pubkey) -> Result<TestPoolState>
     let load_pubkeys = vec![pool_id.clone()];
     let rsps = client.get_multiple_accounts(&load_pubkeys)?;
     let [pool_account] = array_ref![rsps, 0, 1];
-    let pool_state = deserialize_anchor_account::<gamma::states::PoolState>(&pool_account.as_ref().unwrap())?;
-    
+    let pool_state =
+        deserialize_anchor_account::<gamma::states::PoolState>(&pool_account.as_ref().unwrap())?;
+
     Ok(TestPoolState {
         token_0_vault: pool_state.token_0_vault,
         token_1_vault: pool_state.token_1_vault,
@@ -102,15 +103,35 @@ pub fn run_swap_test(config: &ClientConfig, user_keypair_path: String) -> Result
     let [n4_mint_account, n5_mint_account] = array_ref![rsps, 0, 2];
     let mut n4_mint_data = n4_mint_account.clone().unwrap().data;
     let mut n5_mint_data = n5_mint_account.clone().unwrap().data;
-    let n4_decimals = StateWithExtensionsMut::<Mint>::unpack(&mut n4_mint_data)?.base.decimals;
-    let n5_decimals = StateWithExtensionsMut::<Mint>::unpack(&mut n5_mint_data)?.base.decimals;
+    let n4_decimals = StateWithExtensionsMut::<Mint>::unpack(&mut n4_mint_data)?
+        .base
+        .decimals;
+    let n5_decimals = StateWithExtensionsMut::<Mint>::unpack(&mut n5_mint_data)?
+        .base
+        .decimals;
 
     let swap_amounts_n4: Vec<u64> = vec![1_000_000_000, 2_000_000_000, 3_000_000_000];
     let swap_amounts_n5: Vec<u64> = vec![150_000_000, 300_000_000, 450_000_000];
 
     println!("Initial state:");
-    print_state(&rpc_client, &pool_id, &user_1_n4_account, &user_1_n5_account, n4_decimals, n5_decimals, "User 1")?;
-    print_state(&rpc_client, &pool_id, &user_2_n4_account, &user_2_n5_account, n4_decimals, n5_decimals, "User 2")?;
+    print_state(
+        &rpc_client,
+        &pool_id,
+        &user_1_n4_account,
+        &user_1_n5_account,
+        n4_decimals,
+        n5_decimals,
+        "User 1",
+    )?;
+    print_state(
+        &rpc_client,
+        &pool_id,
+        &user_2_n4_account,
+        &user_2_n5_account,
+        n4_decimals,
+        n5_decimals,
+        "User 2",
+    )?;
     let user_keypair = read_keypair_file(user_keypair_path.clone()).unwrap();
     let user_pubkey = user_keypair.pubkey();
     let user_token_0_account = get_associated_token_address(&user_pubkey, &n4_mint);
@@ -120,15 +141,31 @@ pub fn run_swap_test(config: &ClientConfig, user_keypair_path: String) -> Result
 
         // User 1: N4 to N5 swap
         execute_swap(&pool_id, &user_token_0_account, amount, "User 1: N4 to N5")?;
-        print_state(&rpc_client, &pool_id, &user_token_0_account, &user_token_1_account, n4_decimals, n5_decimals, "User 1")?;
+        print_state(
+            &rpc_client,
+            &pool_id,
+            &user_token_0_account,
+            &user_token_1_account,
+            n4_decimals,
+            n5_decimals,
+            "User 1",
+        )?;
     }
-    
+
     for (i, &amount) in swap_amounts_n5.iter().enumerate() {
         println!("\n--- Swap {} User 1: N5 to N4 ---", i + 1);
 
         // User 1: N5 to N4 swap
         execute_swap(&pool_id, &user_token_1_account, amount, "User 1: N5 to N4")?;
-        print_state(&rpc_client, &pool_id, &user_token_0_account, &user_token_1_account, n4_decimals, n5_decimals, "User 1")?;
+        print_state(
+            &rpc_client,
+            &pool_id,
+            &user_token_0_account,
+            &user_token_1_account,
+            n4_decimals,
+            n5_decimals,
+            "User 1",
+        )?;
     }
 
     Ok(())
@@ -178,19 +215,58 @@ fn print_state(
     let lp_supply_difference = calculated_lp_amount - pool_state.lp_supply as f64;
 
     println!("--- {} State ---", user_description);
-    println!("N4 (SOL) balance: {:.6}", user_n4_balance as f64 / 10f64.powi(n4_decimals as i32));
-    println!("N5 (USDC) balance: {:.6}", user_n5_balance as f64 / 10f64.powi(n5_decimals as i32));
-    println!("Pool N4 (SOL) vault balance: {:.6}", token_0_balance as f64 / 10f64.powi(n4_decimals as i32));
-    println!("Pool N5 (USDC) vault balance: {:.6}", token_1_balance as f64 / 10f64.powi(n5_decimals as i32));
-    println!("Protocol fees (N4): {:.6}", pool_state.protocol_fees_token_0 as f64 / 10f64.powi(n4_decimals as i32));
-    println!("Protocol fees (N5): {:.6}", pool_state.protocol_fees_token_1 as f64 / 10f64.powi(n5_decimals as i32));
-    println!("Fund fees (N4): {:.6}", pool_state.fund_fees_token_0 as f64 / 10f64.powi(n4_decimals as i32));
-    println!("Fund fees (N5): {:.6}", pool_state.fund_fees_token_1 as f64 / 10f64.powi(n5_decimals as i32));
-    println!("Cumulative trade fees (N4): {:.6}", pool_state.cumulative_trade_fees_token_0 as f64 / 10f64.powi(n4_decimals as i32));
-    println!("Cumulative trade fees (N5): {:.6}", pool_state.cumulative_trade_fees_token_1 as f64 / 10f64.powi(n5_decimals as i32));
-    println!("Cumulative volume (N4): {:.6}", pool_state.cumulative_volume_token_0 as f64 / 10f64.powi(n4_decimals as i32));
-    println!("Cumulative volume (N5): {:.6}", pool_state.cumulative_volume_token_1 as f64 / 10f64.powi(n5_decimals as i32));
-    println!("LP supply: {:.6}", pool_state.lp_supply as f64 / 10f64.powi(9));
+    println!(
+        "N4 (SOL) balance: {:.6}",
+        user_n4_balance as f64 / 10f64.powi(n4_decimals as i32)
+    );
+    println!(
+        "N5 (USDC) balance: {:.6}",
+        user_n5_balance as f64 / 10f64.powi(n5_decimals as i32)
+    );
+    println!(
+        "Pool N4 (SOL) vault balance: {:.6}",
+        token_0_balance as f64 / 10f64.powi(n4_decimals as i32)
+    );
+    println!(
+        "Pool N5 (USDC) vault balance: {:.6}",
+        token_1_balance as f64 / 10f64.powi(n5_decimals as i32)
+    );
+    println!(
+        "Protocol fees (N4): {:.6}",
+        pool_state.protocol_fees_token_0 as f64 / 10f64.powi(n4_decimals as i32)
+    );
+    println!(
+        "Protocol fees (N5): {:.6}",
+        pool_state.protocol_fees_token_1 as f64 / 10f64.powi(n5_decimals as i32)
+    );
+    println!(
+        "Fund fees (N4): {:.6}",
+        pool_state.fund_fees_token_0 as f64 / 10f64.powi(n4_decimals as i32)
+    );
+    println!(
+        "Fund fees (N5): {:.6}",
+        pool_state.fund_fees_token_1 as f64 / 10f64.powi(n5_decimals as i32)
+    );
+    println!(
+        "Cumulative trade fees (N4): {:.6}",
+        pool_state.cumulative_trade_fees_token_0 as f64 / 10f64.powi(n4_decimals as i32)
+    );
+    println!(
+        "Cumulative trade fees (N5): {:.6}",
+        pool_state.cumulative_trade_fees_token_1 as f64 / 10f64.powi(n5_decimals as i32)
+    );
+    println!(
+        "Cumulative volume (N4): {:.6}",
+        pool_state.cumulative_volume_token_0 as f64 / 10f64.powi(n4_decimals as i32)
+    );
+    println!(
+        "Cumulative volume (N5): {:.6}",
+        pool_state.cumulative_volume_token_1 as f64 / 10f64.powi(n5_decimals as i32)
+    );
+    println!(
+        "LP supply: {:.6}",
+        pool_state.lp_supply as f64 / 10f64.powi(9)
+    );
     println!("Price (USDC/SOL): {:.6}", price);
     println!("Constant product (k): {}", k);
     println!("Calculated LP amount: {:.6}", calculated_lp_amount);

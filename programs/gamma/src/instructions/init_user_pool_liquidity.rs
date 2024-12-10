@@ -39,7 +39,7 @@ pub fn init_user_pool_liquidity(
         },
         None => None,
     };
-    
+
     user_pool_liquidity.initialize(
         ctx.accounts.user.key(),
         ctx.accounts.pool_state.key(),

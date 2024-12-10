@@ -92,7 +92,7 @@ pub fn collect_fund_fee(
             .fund_fees_token_1
             .checked_sub(amount_1)
             .ok_or(GammaError::MathOverflow)?;
-        auth_bump = pool_state.auth_bump;   
+        auth_bump = pool_state.auth_bump;
         pool_state.recent_epoch = Clock::get()?.epoch;
     }
     transfer_from_pool_vault_to_user(

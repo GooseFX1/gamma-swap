@@ -123,6 +123,9 @@ impl CurveCalculator {
         let source_amount_after_fees = source_amount_to_be_swapped
             .checked_sub(dynamic_fee)
             .ok_or(GammaError::MathOverflow)?;
+        msg!("Inside, {}, {}, {}",             source_amount_after_fees,
+        swap_source_amount,
+        swap_destination_amount,);
         let destination_amount_swapped = ConstantProductCurve::swap_base_input_without_fees(
             source_amount_after_fees,
             swap_source_amount,

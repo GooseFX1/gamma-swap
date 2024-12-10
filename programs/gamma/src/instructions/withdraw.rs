@@ -107,10 +107,7 @@ pub fn withdraw(
     if !pool_state.get_status_by_bit(PoolStatusBitIndex::Withdraw) {
         return err!(GammaError::NotApproved);
     }
-    let (total_token_0_amount, total_token_1_amount) = pool_state.vault_amount_without_fee(
-        ctx.accounts.token_0_vault.amount,
-        ctx.accounts.token_1_vault.amount,
-    )?;
+    let (total_token_0_amount, total_token_1_amount) = pool_state.vault_amount_without_fee()?;
     let results = CurveCalculator::lp_tokens_to_trading_tokens(
         u128::from(lp_token_amount),
         u128::from(pool_state.lp_supply),
@@ -242,6 +239,16 @@ pub fn withdraw(
         ctx.accounts.vault_1_mint.decimals,
         &[&[crate::AUTH_SEED.as_bytes(), &[pool_state.auth_bump]]],
     )?;
+
+    pool_state.token_0_vault_amount = pool_state
+        .token_0_vault_amount
+        .checked_sub(token_0_amount)
+        .ok_or(GammaError::MathOverflow)?;
+    pool_state.token_1_vault_amount = pool_state
+        .token_1_vault_amount
+        .checked_sub(token_1_amount)
+        .ok_or(GammaError::MathOverflow)?;
+
     pool_state.recent_epoch = Clock::get()?.epoch;
 
     Ok(())

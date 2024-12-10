@@ -161,6 +161,8 @@ pub fn initialize_pool_instr(
             init_amount_0,
             init_amount_1,
             open_time,
+            max_trade_fee_rate: 1000000,
+            volatility_factor: 0,
         })
         .instructions()?;
     Ok(instructions)
@@ -441,7 +443,9 @@ pub fn init_user_pool_liquidity_instr(
             user_pool_liquidity,
             system_program: system_program::id(),
         })
-        .args(gamma_instructions::InitUserPoolLiquidity {})
+        .args(gamma_instructions::InitUserPoolLiquidity {
+            partner: None,
+        })
         .instructions()?;
     Ok(instructions)
 }
