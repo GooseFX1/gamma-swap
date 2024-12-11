@@ -8,3 +8,4 @@ test-ledger
 .yarn
 .keys
 .env
+scripts/**.json

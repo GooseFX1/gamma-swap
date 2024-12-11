@@ -36,3 +36,6 @@ script="""
 cd programs/gamma
 cargo test-sbf --features test-sbf
 """
+
+[tasks.verified_build]
+script="solana-verify build --library-name gamma"
