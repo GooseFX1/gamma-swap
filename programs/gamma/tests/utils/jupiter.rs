@@ -221,11 +221,8 @@ impl Amm for Gamma {
         }
 
         // Calculate the trade amounts
-        let (total_token_0_amount, total_token_1_amount) = vault_amount_without_fee(
-            &self.pool_state,
-            self.vault_0_amount.context("Vault 0 missing or frozen")?,
-            self.vault_1_amount.context("Vault 1 missing or frozen")?,
-        )?;
+        let (total_token_0_amount, total_token_1_amount) =
+            vault_amount_without_fee(&self.pool_state)?;
 
         let result = gamma::curve::CurveCalculator::swap_base_input(
             actual_amount_in.into(),
@@ -353,17 +350,6 @@ impl Amm for Gamma {
 
 // We are extracting this here to avoid the need to fix the contract it self.
 // https://github.com/GooseFX1/gamma/blob/61105a2415831e61111b3d0bbcd7a830724ee5cb/programs/gamma/src/states/pool.rs#L161-L170
-fn vault_amount_without_fee(pool: &PoolState, vault_0: u64, vault_1: u64) -> Result<(u64, u64)> {
-    Ok((
-        vault_0
-            .checked_sub(pool.protocol_fees_token_0)
-            .ok_or(anyhow!("Math overflow"))?
-            .checked_sub(pool.fund_fees_token_0)
-            .ok_or(anyhow!("Math overflow"))?,
-        vault_1
-            .checked_sub(pool.protocol_fees_token_1)
-            .ok_or(anyhow!("Math overflow"))?
-            .checked_sub(pool.fund_fees_token_1)
-            .ok_or(anyhow!("Math overflow"))?,
-    ))
+fn vault_amount_without_fee(pool: &PoolState) -> Result<(u64, u64)> {
+    Ok((pool.token_0_vault_amount, pool.token_1_vault_amount))
 }

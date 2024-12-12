@@ -1,7 +1,7 @@
+use crate::error::GammaError;
 /// Oracle provides price data useful for a wide variety of system designs
 ///
 use anchor_lang::prelude::*;
-use crate::error::GammaError;
 /// Seed to derive account address and signature
 pub const OBSERVATION_SEED: &str = "observation";
 // Number of ObservationState element
@@ -88,8 +88,12 @@ impl ObservationState {
             if delta_time < OBSERVATION_UPDATE_DURATION_DEFAULT {
                 return Ok(());
             }
-            let delta_token_0_price_x32 = token_0_price_x32.checked_mul(delta_time.into()).ok_or(GammaError::MathOverflow)?;
-            let delta_token_1_price_x32 = token_1_price_x32.checked_mul(delta_time.into()).ok_or(GammaError::MathOverflow)?;
+            let delta_token_0_price_x32 = token_0_price_x32
+                .checked_mul(delta_time.into())
+                .ok_or(GammaError::MathOverflow)?;
+            let delta_token_1_price_x32 = token_1_price_x32
+                .checked_mul(delta_time.into())
+                .ok_or(GammaError::MathOverflow)?;
             let next_observation_index = if observation_index as usize == OBSERVATION_NUM - 1 {
                 0
             } else {

@@ -1,11 +1,8 @@
 use super::{ceil_div, floor_div, FEE_RATE_DENOMINATOR_VALUE};
 
-
 pub struct StaticFee {}
 
 impl StaticFee {
-    
-
     /// Calculate the trading fee in trading tokens
     pub fn trading_fee(amount: u128, trade_fee_rate: u64) -> Option<u128> {
         ceil_div(
@@ -32,8 +29,6 @@ impl StaticFee {
             u128::from(FEE_RATE_DENOMINATOR_VALUE),
         )
     }
-
-    
 
     pub fn calculate_pre_trade_fee_amount(
         post_fee_amount: u128,

@@ -29,17 +29,11 @@ pub fn swap_base_output<'c, 'info>(
         if ctx.accounts.input_vault.key() == pool_state.token_0_vault
             && ctx.accounts.output_vault.key() == pool_state.token_1_vault
         {
-            pool_state.token_price_x32(
-                ctx.accounts.input_vault.amount,
-                ctx.accounts.output_vault.amount,
-            )?
+            pool_state.token_price_x32()?
         } else if ctx.accounts.input_vault.key() == pool_state.token_1_vault
             && ctx.accounts.output_vault.key() == pool_state.token_0_vault
         {
-            pool_state.token_price_x32(
-                ctx.accounts.output_vault.amount,
-                ctx.accounts.input_vault.amount,
-            )?
+            pool_state.token_price_x32()?
         } else {
             return err!(GammaError::InvalidVault);
         };
@@ -57,11 +51,8 @@ pub fn swap_base_output<'c, 'info>(
         if ctx.accounts.input_vault.key() == pool_state.token_0_vault
             && ctx.accounts.output_vault.key() == pool_state.token_1_vault
         {
-            let (total_input_token_amount, total_output_token_amount) = pool_state
-                .vault_amount_without_fee(
-                    ctx.accounts.input_vault.amount,
-                    ctx.accounts.output_vault.amount,
-                )?;
+            let (total_input_token_amount, total_output_token_amount) =
+                pool_state.vault_amount_without_fee()?;
 
             (
                 TradeDirection::ZeroForOne,
@@ -71,11 +62,8 @@ pub fn swap_base_output<'c, 'info>(
         } else if ctx.accounts.input_vault.key() == pool_state.token_1_vault
             && ctx.accounts.output_vault.key() == pool_state.token_0_vault
         {
-            let (total_output_token_amount, total_input_token_amount) = pool_state
-                .vault_amount_without_fee(
-                    ctx.accounts.output_vault.amount,
-                    ctx.accounts.input_vault.amount,
-                )?;
+            let (total_output_token_amount, total_input_token_amount) =
+                pool_state.vault_amount_without_fee()?;
 
             (
                 TradeDirection::OneForZero,
@@ -155,7 +143,7 @@ pub fn swap_base_output<'c, 'info>(
     let fund_fee = u64::try_from(result.fund_fee).or(err!(GammaError::MathOverflow))?;
     let mut dynamic_fee = u64::try_from(result.dynamic_fee).or(err!(GammaError::MathOverflow))?;
 
-    let source_amount_swapped =
+    let mut source_amount_swapped =
         u64::try_from(result.source_amount_swapped).or(err!(GammaError::MathOverflow))?;
 
     if let Some(info) = referral_info {
@@ -179,6 +167,9 @@ pub fn swap_base_output<'c, 'info>(
                 .checked_sub(referral_amount)
                 .ok_or(GammaError::MathError)?;
             input_transfer_amount = input_transfer_amount
+                .checked_sub(referral_amount)
+                .ok_or(GammaError::MathError)?;
+            source_amount_swapped = source_amount_swapped
                 .checked_sub(referral_amount)
                 .ok_or(GammaError::MathError)?;
 
@@ -251,6 +242,20 @@ pub fn swap_base_output<'c, 'info>(
                 .cumulative_volume_token_0
                 .checked_add(source_amount_swapped as u128)
                 .ok_or(GammaError::MathOverflow)?;
+
+            pool_state.token_0_vault_amount = pool_state
+                .token_0_vault_amount
+                .checked_add(source_amount_swapped)
+                .ok_or(GammaError::MathOverflow)?
+                .checked_sub(fund_fee)
+                .ok_or(GammaError::MathOverflow)?
+                .checked_sub(protocol_fee)
+                .ok_or(GammaError::MathOverflow)?;
+
+            pool_state.token_1_vault_amount = pool_state
+                .token_1_vault_amount
+                .checked_sub(output_transfer_amount)
+                .ok_or(GammaError::MathOverflow)?;
         }
         TradeDirection::OneForZero => {
             pool_state.protocol_fees_token_1 = pool_state
@@ -268,6 +273,21 @@ pub fn swap_base_output<'c, 'info>(
             pool_state.cumulative_volume_token_1 = pool_state
                 .cumulative_volume_token_1
                 .checked_add(source_amount_swapped as u128)
+                .ok_or(GammaError::MathOverflow)?;
+
+
+            pool_state.token_1_vault_amount = pool_state
+                .token_1_vault_amount
+                .checked_add(source_amount_swapped)
+                .ok_or(GammaError::MathOverflow)?
+                .checked_sub(fund_fee)
+                .ok_or(GammaError::MathOverflow)?
+                .checked_sub(protocol_fee)
+                .ok_or(GammaError::MathOverflow)?;
+
+            pool_state.token_0_vault_amount = pool_state
+                .token_0_vault_amount
+                .checked_sub(output_transfer_amount)
                 .ok_or(GammaError::MathOverflow)?;
         }
     };

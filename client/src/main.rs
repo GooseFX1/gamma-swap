@@ -27,9 +27,6 @@ use spl_token_2022::{
     extension::StateWithExtensionsMut,
     state::{Account, Mint},
 };
-// This module is only to make sure the gist compiles for jupiter.
-// If any change is made in the file, we should send the changes to the jupiter team.
-pub mod jupiter;
 mod test_swaps;
 use test_swaps::run_swap_test;
 
@@ -319,15 +316,13 @@ fn main() -> Result<()> {
             // docode account
             let mut token_0_vault_data = token_0_vault_account.clone().unwrap().data;
             let mut token_1_vault_data = token_1_vault_account.clone().unwrap().data;
-            let token_0_vault_info =
+            let _token_0_vault_info =
                 StateWithExtensionsMut::<Account>::unpack(&mut token_0_vault_data)?;
-            let token_1_vault_info =
+            let _token_1_vault_info =
                 StateWithExtensionsMut::<Account>::unpack(&mut token_1_vault_data)?;
 
             let (total_token_0_amount, total_token_1_amount) = pool_state
                 .vault_amount_without_fee(
-                    token_0_vault_info.base.amount,
-                    token_1_vault_info.base.amount,
                 )?;
             // calculate amount
             let results = gamma::curve::CurveCalculator::lp_tokens_to_trading_tokens(
@@ -428,15 +423,13 @@ fn main() -> Result<()> {
             // docode account
             let mut token_0_vault_data = token_0_vault_account.clone().unwrap().data;
             let mut token_1_vault_data = token_1_vault_account.clone().unwrap().data;
-            let token_0_vault_info =
+            let _token_0_vault_info =
                 StateWithExtensionsMut::<Account>::unpack(&mut token_0_vault_data)?;
-            let token_1_vault_info =
+            let _token_1_vault_info =
                 StateWithExtensionsMut::<Account>::unpack(&mut token_1_vault_data)?;
 
             let (total_token_0_amount, total_token_1_amount) = pool_state
                 .vault_amount_without_fee(
-                    token_0_vault_info.base.amount,
-                    token_1_vault_info.base.amount,
                 )?;
             // calculate amount
             let results = gamma::curve::CurveCalculator::lp_tokens_to_trading_tokens(
@@ -557,7 +550,7 @@ fn main() -> Result<()> {
             )?;
             let token_0_vault_info =
                 StateWithExtensionsMut::<Account>::unpack(&mut token_0_vault_data)?;
-            let token_1_vault_info =
+            let _token_1_vault_info =
                 StateWithExtensionsMut::<Account>::unpack(&mut token_1_vault_data)?;
             let token_0_mint_info = StateWithExtensionsMut::<Mint>::unpack(&mut token_0_mint_data)?;
             let token_1_mint_info = StateWithExtensionsMut::<Mint>::unpack(&mut token_1_mint_data)?;
@@ -566,8 +559,6 @@ fn main() -> Result<()> {
 
             let (total_token_0_amount, total_token_1_amount) = pool_state
                 .vault_amount_without_fee(
-                    token_0_vault_info.base.amount,
-                    token_1_vault_info.base.amount,
                 )?;
 
             let (
@@ -636,9 +627,8 @@ fn main() -> Result<()> {
                 u128::from(actual_amount_in),
                 u128::from(total_input_token_amount),
                 u128::from(total_output_token_amount),
-                amm_config_state.trade_fee_rate,
-                amm_config_state.protocol_fee_rate,
-                amm_config_state.fund_fee_rate,
+                &amm_config_state,
+                &pool_state,
                 current_unix_timestamp,
                 &observation,
             )?;
@@ -723,7 +713,7 @@ fn main() -> Result<()> {
             )?;
             let token_0_vault_info =
                 StateWithExtensionsMut::<Account>::unpack(&mut token_0_vault_data)?;
-            let token_1_vault_info =
+            let _token_1_vault_info =
                 StateWithExtensionsMut::<Account>::unpack(&mut token_1_vault_data)?;
             let token_0_mint_info = StateWithExtensionsMut::<Mint>::unpack(&mut token_0_mint_data)?;
             let token_1_mint_info = StateWithExtensionsMut::<Mint>::unpack(&mut token_1_mint_data)?;
@@ -732,8 +722,6 @@ fn main() -> Result<()> {
 
             let (total_token_0_amount, total_token_1_amount) = pool_state
                 .vault_amount_without_fee(
-                    token_0_vault_info.base.amount,
-                    token_1_vault_info.base.amount,
                 )?;
 
             let (
@@ -800,9 +788,8 @@ fn main() -> Result<()> {
                 u128::from(actual_amount_out),
                 u128::from(total_input_token_amount),
                 u128::from(total_output_token_amount),
-                amm_config_state.trade_fee_rate,
-                amm_config_state.protocol_fee_rate,
-                amm_config_state.fund_fee_rate,
+                &amm_config_state,
+                &pool_state,
                 current_unix_timestamp,
                 &observation,
             )?;
