@@ -134,7 +134,7 @@ pub struct PoolState {
     pub token_0_vault_amount: u64,
     pub token_1_vault_amount: u64,
 
-    // Max percentage after dividing by 1_000_000, that can be shared with the partner for extra yeild generation.
+    // Max percentage after dividing by 1_000_000, that can be shared with the platforms(eg. Kamino) for extra yeild generation.
     pub max_shared_token0: u64,
     pub max_shared_token1: u64,
 
