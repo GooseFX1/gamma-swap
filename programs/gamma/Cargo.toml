@@ -35,6 +35,7 @@ clmm-cpi = { workspace = true , features = ["cpi"] }
 cpmm-cpi = { workspace = true , features = ["cpi"] }
 whirlpool-cpi = { workspace = true , features = ["cpi"] }
 dlmm-cpi = { workspace = true , features = ["cpi"] }
+kamino-cpi = { workspace = true , features = ["cpi"] }
 bytemuck={workspace=true}
 
 [dev-dependencies]

@@ -6,6 +6,7 @@ members = [
     "cpi/clmm-cpi", 
     "cpi/cpmm-cpi", 
     "cpi/whirlpool-cpi", 
+    "cpi/kamino-cpi",
 ]
 resolver = "2"
 
@@ -78,3 +79,4 @@ clmm-cpi = { path = "cpi/clmm-cpi", features = ["no-entrypoint", "cpi"] }
 cpmm-cpi = { path = "cpi/cpmm-cpi", features = ["no-entrypoint", "cpi"] }
 dlmm-cpi = { path = "cpi/dlmm-cpi", features = ["no-entrypoint", "cpi"] }
 whirlpool-cpi = { path = "cpi/whirlpool-cpi", features = ["no-entrypoint", "cpi"] }
+kamino-cpi = { path = "cpi/kamino-cpi", features = ["no-entrypoint", "cpi"] }

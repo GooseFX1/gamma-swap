@@ -45,4 +45,6 @@ pub enum GammaError {
     InvalidOpenTime,
     #[msg("Invalid lp token amount")]
     InvalidLpTokenAmount,
+    #[msg("Cannot change kamino market when there is already a deposit, first withdraw everything and change the market.")]
+    CannotChangeKaminoMarket,
 }

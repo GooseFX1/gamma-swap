@@ -1963,6 +1963,7 @@ dependencies = [
  "cpmm-cpi",
  "dlmm-cpi",
  "jupiter-amm-interface",
+ "kamino-cpi",
  "proptest",
  "quickcheck",
  "rand 0.8.5",
@@ -2615,6 +2616,14 @@ dependencies = [
  "serde_json",
  "solana-account-decoder",
  "solana-sdk",
+]
+
+[[package]]
+name = "kamino-cpi"
+version = "0.1.0"
+dependencies = [
+ "anchor-gen",
+ "anchor-lang",
 ]
 
 [[package]]
