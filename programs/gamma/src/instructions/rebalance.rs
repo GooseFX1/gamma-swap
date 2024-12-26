@@ -14,11 +14,14 @@ use kamino_cpi::Kamino;
 
 #[derive(Accounts)]
 pub struct Rebalance<'info> {
-    #[account(
-        mut,
-        constraint = authority.key() == crate::admin::id()
-    )]
-    pub authority: Signer<'info>,
+    // The signer for this instruction can be anyone, it does not have to a an admin.
+    // The amount of withdraw or deposit is determined by calculations and config updated by admin
+    // which makes this instruction very safe.
+    // By allowing anyone to sign this instruction, we can in future allow anyone to rebalance the pool
+    // then it can also happen very easily from the frontend or this instruction can be added to withdraw/deposit
+    // transactions.
+    #[account(mut)]
+    pub signer: Signer<'info>,
 
     /// CHECK: pool vault authority
     #[account(
@@ -70,7 +73,7 @@ pub struct Rebalance<'info> {
             token_mint.key().as_ref(),
         ],
         bump,
-        payer = authority,
+        payer = signer,
         token::mint = reserve_collateral_mint,
         token::authority = gamma_authority,
     )]
