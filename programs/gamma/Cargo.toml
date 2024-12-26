@@ -52,6 +52,7 @@ spl-token-2022 = { workspace = true }
 anyhow ={workspace=true}
 ahash={workspace=true}
 
+
 [profile.release]
 lto = "fat"
 codegen-units = 1
