@@ -84,7 +84,8 @@ pub struct Rebalance<'info> {
     pub gamma_pool_destination_collateral: Box<InterfaceAccount<'info, TokenAccount>>,
 
     #[account(address = INSTRUCTION_SYSVAR_ID )]
-    pub instruction_sysvar_account: AccountInfo<'info>,
+    /// CHECK: The native instructions sysvar
+    pub instruction_sysvar_account: UncheckedAccount<'info>,
 
     #[account(
         constraint = liquidity_token_program.key() == *token_mint.to_account_info().owner
