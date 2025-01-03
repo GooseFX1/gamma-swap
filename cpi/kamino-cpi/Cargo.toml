@@ -1,0 +1,25 @@
+[package]
+name = "kamino-cpi"
+version = "0.1.0"
+edition = "2021"
+
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "kamino_cpi"
+
+[features]
+no-entrypoint = []
+no-idl = []
+no-log-ix-name = []
+cpi = ["no-entrypoint"]
+enable-log = []
+devnet = []
+
+
+[dependencies]
+anchor-gen = { workspace = true }
+anchor-lang = { workspace = true }
+fixed = { version = "=1.23.1" }
+fixed-macro = "1.1"
+uint = "0.9.5"

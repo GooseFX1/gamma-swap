@@ -7,6 +7,8 @@ use std::ops::{BitAnd, BitOr, BitXor};
 pub const POOL_SEED: &str = "pool";
 pub const POOL_LP_MINT_SEED: &str = "pool_lp_mint";
 pub const POOL_VAULT_SEED: &str = "pool_vault";
+// This is for deriving the token account where kamino collateral is deposited
+pub const POOL_KAMINO_DEPOSITS_SEED: &str = "pool_kamino_deposits";
 
 pub const Q32: u128 = (u32::MAX as u128) + 1; // 2^32
 
@@ -134,14 +136,19 @@ pub struct PoolState {
     pub token_0_vault_amount: u64,
     pub token_1_vault_amount: u64,
 
-    // Max percentage after dividing by 1_000_000, that can be shared with the platforms(eg. Kamino) for extra yeild generation.
+    // Max fractions after dividing by 1_000_000, that can be shared with the platforms(eg. Kamino) for extra yield generation.
     pub max_shared_token0: u64,
     pub max_shared_token1: u64,
 
     // This will store the partner information, like how much token0 and token1 they was invested from their platforms.
     pub partners: [PartnerInfo; 1],
+
+    // Keeps track of the absolute amount we put in kamino, in terms of the token0 or token1.
+    // This is important to make sure that when kamino collateral price decreases in rate cases we don't deposit more.
+    pub token_0_amount_in_kamino: u64,
+    pub token_1_amount_in_kamino: u64,
     /// padding
-    pub padding: [u64; 12],
+    pub padding: [u64; 10],
 }
 
 impl PoolState {
@@ -201,7 +208,7 @@ impl PoolState {
 
         self.partners = [PartnerInfo::default(); 1];
 
-        self.padding = [0u64; 12];
+        self.padding = [0u64; 10];
         Ok(())
     }
 

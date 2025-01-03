@@ -387,4 +387,10 @@ pub mod gamma {
             maximum_token_1_amount,
         )
     }
+
+    pub fn rebalance_kamino<'a, 'b, 'c, 'info>(
+        ctx: Context<'a, 'b, 'c, 'info, Rebalance<'info>>,
+    ) -> Result<()> {
+        instructions::rebalance_kamino(ctx)
+    }
 }
