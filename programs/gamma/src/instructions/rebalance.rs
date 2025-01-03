@@ -127,7 +127,7 @@ pub fn rebalance_kamino<'c, 'info>(
     } else {
         withdraw_from_kamino(
             &ctx,
-            deposit_withdraw_amounts.amount_to_deposit_withdraw,
+            deposit_withdraw_amounts.withdraw_amount_in_collateral_tokens,
             signer_seeds,
         )?;
     }
@@ -210,7 +210,7 @@ fn get_amounts_in_kamino_after_rebalance<'info>(
     let reserve: kamino_cpi::state::Reserve = load_account(&kamino_reserve)?;
     let collateral_amount = gamma_pool_destination_collateral.amount;
 
-    let amount_deposited = reserve.redeem_collateral_expected(collateral_amount)?;
+    let amount_deposited = reserve.collateral_to_liquidity(collateral_amount)?;
 
     Ok(amount_deposited)
 }
@@ -223,6 +223,7 @@ struct DepositWithdrawAmountResult {
     amount_to_deposit_withdraw: u64,
     is_token_0: bool,
     is_withdrawing_profit: bool,
+    withdraw_amount_in_collateral_tokens: u64,
 }
 
 fn get_deposit_withdraw_amounts<'c, 'info>(
@@ -238,7 +239,7 @@ fn get_deposit_withdraw_amounts<'c, 'info>(
 
     let collateral_amount = gamma_pool_destination_collateral.amount;
 
-    let amount_in_kamino = reserve.redeem_collateral_expected(collateral_amount)?;
+    let amount_in_kamino = reserve.collateral_to_liquidity(collateral_amount)?;
 
     let amount_deposited = if is_token_0 {
         pool_state.token_0_amount_in_kamino
@@ -257,11 +258,14 @@ fn get_deposit_withdraw_amounts<'c, 'info>(
     } else {
         pool_state.token_1_vault_amount
     };
-    let max_deposit_allowed = amount_in_pool_vault
-        .checked_mul(FEE_RATE_DENOMINATOR_VALUE)
+    let max_deposit_allowed = u128::from(amount_in_pool_vault)
+        .checked_mul(u128::from(max_deposit_allowed_rate))
         .ok_or(GammaError::MathOverflow)?
-        .checked_div(max_deposit_allowed_rate)
+        .checked_div(u128::from(FEE_RATE_DENOMINATOR_VALUE))
         .ok_or(GammaError::MathOverflow)?;
+    let max_deposit_allowed: u64 = max_deposit_allowed
+        .try_into()
+        .map_err(|_| GammaError::MathOverflow)?;
 
     msg!("max_deposit_allowed: {}", max_deposit_allowed);
     msg!("amount_in_kamino: {}", amount_in_kamino);
@@ -272,7 +276,7 @@ fn get_deposit_withdraw_amounts<'c, 'info>(
 
     let mut is_withdrawing_profit = false;
 
-    let amount_to_deposit_withdraw = if max_deposit_allowed < amount_deposited {
+    let amount_to_deposit_withdraw = if max_deposit_allowed > amount_deposited {
         // Deposit the difference between the max deposit allowed and the amount deposited.
         max_deposit_allowed
             .checked_sub(amount_deposited)
@@ -280,9 +284,8 @@ fn get_deposit_withdraw_amounts<'c, 'info>(
     } else if max_deposit_allowed == amount_deposited {
         is_withdrawing_profit = true;
         // If this is the case we still want to withdraw the profit, if any,
-        amount_in_kamino
-            .checked_sub(amount_deposited)
-            .ok_or(GammaError::MathOverflow)?
+        // We do saturating_sub to avoid failing if the profits are zero.
+        amount_in_kamino.saturating_sub(amount_deposited)
     } else {
         // Withdraw the difference between the max deposit allowed and the amount deposited.
         // We do a min here as in the worst case the amount in kamino is less than the amount deposited i.e we incurred loss on our deposits.
@@ -298,10 +301,12 @@ fn get_deposit_withdraw_amounts<'c, 'info>(
         pool_state_auth_bump: pool_state.auth_bump,
         // We don't need to do anything if we have deposited the max we wanted to deposit, and the amount in kamino is less than the amount deposited i.e there is no profits on the amount we put in kamino.
         should_do_nothing: amount_to_deposit_withdraw == 0,
-        should_deposit: max_deposit_allowed < amount_deposited,
+        should_deposit: max_deposit_allowed > amount_deposited,
         amount_to_deposit_withdraw,
         is_token_0,
         is_withdrawing_profit,
+        withdraw_amount_in_collateral_tokens: reserve
+            .liquidity_to_collateral(amount_to_deposit_withdraw)?,
     })
 }
 
@@ -310,8 +315,7 @@ pub fn load_account<T: BorshDeserialize>(account_info: &AccountInfo) -> Result<T
 
     // Ensure data length matches the struct size
     if data.len() != std::mem::size_of::<T>() {
-        panic!("Invalid account data");
-        // return err!(ErrorCode::);
+        return err!(ErrorCode::AccountDidNotDeserialize);
     }
 
     // Deserialize using Borsh

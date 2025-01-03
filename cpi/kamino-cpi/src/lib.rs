@@ -53,12 +53,20 @@ impl ReserveCollateral {
 }
 
 impl Reserve {
-    pub fn redeem_collateral_expected(&self, collateral_amount: u64) -> Result<u64> {
+    pub fn collateral_to_liquidity(&self, collateral_amount: u64) -> Result<u64> {
         let collateral_exchange_rate = self.collateral_exchange_rate()?;
 
         let liquidity_amount = collateral_exchange_rate.collateral_to_liquidity(collateral_amount);
 
         Ok(liquidity_amount)
+    }
+
+    pub fn liquidity_to_collateral(&self, liquidity_amount: u64) -> Result<u64> {
+        let collateral_exchange_rate = self.collateral_exchange_rate()?;
+
+        let collateral_amount = collateral_exchange_rate.liquidity_to_collateral(liquidity_amount);
+
+        Ok(collateral_amount)
     }
 
     fn collateral_exchange_rate(&self) -> Result<CollateralExchangeRate> {
