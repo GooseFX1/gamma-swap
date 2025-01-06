@@ -1,19 +1,19 @@
 [toolchain]
-anchor_version = "0.29.0"
+anchor_version = "0.30.1"
 solana_version = "1.18.22"
 
 [features]
 resolution = true
 skip-lint = false
 
-[programs.devnet]
+[programs.localnet]
 gamma = "GAMMA7meSFWaBXF25oSUgmGRwaW6sCMFLmBNiMSdbHVT"
 
 [registry]
 url = "https://github.com/GooseFX1/gamma"
 
 [provider]
-cluster = "https://api.devnet.solana.com"
+cluster = "localnet"
 wallet = "~/.config/solana/id.json"
 
 [workspace]

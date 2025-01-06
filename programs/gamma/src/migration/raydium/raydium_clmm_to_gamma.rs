@@ -33,6 +33,7 @@ pub struct RaydiumClmmToGamma<'info> {
     pub raydium_clmm_protocol_position: UncheckedAccount<'info>,
 
     /// Token_0 vault
+    /// CHECK: Token_0 vault
     #[account(mut)]
     pub raydium_clmm_token_vault_0: UncheckedAccount<'info>,
 

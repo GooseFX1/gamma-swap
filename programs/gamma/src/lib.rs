@@ -5,6 +5,7 @@ pub mod instructions;
 pub mod migration;
 pub mod states;
 pub mod utils;
+mod external;
 
 use anchor_lang::prelude::*;
 use instructions::*;

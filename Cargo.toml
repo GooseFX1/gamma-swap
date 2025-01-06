@@ -20,10 +20,10 @@ incremental = false
 codegen-units = 1
 
 [workspace.dependencies]
-anchor-client = { version = "0.29.0" }
+anchor-client = { version = "0.30.1" }
 anchor-gen = "0.3.1"
-anchor-lang = { version = "0.29.0", features = ["init-if-needed"] }
-anchor-spl = { version = "0.29.0" }
+anchor-lang = { version = "0.30.1", features = ["init-if-needed"] }
+anchor-spl = { version = "0.30.1" }
 spl-associated-token-account= "3.0.4"
 anyhow = "1"
 arrayref = "0.3.7"
@@ -44,7 +44,7 @@ peace-lock = "0.1"
 proptest = "1.0"
 quickcheck = "0.9"
 rand = "0.8.5"
-referral = { git = "https://github.com/GooseFX1/gfx-referral.git", branch = "make-types-public", features = ["cpi"] }
+referral = { git = "https://github.com/GooseFX1/gfx-referral.git", branch = "make-types-public-0.30.1", features = ["cpi"] }
 regex = "1"
 rust_decimal = { version = "1.36.0", features = ["maths", "c-repr"] }
 serde = { version = "1", features = ["derive"] }
