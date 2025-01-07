@@ -1,5 +1,6 @@
 pub mod curve;
 pub mod error;
+mod external;
 pub mod fees;
 pub mod instructions;
 pub mod migration;
@@ -9,8 +10,6 @@ pub mod utils;
 use anchor_lang::prelude::*;
 use instructions::*;
 use migration::*;
-
-use whirlpool_cpi::RemainingAccountsInfo;
 
 #[cfg(not(feature = "no-entrypoint"))]
 solana_security_txt::security_txt! {
@@ -274,7 +273,7 @@ pub mod gamma {
 
     pub fn migrate_meteora_dlmm_to_gamma<'a, 'b, 'c, 'info>(
         ctx: Context<'a, 'b, 'c, 'info, MeteoraDlmmToGamma<'info>>,
-        bin_liquidity_reduction: Vec<dlmm_cpi::BinLiquidityReduction>,
+        bin_liquidity_reduction: Vec<crate::external::dlmm::lb_clmm::types::BinLiquidityReduction>,
         maximum_token_0_amount: u64,
         maximum_token_1_amount: u64,
     ) -> Result<()> {
@@ -293,7 +292,9 @@ pub mod gamma {
         liquidity_amount: u128,
         token_min_a: u64,
         token_min_b: u64,
-        remaining_accounts: Option<RemainingAccountsInfo>,
+        remaining_accounts: Option<
+            crate::external::whirlpool::whirlpool::types::RemainingAccountsInfo,
+        >,
         maximum_token_0_amount: u64,
         maximum_token_1_amount: u64,
     ) -> Result<()> {

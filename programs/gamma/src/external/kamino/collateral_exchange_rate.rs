@@ -1,4 +1,4 @@
-use crate::fraction::{Fraction, FractionExtra};
+use crate::external::kamino::fraction::{Fraction, FractionExtra};
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct CollateralExchangeRate(pub Fraction);
 

@@ -12,17 +12,17 @@ use anchor_spl::{
 #[derive(Accounts)]
 pub struct OrcaWhirlpoolToGamma<'info> {
     /// CHECK: Whirlpool program
-    #[account(address = whirlpool_cpi::ID)]
+    #[account(address = crate::external::whirlpool::whirlpool::ID)]
     pub whirlpool_program: UncheckedAccount<'info>,
 
     #[account(mut)]
     /// CHECK: Whirlpool
     pub whirlpool: UncheckedAccount<'info>,
 
-    #[account(address = *gamma_vault_0_mint.to_account_info().owner)]
+    // #[account(address = gamma_vault_0_mint.to_account_info().owner)]
     /// CHECK: Token program of mint A
     pub token_program_a: UncheckedAccount<'info>,
-    #[account(address = *gamma_vault_1_mint.to_account_info().owner)]
+    // #[account(address = gamma_vault_1_mint.to_account_info().owner)]
     /// CHECK: Token program of mint B
     pub token_program_b: UncheckedAccount<'info>,
 
@@ -154,7 +154,7 @@ pub fn orca_whirlpool_to_gamma<'info>(
     let user_token1_balance_before = ctx.accounts.gamma_token_1_account.amount;
 
     // Withdraw from Orca Whirlpool
-    let accounts = whirlpool_cpi::cpi::accounts::DecreaseLiquidity {
+    let accounts = crate::external::whirlpool::whirlpool::cpi::accounts::DecreaseLiquidity {
         whirlpool: ctx.accounts.whirlpool.to_account_info(),
         token_program: ctx.accounts.token_program.to_account_info(),
         position_authority: ctx.accounts.gamma_owner.to_account_info(),
@@ -172,7 +172,12 @@ pub fn orca_whirlpool_to_gamma<'info>(
     };
 
     let cpi_ctx = CpiContext::new(ctx.accounts.whirlpool_program.to_account_info(), accounts);
-    whirlpool_cpi::cpi::decrease_liquidity(cpi_ctx, liquidity_amount, token_min_a, token_min_b)?;
+    crate::external::whirlpool::whirlpool::cpi::decrease_liquidity(
+        cpi_ctx,
+        liquidity_amount,
+        token_min_a,
+        token_min_b,
+    )?;
 
     ctx.accounts.gamma_token_0_account.reload()?;
     ctx.accounts.gamma_token_1_account.reload()?;

@@ -11,7 +11,7 @@ use anchor_spl::{
 
 #[derive(Accounts)]
 pub struct RaydiumClmmToGammaV2<'info> {
-    #[account(address = clmm_cpi::ID)]
+    #[account(address = crate::external::raydium_clmm::amm_v3::ID)]
     /// CHECK: clmm program
     pub raydium_clmm_program: UncheckedAccount<'info>,
     /// CHECK: The position owner or delegated authority
@@ -159,7 +159,7 @@ pub fn raydium_clmm_to_gamma_v2<'a, 'b, 'c, 'info>(
     let user_token1_balance_before = ctx.accounts.gamma_token_1_account.amount;
 
     // Withdraw from Raydium CLMM
-    let cpi_accounts = clmm_cpi::cpi::accounts::DecreaseLiquidityV2 {
+    let cpi_accounts = crate::external::raydium_clmm::amm_v3::cpi::accounts::DecreaseLiquidityV2 {
         nft_owner: ctx.accounts.raydium_clmm_nft_owner.to_account_info(),
         nft_account: ctx.accounts.raydium_clmm_nft_account.to_account_info(),
         personal_position: ctx
@@ -188,7 +188,12 @@ pub fn raydium_clmm_to_gamma_v2<'a, 'b, 'c, 'info>(
         cpi_accounts,
     )
     .with_remaining_accounts(ctx.remaining_accounts.to_vec());
-    clmm_cpi::cpi::decrease_liquidity_v2(cpi_context, liquidity, amount_0_min, amount_1_min)?;
+    crate::external::raydium_clmm::amm_v3::cpi::decrease_liquidity_v2(
+        cpi_context,
+        liquidity,
+        amount_0_min,
+        amount_1_min,
+    )?;
 
     ctx.accounts.gamma_token_0_account.reload()?;
     ctx.accounts.gamma_token_1_account.reload()?;
