@@ -35,10 +35,7 @@
         {
           "name": "quoteCurrency",
           "type": {
-            "array": [
-              "u8",
-              32
-            ]
+            "array": ["u8", 32]
           }
         }
       ]
@@ -65,10 +62,7 @@
         {
           "name": "value",
           "type": {
-            "array": [
-              "u8",
-              72
-            ]
+            "array": ["u8", 72]
           }
         }
       ]
@@ -1756,10 +1750,7 @@
           {
             "name": "quoteCurrency",
             "type": {
-              "array": [
-                "u8",
-                32
-              ]
+              "array": ["u8", 32]
             }
           },
           {
@@ -1813,10 +1804,7 @@
           {
             "name": "reserved1",
             "type": {
-              "array": [
-                "u8",
-                8
-              ]
+              "array": ["u8", 8]
             }
           },
           {
@@ -1833,10 +1821,7 @@
           {
             "name": "elevationGroupPadding",
             "type": {
-              "array": [
-                "u64",
-                90
-              ]
+              "array": ["u64", 90]
             }
           },
           {
@@ -1850,19 +1835,13 @@
           {
             "name": "name",
             "type": {
-              "array": [
-                "u8",
-                32
-              ]
+              "array": ["u8", 32]
             }
           },
           {
             "name": "padding1",
             "type": {
-              "array": [
-                "u64",
-                173
-              ]
+              "array": ["u64", 173]
             }
           }
         ]
@@ -1940,19 +1919,13 @@
           {
             "name": "depositsAssetTiers",
             "type": {
-              "array": [
-                "u8",
-                8
-              ]
+              "array": ["u8", 8]
             }
           },
           {
             "name": "borrowsAssetTiers",
             "type": {
-              "array": [
-                "u8",
-                5
-              ]
+              "array": ["u8", 5]
             }
           },
           {
@@ -1978,10 +1951,7 @@
           {
             "name": "reserved",
             "type": {
-              "array": [
-                "u8",
-                7
-              ]
+              "array": ["u8", 7]
             }
           },
           {
@@ -1991,10 +1961,7 @@
           {
             "name": "padding3",
             "type": {
-              "array": [
-                "u64",
-                126
-              ]
+              "array": ["u64", 126]
             }
           }
         ]
@@ -2028,10 +1995,7 @@
           {
             "name": "padding",
             "type": {
-              "array": [
-                "u64",
-                31
-              ]
+              "array": ["u64", 31]
             }
           }
         ]
@@ -2061,19 +2025,13 @@
           {
             "name": "padding1",
             "type": {
-              "array": [
-                "u64",
-                51
-              ]
+              "array": ["u64", 51]
             }
           },
           {
             "name": "padding2",
             "type": {
-              "array": [
-                "u64",
-                64
-              ]
+              "array": ["u64", 64]
             }
           }
         ]
@@ -2147,10 +2105,7 @@
           {
             "name": "reserveLiquidityPadding",
             "type": {
-              "array": [
-                "u64",
-                150
-              ]
+              "array": ["u64", 150]
             }
           },
           {
@@ -2162,10 +2117,7 @@
           {
             "name": "reserveCollateralPadding",
             "type": {
-              "array": [
-                "u64",
-                150
-              ]
+              "array": ["u64", 150]
             }
           },
           {
@@ -2177,10 +2129,7 @@
           {
             "name": "configPadding",
             "type": {
-              "array": [
-                "u64",
-                117
-              ]
+              "array": ["u64", 117]
             }
           },
           {
@@ -2190,19 +2139,13 @@
           {
             "name": "borrowedAmountsAgainstThisReserveInElevationGroups",
             "type": {
-              "array": [
-                "u64",
-                32
-              ]
+              "array": ["u64", 32]
             }
           },
           {
             "name": "padding",
             "type": {
-              "array": [
-                "u64",
-                207
-              ]
+              "array": ["u64", 207]
             }
           }
         ]
@@ -2230,10 +2173,7 @@
           {
             "name": "placeholder",
             "type": {
-              "array": [
-                "u8",
-                6
-              ]
+              "array": ["u8", 6]
             }
           }
         ]
@@ -2279,10 +2219,7 @@
           {
             "name": "padding1",
             "type": {
-              "array": [
-                "u64",
-                4
-              ]
+              "array": ["u64", 4]
             }
           }
         ]
@@ -2328,10 +2265,7 @@
           {
             "name": "padding",
             "type": {
-              "array": [
-                "u64",
-                9
-              ]
+              "array": ["u64", 9]
             }
           }
         ]
@@ -2375,10 +2309,7 @@
           {
             "name": "padding2",
             "type": {
-              "array": [
-                "u64",
-                7
-              ]
+              "array": ["u64", 7]
             }
           }
         ]
@@ -2392,19 +2323,13 @@
           {
             "name": "value",
             "type": {
-              "array": [
-                "u64",
-                4
-              ]
+              "array": ["u64", 4]
             }
           },
           {
             "name": "padding",
             "type": {
-              "array": [
-                "u64",
-                2
-              ]
+              "array": ["u64", 2]
             }
           }
         ]
@@ -2484,19 +2409,13 @@
           {
             "name": "padding2",
             "type": {
-              "array": [
-                "u64",
-                51
-              ]
+              "array": ["u64", 51]
             }
           },
           {
             "name": "padding3",
             "type": {
-              "array": [
-                "u128",
-                32
-              ]
+              "array": ["u128", 32]
             }
           }
         ]
@@ -2522,19 +2441,13 @@
           {
             "name": "padding1",
             "type": {
-              "array": [
-                "u128",
-                32
-              ]
+              "array": ["u128", 32]
             }
           },
           {
             "name": "padding2",
             "type": {
-              "array": [
-                "u128",
-                32
-              ]
+              "array": ["u128", 32]
             }
           }
         ]
@@ -2560,19 +2473,13 @@
           {
             "name": "reserved2",
             "type": {
-              "array": [
-                "u8",
-                2
-              ]
+              "array": ["u8", 2]
             }
           },
           {
             "name": "reserved3",
             "type": {
-              "array": [
-                "u8",
-                8
-              ]
+              "array": ["u8", 8]
             }
           },
           {
@@ -2656,10 +2563,7 @@
           {
             "name": "elevationGroups",
             "type": {
-              "array": [
-                "u8",
-                20
-              ]
+              "array": ["u8", 20]
             }
           },
           {
@@ -2673,10 +2577,7 @@
           {
             "name": "reserved1",
             "type": {
-              "array": [
-                "u8",
-                2
-              ]
+              "array": ["u8", 2]
             }
           },
           {
@@ -2686,10 +2587,7 @@
           {
             "name": "borrowLimitAgainstThisCollateralInElevationGroup",
             "type": {
-              "array": [
-                "u64",
-                32
-              ]
+              "array": ["u64", 32]
             }
           }
         ]
@@ -2735,10 +2633,7 @@
           {
             "name": "padding",
             "type": {
-              "array": [
-                "u8",
-                8
-              ]
+              "array": ["u8", 8]
             }
           }
         ]
@@ -2752,10 +2647,7 @@
           {
             "name": "name",
             "type": {
-              "array": [
-                "u8",
-                32
-              ]
+              "array": ["u8", 32]
             }
           },
           {
@@ -2801,19 +2693,13 @@
           {
             "name": "reserved",
             "type": {
-              "array": [
-                "u8",
-                7
-              ]
+              "array": ["u8", 7]
             }
           },
           {
             "name": "padding",
             "type": {
-              "array": [
-                "u64",
-                19
-              ]
+              "array": ["u64", 19]
             }
           }
         ]
@@ -2851,19 +2737,13 @@
           {
             "name": "priceChain",
             "type": {
-              "array": [
-                "u16",
-                4
-              ]
+              "array": ["u16", 4]
             }
           },
           {
             "name": "twapChain",
             "type": {
-              "array": [
-                "u16",
-                4
-              ]
+              "array": ["u16", 4]
             }
           }
         ]
@@ -3029,21 +2909,15 @@
         "variants": [
           {
             "name": "Additive",
-            "fields": [
-              "u64"
-            ]
+            "fields": ["u64"]
           },
           {
             "name": "Subtractive",
-            "fields": [
-              "u64"
-            ]
+            "fields": ["u64"]
           },
           {
             "name": "SubstractiveSigned",
-            "fields": [
-              "i64"
-            ]
+            "fields": ["i64"]
           }
         ]
       }
@@ -3055,49 +2929,33 @@
         "variants": [
           {
             "name": "Bool",
-            "fields": [
-              "bool"
-            ]
+            "fields": ["bool"]
           },
           {
             "name": "U8",
-            "fields": [
-              "u8"
-            ]
+            "fields": ["u8"]
           },
           {
             "name": "U8Tuple",
-            "fields": [
-              "u8",
-              "u8"
-            ]
+            "fields": ["u8", "u8"]
           },
           {
             "name": "U16",
-            "fields": [
-              "u16"
-            ]
+            "fields": ["u16"]
           },
           {
             "name": "U64",
-            "fields": [
-              "u64"
-            ]
+            "fields": ["u64"]
           },
           {
             "name": "Pubkey",
-            "fields": [
-              "publicKey"
-            ]
+            "fields": ["publicKey"]
           },
           {
             "name": "ScopeChain",
             "fields": [
               {
-                "array": [
-                  "u16",
-                  4
-                ]
+                "array": ["u16", 4]
               }
             ]
           },
@@ -3105,10 +2963,7 @@
             "name": "Name",
             "fields": [
               {
-                "array": [
-                  "u8",
-                  32
-                ]
+                "array": ["u8", 32]
               }
             ]
           },
@@ -3130,19 +2985,13 @@
           },
           {
             "name": "WithdrawalCap",
-            "fields": [
-              "u64",
-              "u64"
-            ]
+            "fields": ["u64", "u64"]
           },
           {
             "name": "ElevationGroups",
             "fields": [
               {
-                "array": [
-                  "u8",
-                  20
-                ]
+                "array": ["u8", 20]
               }
             ]
           },
@@ -3150,10 +2999,7 @@
             "name": "ElevationGroupBorrowLimits",
             "fields": [
               {
-                "array": [
-                  "u64",
-                  32
-                ]
+                "array": ["u64", 32]
               }
             ]
           }
@@ -3316,50 +3162,35 @@
         "variants": [
           {
             "name": "Bool",
-            "fields": [
-              "bool"
-            ]
+            "fields": ["bool"]
           },
           {
             "name": "U8",
-            "fields": [
-              "u8"
-            ]
+            "fields": ["u8"]
           },
           {
             "name": "U8Array",
             "fields": [
               {
-                "array": [
-                  "u8",
-                  8
-                ]
+                "array": ["u8", 8]
               }
             ]
           },
           {
             "name": "U16",
-            "fields": [
-              "u16"
-            ]
+            "fields": ["u16"]
           },
           {
             "name": "U64",
-            "fields": [
-              "u64"
-            ]
+            "fields": ["u64"]
           },
           {
             "name": "U128",
-            "fields": [
-              "u128"
-            ]
+            "fields": ["u128"]
           },
           {
             "name": "Pubkey",
-            "fields": [
-              "publicKey"
-            ]
+            "fields": ["publicKey"]
           },
           {
             "name": "ElevationGroup",
@@ -3373,10 +3204,7 @@
             "name": "Name",
             "fields": [
               {
-                "array": [
-                  "u8",
-                  32
-                ]
+                "array": ["u8", 32]
               }
             ]
           }
@@ -4027,5 +3855,8 @@
       "name": "CannotCalculateReferralAmountDueToSlotsMismatch",
       "msg": "Cannot calculate referral amount due to slots mismatch"
     }
-  ]
+  ],
+  "metadata": {
+    "address": "KLend2g3cP87fffoy8q1mQqGKjrxjC8boSyAYavgmjD"
+  }
 }

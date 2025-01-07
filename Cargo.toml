@@ -2,11 +2,6 @@
 members = [
     "programs/*",
     "client", 
-    "cpi/dlmm-cpi", 
-    "cpi/clmm-cpi", 
-    "cpi/cpmm-cpi", 
-    "cpi/whirlpool-cpi", 
-    "cpi/kamino-cpi",
 ]
 resolver = "2"
 
@@ -71,12 +66,9 @@ url = "2"
 zstd = "0.12"
 ahash = "0.8.11"
 
-
+base64 = "0.21.0"
 solana-bpf-simulator = { git = "https://github.com/dovahcrow/solana-bpf-simulator" }
 
 gamma = { path = "programs/gamma", features = ["no-entrypoint"] }
-clmm-cpi = { path = "cpi/clmm-cpi", features = ["no-entrypoint", "cpi"] }
-cpmm-cpi = { path = "cpi/cpmm-cpi", features = ["no-entrypoint", "cpi"] }
-dlmm-cpi = { path = "cpi/dlmm-cpi", features = ["no-entrypoint", "cpi"] }
-whirlpool-cpi = { path = "cpi/whirlpool-cpi", features = ["no-entrypoint", "cpi"] }
-kamino-cpi = { path = "cpi/kamino-cpi", features = ["no-entrypoint", "cpi"] }
+fixed = { version = "=1.23.1" }
+fixed-macro = "1.1"

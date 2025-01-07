@@ -1,3 +1,4 @@
+use crate::external::kamino::KaminoProgram;
 use crate::{
     error::GammaError,
     fees::FEE_RATE_DENOMINATOR_VALUE,
@@ -11,7 +12,6 @@ use anchor_spl::{
     token_interface::{Mint, TokenAccount, TokenInterface},
 };
 use borsh::BorshDeserialize;
-use kamino_cpi::Kamino;
 
 #[derive(Accounts)]
 pub struct Rebalance<'info> {
@@ -94,7 +94,7 @@ pub struct Rebalance<'info> {
 
     pub collateral_token_program: Program<'info, Token>,
 
-    pub kamino_program: Program<'info, Kamino>,
+    pub kamino_program: Program<'info, KaminoProgram>,
     pub token_program: Program<'info, Token>,
     pub token_program_2022: Program<'info, Token2022>,
     pub system_program: Program<'info, System>,
@@ -208,10 +208,10 @@ fn get_amounts_in_kamino_after_rebalance<'info>(
 ) -> Result<u64> {
     gamma_pool_destination_collateral.reload()?;
 
-    let reserve: kamino_cpi::state::Reserve = load_account(&kamino_reserve)?;
     let collateral_amount = gamma_pool_destination_collateral.amount;
 
-    let amount_deposited = reserve.collateral_to_liquidity(collateral_amount)?;
+    let amount_deposited =
+        crate::external::kamino::collateral_to_liquidity(&kamino_reserve, collateral_amount)?;
 
     Ok(amount_deposited)
 }
@@ -236,11 +236,10 @@ fn get_deposit_withdraw_amounts<'c, 'info>(
     let pool_state = pool_state.load()?;
     let is_token_0 = token_vault.key() == pool_state.token_0_vault;
 
-    let reserve: kamino_cpi::state::Reserve = load_account(&kamino_reserve)?;
-
     let collateral_amount = gamma_pool_destination_collateral.amount;
 
-    let amount_in_kamino = reserve.collateral_to_liquidity(collateral_amount)?;
+    let amount_in_kamino =
+        crate::external::kamino::collateral_to_liquidity(&kamino_reserve, collateral_amount)?;
 
     let amount_deposited = if is_token_0 {
         pool_state.token_0_amount_in_kamino
@@ -306,8 +305,10 @@ fn get_deposit_withdraw_amounts<'c, 'info>(
         amount_to_deposit_withdraw,
         is_token_0,
         is_withdrawing_profit,
-        withdraw_amount_in_collateral_tokens: reserve
-            .liquidity_to_collateral(amount_to_deposit_withdraw)?,
+        withdraw_amount_in_collateral_tokens: crate::external::kamino::liquidity_to_collateral(
+            &kamino_reserve,
+            amount_to_deposit_withdraw,
+        )?,
     })
 }
 
@@ -330,7 +331,7 @@ pub fn deposit_in_kamino<'c, 'info>(
 ) -> Result<()> {
     let kamino_deposit_cpi_ctx = CpiContext::new_with_signer(
         ctx.accounts.kamino_program.to_account_info(),
-        kamino_cpi::cpi::accounts::DepositReserveLiquidity {
+        crate::external::kamino::kamino::cpi::accounts::DepositReserveLiquidity {
             owner: ctx.accounts.gamma_authority.to_account_info(),
             reserve: ctx.accounts.kamino_reserve.to_account_info(),
             lending_market: ctx.accounts.kamino_lending_market.to_account_info(),
@@ -349,7 +350,10 @@ pub fn deposit_in_kamino<'c, 'info>(
         },
         signer_seeds,
     );
-    kamino_cpi::cpi::deposit_reserve_liquidity(kamino_deposit_cpi_ctx, amount)?;
+    crate::external::kamino::kamino::cpi::deposit_reserve_liquidity(
+        kamino_deposit_cpi_ctx,
+        amount,
+    )?;
     Ok(())
 }
 
@@ -360,7 +364,7 @@ pub fn withdraw_from_kamino<'c, 'info>(
 ) -> Result<()> {
     let kamino_withdraw_cpi_ctx = CpiContext::new_with_signer(
         ctx.accounts.kamino_program.to_account_info(),
-        kamino_cpi::cpi::accounts::RedeemReserveCollateral {
+        crate::external::kamino::kamino::cpi::accounts::RedeemReserveCollateral {
             owner: ctx.accounts.gamma_authority.to_account_info(),
             reserve: ctx.accounts.kamino_reserve.to_account_info(),
             lending_market: ctx.accounts.kamino_lending_market.to_account_info(),
@@ -380,6 +384,9 @@ pub fn withdraw_from_kamino<'c, 'info>(
         signer_seeds,
     );
 
-    kamino_cpi::cpi::redeem_reserve_collateral(kamino_withdraw_cpi_ctx, amount)?;
+    crate::external::kamino::kamino::cpi::redeem_reserve_collateral(
+        kamino_withdraw_cpi_ctx,
+        amount,
+    )?;
     Ok(())
 }

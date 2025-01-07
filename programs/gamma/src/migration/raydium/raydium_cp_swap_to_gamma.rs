@@ -150,7 +150,7 @@ pub fn raydium_cp_swap_to_gamma<'a, 'b, 'c, 'info>(
     let user_token0_balance_before = ctx.accounts.gamma_token_0_account.amount;
     let user_token1_balance_before = ctx.accounts.gamma_token_1_account.amount;
     // Withdraw from Raydium CPMM
-    let cpi_accounts = cpmm_cpi::cpi::accounts::Withdraw {
+    let cpi_accounts = crate::external::raydium_cp::raydium_cp_swap::cpi::accounts::Withdraw {
         owner: ctx.accounts.owner.to_account_info(),
         authority: ctx.accounts.raydium_cp_swap_authority.to_account_info(),
         pool_state: ctx.accounts.raydium_cp_swap_pool_state.to_account_info(),
@@ -173,7 +173,7 @@ pub fn raydium_cp_swap_to_gamma<'a, 'b, 'c, 'info>(
         ctx.accounts.raydium_cp_swap_program.to_account_info(),
         cpi_accounts,
     );
-    cpmm_cpi::cpi::withdraw(
+    crate::external::raydium_cp::raydium_cp_swap::cpi::withdraw(
         cpi_context,
         lp_token_amount_withdraw,
         minimum_token_0_amount,

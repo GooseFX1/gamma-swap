@@ -10,7 +10,7 @@ cargo build --release
 
 [tasks.build_program]
 script = """
-anchor build
+RUSTUP_TOOLCHAIN="nightly-2024-11-19" anchor build
 """
 [tasks.build_all]
 dependencies = ["build_program", "build_client"]

@@ -1,4 +1,4 @@
-use crate::external::dlmm::lb::types::BinLiquidityReduction;
+use crate::external::dlmm::lb_clmm::types::BinLiquidityReduction;
 use crate::{
     calculate_gamma_lp_tokens,
     instructions::deposit::{deposit_to_gamma_pool, Deposit},
@@ -38,7 +38,7 @@ pub struct MeteoraDlmmToGamma<'info> {
     /// CHECK: Bin array upper account
     pub dlmm_bin_array_upper: UncheckedAccount<'info>,
 
-    #[account(address = crate::external::dlmm::lb::ID)]
+    #[account(address = crate::external::dlmm::lb_clmm::ID)]
     /// CHECK: DLMM program
     pub dlmm_program: UncheckedAccount<'info>,
 
@@ -147,7 +147,7 @@ pub fn meteora_dlmm_to_gamma(
     let user_token0_balance_before = ctx.accounts.gamma_token_0_account.amount;
     let user_token1_balance_before = ctx.accounts.gamma_token_1_account.amount;
     // Withdraw from Meteora DLMM
-    let accounts = crate::external::dlmm::lb::cpi::accounts::RemoveLiquidity {
+    let accounts = crate::external::dlmm::lb_clmm::cpi::accounts::RemoveLiquidity {
         position: ctx.accounts.dlmm_position.to_account_info(),
         lb_pair: ctx.accounts.dlmm_lb_pair.to_account_info(),
         bin_array_bitmap_extension: if let Some(bin_array_bitmap_extension) =
@@ -173,7 +173,7 @@ pub fn meteora_dlmm_to_gamma(
     };
 
     let cpi_ctx = CpiContext::new(ctx.accounts.dlmm_program.to_account_info(), accounts);
-    crate::external::dlmm::lb::cpi::remove_liquidity(cpi_ctx, bin_liquidity_reduction)?;
+    crate::external::dlmm::lb_clmm::cpi::remove_liquidity(cpi_ctx, bin_liquidity_reduction)?;
 
     ctx.accounts.gamma_token_0_account.reload()?;
     ctx.accounts.gamma_token_1_account.reload()?;
