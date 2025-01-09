@@ -141,19 +141,23 @@ pub fn rebalance_kamino<'c, 'info>(
         ctx.accounts.kamino_reserve.to_account_info(),
         &mut ctx.accounts.gamma_pool_destination_collateral,
     )?;
+    ctx.accounts.reserve_liquidity_supply.reload()?;
+    let amount_in_kamino_reserve_after = ctx.accounts.reserve_liquidity_supply.amount;
 
     // This is the actual amount that was deposited in kamino.
     // Stored here for easy access of how much was deposited at time of rebalance.
     if deposit_withdraw_amounts.is_withdrawing_profit {
+        let amount_changed_in_kamino = amount_in_kamino_after_rebalance
+            .checked_sub(amount_in_kamino_reserve_after)
+            .ok_or(GammaError::MathOverflow)?;
+
+
         if deposit_withdraw_amounts.is_token_0 {
-            pool_state.token_0_profit_in_kamino = amount_in_kamino_after_rebalance;
+            pool_state.token_0_profit_in_kamino = amount_changed_in_kamino;
         } else {
-            pool_state.token_1_profit_in_kamino = amount_in_kamino_after_rebalance;
+            pool_state.token_1_profit_in_kamino = amount_changed_in_kamino;
         }
     } else {
-        ctx.accounts.reserve_liquidity_supply.reload()?;
-        let amount_in_kamino_reserve_after = ctx.accounts.reserve_liquidity_supply.amount;
-
         let amount_changed = if deposit_withdraw_amounts.should_deposit {
             amount_in_kamino_reserve_after
                 .checked_sub(amount_in_kamino_reserve_before)
