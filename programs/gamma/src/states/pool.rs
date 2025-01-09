@@ -147,8 +147,10 @@ pub struct PoolState {
     // This is important to make sure that when kamino collateral price decreases in rate cases we don't deposit more.
     pub token_0_amount_in_kamino: u64,
     pub token_1_amount_in_kamino: u64,
+    pub token_0_profit_in_kamino: u64,
+    pub token_1_profit_in_kamino: u64,
     /// padding
-    pub padding: [u64; 10],
+    pub padding: [u64; 8],
 }
 
 impl PoolState {
@@ -205,10 +207,12 @@ impl PoolState {
         self.token_1_vault_amount = token_1_vault_amount;
         self.max_shared_token0 = 0;
         self.max_shared_token1 = 0;
+        self.token_0_amount_in_kamino = 0;
+        self.token_1_amount_in_kamino = 0;
 
         self.partners = [PartnerInfo::default(); 1];
 
-        self.padding = [0u64; 10];
+        self.padding = [0u64; 8];
         Ok(())
     }
 

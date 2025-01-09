@@ -144,7 +144,13 @@ pub fn rebalance_kamino<'c, 'info>(
 
     // This is the actual amount that was deposited in kamino.
     // Stored here for easy access of how much was deposited at time of rebalance.
-    if !deposit_withdraw_amounts.is_withdrawing_profit {
+    if deposit_withdraw_amounts.is_withdrawing_profit {
+        if deposit_withdraw_amounts.is_token_0 {
+            pool_state.token_0_profit_in_kamino = amount_in_kamino_after_rebalance;
+        } else {
+            pool_state.token_1_profit_in_kamino = amount_in_kamino_after_rebalance;
+        }
+    } else {
         ctx.accounts.reserve_liquidity_supply.reload()?;
         let amount_in_kamino_reserve_after = ctx.accounts.reserve_liquidity_supply.amount;
 
