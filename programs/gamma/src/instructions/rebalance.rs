@@ -147,8 +147,8 @@ pub fn rebalance_kamino<'c, 'info>(
     // This is the actual amount that was deposited in kamino.
     // Stored here for easy access of how much was deposited at time of rebalance.
     if deposit_withdraw_amounts.is_withdrawing_profit {
-        let amount_changed_in_kamino = amount_in_kamino_reserve_after
-            .checked_sub(amount_in_kamino_reserve_before)
+        let amount_changed_in_kamino = amount_in_kamino_reserve_before
+            .checked_sub(amount_in_kamino_reserve_after)
             .ok_or(GammaError::MathOverflow)?;
             
         if deposit_withdraw_amounts.is_token_0 {
@@ -293,7 +293,7 @@ fn get_deposit_withdraw_amounts<'c, 'info>(
     } else if max_deposit_allowed == amount_deposited {
         is_withdrawing_profit = true;
         // If this is the case we still want to withdraw the profit, if any,
-        // We do saturating_sub to avoid failing if the profits are zero.
+        // We do saturating_sub to avoid failing if the profits are negative.
         amount_in_kamino.saturating_sub(amount_deposited)
     } else {
         // Withdraw the difference between the max deposit allowed and the amount deposited.
