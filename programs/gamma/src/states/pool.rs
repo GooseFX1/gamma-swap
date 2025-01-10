@@ -147,8 +147,9 @@ pub struct PoolState {
     // This is important to make sure that when kamino collateral price decreases in rate cases we don't deposit more.
     pub token_0_amount_in_kamino: u64,
     pub token_1_amount_in_kamino: u64,
-    pub token_0_profit_in_kamino: u64,
-    pub token_1_profit_in_kamino: u64,
+    // To keep track of the profit we made from kamino, in terms of the token0 or token1.
+    pub withdrawn_kamino_profit_token_0: u64,
+    pub withdrawn_kamino_profit_token_1: u64,
     /// padding
     pub padding: [u64; 8],
 }

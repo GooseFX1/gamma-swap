@@ -150,11 +150,11 @@ pub fn rebalance_kamino<'c, 'info>(
         let amount_changed_in_kamino = amount_in_kamino_reserve_before
             .checked_sub(amount_in_kamino_reserve_after)
             .ok_or(GammaError::MathOverflow)?;
-            
+
         if deposit_withdraw_amounts.is_token_0 {
-            pool_state.token_0_profit_in_kamino = amount_changed_in_kamino;
+            pool_state.withdrawn_kamino_profit_token_0 = amount_changed_in_kamino;
         } else {
-            pool_state.token_1_profit_in_kamino = amount_changed_in_kamino;
+            pool_state.withdrawn_kamino_profit_token_1 = amount_changed_in_kamino;
         }
     } else {
         let amount_changed = if deposit_withdraw_amounts.should_deposit {
