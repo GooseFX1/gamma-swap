@@ -6,7 +6,7 @@ use anchor_lang::solana_program::clock;
 #[instruction(param: u32, value: u64)]
 pub struct UpdatePool<'info> {
     #[account(
-        constraint = param==5|| authority.key() == crate::admin::id()
+        constraint = authority.key() == crate::admin::id()
     )]
     pub authority: Signer<'info>,
 
