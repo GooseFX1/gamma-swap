@@ -1,6 +1,6 @@
-use anchor_lang::prelude::*;
-
 use crate::{error::GammaError, fees::FEE_RATE_DENOMINATOR_VALUE, states::PoolState};
+use anchor_lang::prelude::*;
+use anchor_lang::solana_program::clock;
 
 #[derive(Accounts)]
 #[instruction(param: u32, value: u64)]
@@ -21,14 +21,15 @@ pub fn update_pool(ctx: Context<UpdatePool>, param: u32, value: u64) -> Result<(
         2 => update_volatility_factor(ctx, value),
         3 => update_max_shared_token0(ctx, value),
         4 => update_max_shared_token1(ctx, value),
-        5 => update_open_time(ctx, value),
+        5 => update_open_time(ctx),
         _ => Err(GammaError::InvalidInput.into()),
     }
 }
 
-fn update_open_time(ctx: Context<UpdatePool>, open_time: u64) -> Result<()> {
+fn update_open_time(ctx: Context<UpdatePool>) -> Result<()> {
     let mut pool_state = ctx.accounts.pool_state.load_mut()?;
-    pool_state.open_time = open_time;
+    let block_timestamp = clock::Clock::get()?.unix_timestamp as u64;
+    pool_state.open_time = block_timestamp;
     Ok(())
 }
 
