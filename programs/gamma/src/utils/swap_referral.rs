@@ -11,14 +11,17 @@ pub struct ReferralDetails<'c, 'info> {
 pub fn extract_referral_info<'c, 'info>(
     input_token_mint: Pubkey,
     project_key: Pubkey,
-    remaining_accounts: &'c [AccountInfo<'info>],
+    referral_account: &'c Option<AccountInfo<'info>>,
+    referral_token_account: &'c Option<AccountInfo<'info>>,
 ) -> Result<Option<ReferralDetails<'c, 'info>>> {
     // We take exactly two accounts:
     // 1. The referral account
     // 2. The referral token-account
-    let [referral_account, referral_token_account] = &remaining_accounts[..] else {
+    if referral_account.is_none() || referral_token_account.is_none() {
         return Ok(None);
-    };
+    }
+    let referral_account = referral_account.as_ref().unwrap();
+    let referral_token_account = referral_token_account.as_ref().unwrap();
 
     // check: Referral account belongs to referral program and is for project
     require_keys_eq!(*referral_account.owner, referral::ID);

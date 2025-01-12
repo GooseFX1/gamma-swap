@@ -9,6 +9,9 @@ skip-lint = true
 [programs.localnet]
 gamma = "GAMMA7meSFWaBXF25oSUgmGRwaW6sCMFLmBNiMSdbHVT"
 
+[programs.mainnet]
+gamma = "GAMMA7meSFWaBXF25oSUgmGRwaW6sCMFLmBNiMSdbHVT"
+
 [registry]
 url = "https://github.com/GooseFX1/gamma"
 

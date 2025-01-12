@@ -1,6 +1,7 @@
 use crate::curve::calculator::CurveCalculator;
 use crate::curve::TradeDirection;
 use crate::error::GammaError;
+use crate::external::dflow_segmenter::is_invoked_by_segmenter;
 use crate::states::oracle;
 use crate::states::AmmConfig;
 use crate::states::ObservationState;
@@ -78,15 +79,52 @@ pub struct Swap<'info> {
     pub observation_state: AccountLoader<'info, ObservationState>,
 }
 
+pub struct SwapRemainingAccounts<'info> {
+    pub registered_segmenter: Option<AccountInfo<'info>>,
+    pub registry: Option<AccountInfo<'info>>,
+    pub referral_account: Option<AccountInfo<'info>>,
+    pub referral_token_account: Option<AccountInfo<'info>>,
+}
+
+pub fn decode_account_info<'info>(
+    remaining_accounts: &[AccountInfo<'info>],
+    index: usize,
+) -> Option<AccountInfo<'info>> {
+    match remaining_accounts.get(index) {
+        // If the account is the program account, return None
+        // This is also how anchor internally handles optional accounts.
+        // This flexible approach allows users to provide accounts at any index (e.g., accounts 2,3)
+        // without requiring them to provide earlier optional accounts (e.g., accounts 0,1)
+        Some(account) => match account.key.eq(&crate::id()) {
+            false => Some(account.clone()),
+            true => None,
+        },
+        None => None,
+    }
+}
+
+impl<'info> SwapRemainingAccounts<'info> {
+    pub fn new(remaining_accounts: &[AccountInfo<'info>]) -> Self {
+        Self {
+            registered_segmenter: decode_account_info(remaining_accounts, 0),
+            registry: decode_account_info(remaining_accounts, 1),
+            referral_account: decode_account_info(remaining_accounts, 2),
+            referral_token_account: decode_account_info(remaining_accounts, 3),
+        }
+    }
+}
+
 pub fn swap_base_input<'c, 'info>(
     ctx: Context<'_, '_, 'c, 'info, Swap<'info>>,
     amount_in: u64,
     minimum_amount_out: u64,
 ) -> Result<()> {
+    let swap_remaining_accounts = SwapRemainingAccounts::new(&ctx.remaining_accounts);
     let referral_info = extract_referral_info(
         ctx.accounts.input_token_mint.key(),
         ctx.accounts.amm_config.referral_project,
-        &ctx.remaining_accounts,
+        &swap_remaining_accounts.referral_account,
+        &swap_remaining_accounts.referral_token_account,
     )?;
     let block_timestamp = solana_program::clock::Clock::get()?.unix_timestamp as u64;
     let pool_id = ctx.accounts.pool_state.key();
@@ -149,6 +187,20 @@ pub fn swap_base_input<'c, 'info>(
 
     let mut observation_state = ctx.accounts.observation_state.load_mut()?;
 
+    let mut is_invoked_by_signed_segmenter = false;
+
+    if swap_remaining_accounts.registered_segmenter.is_some()
+        && swap_remaining_accounts.registry.is_some()
+    {
+        is_invoked_by_signed_segmenter = is_invoked_by_segmenter(
+            &swap_remaining_accounts.registry.as_ref().unwrap(),
+            &swap_remaining_accounts
+                .registered_segmenter
+                .as_ref()
+                .unwrap(),
+        );
+    }
+
     let result = match CurveCalculator::swap_base_input(
         u128::from(actual_amount_in),
         u128::from(total_input_token_amount),
@@ -157,6 +209,7 @@ pub fn swap_base_input<'c, 'info>(
         &pool_state,
         block_timestamp,
         &observation_state,
+        is_invoked_by_signed_segmenter,
     ) {
         Ok(value) => value,
         Err(_) => return err!(GammaError::ZeroTradingTokens),

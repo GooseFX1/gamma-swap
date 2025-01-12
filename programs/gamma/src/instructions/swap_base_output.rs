@@ -1,8 +1,10 @@
 use super::swap_base_input::Swap;
 use crate::curve::{calculator::CurveCalculator, TradeDirection};
 use crate::error::GammaError;
+use crate::external::dflow_segmenter::is_invoked_by_segmenter;
 use crate::states::{oracle, PoolStatusBitIndex, SwapEvent};
 use crate::utils::{swap_referral::*, token::*};
+use crate::SwapRemainingAccounts;
 use anchor_lang::prelude::*;
 use anchor_lang::solana_program;
 
@@ -11,10 +13,12 @@ pub fn swap_base_output<'c, 'info>(
     max_amount_in: u64,
     amount_out_less_fee: u64,
 ) -> Result<()> {
+    let swap_remaining_accounts = SwapRemainingAccounts::new(&ctx.remaining_accounts);
     let referral_info = extract_referral_info(
         ctx.accounts.input_token_mint.key(),
         ctx.accounts.amm_config.referral_project,
-        &ctx.remaining_accounts,
+        &swap_remaining_accounts.referral_account,
+        &swap_remaining_accounts.referral_token_account,
     )?;
     let block_timestamp = solana_program::clock::Clock::get()?.unix_timestamp as u64;
     let pool_id = ctx.accounts.pool_state.key();
@@ -79,6 +83,19 @@ pub fn swap_base_output<'c, 'info>(
 
     let mut observation_state = ctx.accounts.observation_state.load_mut()?;
 
+    let mut is_invoked_by_signed_segmenter = false;
+    if swap_remaining_accounts.registered_segmenter.is_some()
+        && swap_remaining_accounts.registry.is_some()
+    {
+        is_invoked_by_signed_segmenter = is_invoked_by_segmenter(
+            &swap_remaining_accounts.registry.as_ref().unwrap(),
+            &swap_remaining_accounts
+                .registered_segmenter
+                .as_ref()
+                .unwrap(),
+        );
+    }
+
     let result = match CurveCalculator::swap_base_output(
         u128::from(actual_amount_out),
         u128::from(total_input_token_amount),
@@ -87,6 +104,7 @@ pub fn swap_base_output<'c, 'info>(
         &pool_state,
         block_timestamp,
         &observation_state,
+        is_invoked_by_signed_segmenter,
     ) {
         Ok(value) => value,
         Err(_) => return err!(GammaError::ZeroTradingTokens),
@@ -274,7 +292,6 @@ pub fn swap_base_output<'c, 'info>(
                 .cumulative_volume_token_1
                 .checked_add(source_amount_swapped as u128)
                 .ok_or(GammaError::MathOverflow)?;
-
 
             pool_state.token_1_vault_amount = pool_state
                 .token_1_vault_amount
