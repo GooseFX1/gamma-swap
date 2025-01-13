@@ -44,14 +44,14 @@ regex = "1"
 rust_decimal = { version = "1.36.0", features = ["maths", "c-repr"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-solana-account-decoder = "1.17"
-solana-client = "1.17"
-solana-program = "1.17"
-solana-program-runtime = "1.17"
-solana-program-test = "1.17"
-solana-sdk = "1.17"
+solana-account-decoder = "1.18"
+solana-client = "1.18"
+solana-program = "1.18"
+solana-program-runtime = "1.18"
+solana-program-test = "1.18"
+solana-sdk = "1.18"
 solana-security-txt = "1.1.1"
-solana-transaction-status = "1.17"
+solana-transaction-status = "1.18"
 spl-math = { version = "0.3.0", features = ["no-entrypoint"] }
 spl-memo = "4.0.0"
 spl-token = { version = "4.0.0", features = ["no-entrypoint"] }

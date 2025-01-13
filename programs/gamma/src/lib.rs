@@ -11,6 +11,8 @@ use anchor_lang::prelude::*;
 use instructions::*;
 use migration::*;
 
+declare_id!("GAMMA7meSFWaBXF25oSUgmGRwaW6sCMFLmBNiMSdbHVT");
+
 #[cfg(not(feature = "no-entrypoint"))]
 solana_security_txt::security_txt! {
     name: "gamma",
@@ -21,8 +23,6 @@ solana_security_txt::security_txt! {
     preferred_languages: "en",
     auditors: "https://docs.goosefx.io/goosefx-amm/gamma/audit"
 }
-
-declare_id!("GAMMA7meSFWaBXF25oSUgmGRwaW6sCMFLmBNiMSdbHVT");
 
 pub mod admin {
     use anchor_lang::prelude::declare_id;

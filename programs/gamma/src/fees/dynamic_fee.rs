@@ -44,13 +44,16 @@ impl DynamicFee {
         fee_type: FeeType,
         base_fees: u64,
         pool_state: &PoolState,
+        is_invoked_by_signed_segmenter: bool,
     ) -> Result<(u128, u64)> {
+        // TODO: use is_invoked_by_signed_segmenter to charge less fees for signed segmenter, once they are implemented across all protocols and this is also used by the segmenter.
         let dynamic_fee_rate = Self::calculate_dynamic_fee(
             block_timestamp,
             observation_state,
             fee_type,
             base_fees,
             pool_state,
+            is_invoked_by_signed_segmenter,
         )?;
 
         Ok((
@@ -81,6 +84,7 @@ impl DynamicFee {
         fee_type: FeeType,
         base_fees: u64,
         pool_state: &PoolState,
+        is_invoked_by_signed_segmenter: bool,
     ) -> Result<u64> {
         match fee_type {
             FeeType::Volatility => Self::calculate_volatile_fee(
@@ -88,6 +92,7 @@ impl DynamicFee {
                 observation_state,
                 base_fees,
                 pool_state,
+                is_invoked_by_signed_segmenter,
             ),
         }
     }
@@ -106,6 +111,7 @@ impl DynamicFee {
         observation_state: &ObservationState,
         base_fees: u64,
         pool_state: &PoolState,
+        _is_invoked_by_signed_segmenter: bool,
     ) -> Result<u64> {
         // 1. Price volatility calculation:
         //    - Get min, max and TWAP (Time-Weighted Average Price) over the volatility window
@@ -156,6 +162,12 @@ impl DynamicFee {
         #[cfg(feature = "enable-log")]
         msg!("volatility: {} ", volatility);
 
+        #[cfg(feature = "enable-log")]
+        msg!(
+            "is_invoked_by_signed_segmenter: {}",
+            _is_invoked_by_signed_segmenter
+        );
+
         let volatility_factor = if pool_state.volatility_factor == 0 {
             DEFAULT_VOLATILITY_FACTOR
         } else {
@@ -182,6 +194,7 @@ impl DynamicFee {
         } else {
             pool_state.max_trade_fee_rate
         };
+        // TODO: use is_invoked_by_signed_segmenter to charge less fees for signed segmenter, once they are implemented across all protocols and this is also used by the segmenter.
 
         #[cfg(feature = "enable-log")]
         msg!("dynamic_fee: {}", dynamic_fee);
@@ -324,6 +337,7 @@ impl DynamicFee {
         fee_type: FeeType,
         base_fees: u64,
         pool_state: &PoolState,
+        is_invoked_by_signed_segmenter: bool,
     ) -> Result<(u128, u64)> {
         // x = pre_fee_amount (has to be calculated)
         // y = post_fee_amount
@@ -346,6 +360,7 @@ impl DynamicFee {
             fee_type,
             base_fees,
             pool_state,
+            is_invoked_by_signed_segmenter,
         )?;
         if dynamic_fee_rate == 0 {
             Ok((post_fee_amount, 0))

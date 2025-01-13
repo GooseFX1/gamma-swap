@@ -242,6 +242,7 @@ impl Amm for Gamma {
             self.observation_state
                 .as_ref()
                 .context("Missing observation state")?,
+            false,
         )
         .context("swap failed")?;
 

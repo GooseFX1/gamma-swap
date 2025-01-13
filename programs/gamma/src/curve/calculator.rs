@@ -104,6 +104,9 @@ impl CurveCalculator {
         pool_state: &PoolState,
         block_timestamp: u64,
         observation_state: &ObservationState,
+        // This is to indicate that the trade is not a toxic trade and is coming to us from a signed dflow segmenter.
+        // It is planed to charge an additional fee for this trade if it is false in future.
+        is_invoked_by_signed_segmenter: bool,
         // TODO: add fee type here once that is configurable on pool level/ or we can use it from pool_state
     ) -> Result<SwapResult> {
         let (dynamic_fee, dynamic_fee_rate) = DynamicFee::dynamic_fee(
@@ -113,6 +116,7 @@ impl CurveCalculator {
             FeeType::Volatility,
             amm_config.trade_fee_rate,
             pool_state,
+            is_invoked_by_signed_segmenter,
         )?;
 
         let protocol_fee = StaticFee::protocol_fee(dynamic_fee, amm_config.protocol_fee_rate)
@@ -157,6 +161,7 @@ impl CurveCalculator {
         pool_state: &PoolState,
         block_timestamp: u64,
         observation_state: &ObservationState,
+        is_invoked_by_signed_segmenter: bool,
     ) -> Result<SwapResult> {
         let source_amount_swapped = ConstantProductCurve::swap_base_output_without_fees(
             destination_amount_to_be_swapped,
@@ -171,6 +176,7 @@ impl CurveCalculator {
             FeeType::Volatility,
             amm_config.trade_fee_rate,
             pool_state,
+            is_invoked_by_signed_segmenter,
         )?;
 
         let dynamic_fee = source_amount
