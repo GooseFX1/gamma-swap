@@ -31,20 +31,24 @@ pub struct LpChangeEvent {
 pub struct SwapEvent {
     #[index]
     pub pool_id: Pubkey,
-    // pool vault - trade_fees
+    /// pool vault - trade_fees
     pub input_vault_before: u64,
-    // pool_vault - trade_fees
+    /// pool_vault - trade_fees
     pub output_vault_before: u64,
-    // calculate result without transfer fees
+    /// calculate result without transfer fees
     pub input_amount: u64,
-    // calculate result without transfer fees
+    /// calculate result without transfer fees
     pub output_amount: u64,
-    // transfer fees on input token using token extensions
+    /// input mint for the swap
+    pub input_mint: Pubkey,
+    /// output mint for the swap
+    pub output_mint: Pubkey,
+    /// transfer fees on input token using token extensions
     pub input_transfer_fee: u64,
-    // transfer fees on output token using token extensions
+    /// transfer fees on output token using token extensions
     pub output_transfer_fee: u64,
     pub base_input: bool,
-    // dynamic_fees after this swap
+    /// dynamic_fees after this swap
     pub dynamic_fee: u128,
 }
 
