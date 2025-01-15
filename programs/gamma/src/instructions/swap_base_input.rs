@@ -419,6 +419,8 @@ pub fn swap_base_input<'c, 'info>(
             Ok(value) => value,
             Err(_) => return err!(GammaError::MathOverflow),
         },
+        input_mint: ctx.accounts.input_vault.mint,
+        output_mint: ctx.accounts.output_vault.mint,
         input_transfer_fee,
         output_transfer_fee,
         base_input: true,
