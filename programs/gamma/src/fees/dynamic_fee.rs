@@ -198,12 +198,15 @@ impl DynamicFee {
 
         #[cfg(feature = "enable-log")]
         msg!("dynamic_fee: {}", dynamic_fee);
-        let mut final_fee = std::cmp::min(dynamic_fee, max_fee);
-        if is_invoked_by_signed_segmenter && final_fee > 10 * ONE_BASIS_POINT {
-            final_fee = final_fee - ONE_BASIS_POINT;
+
+        if is_invoked_by_signed_segmenter {
+            return Ok(std::cmp::max(
+                base_fees,
+                std::cmp::min(dynamic_fee, max_fee).saturating_sub(ONE_BASIS_POINT),
+            ));
         }
 
-        Ok(final_fee)
+        Ok(std::cmp::min(dynamic_fee, max_fee))
     }
 
     /// Gets the price range within a specified time window and computes TWAP
