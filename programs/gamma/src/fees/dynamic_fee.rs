@@ -1,6 +1,7 @@
 use super::{ceil_div, FEE_RATE_DENOMINATOR_VALUE};
 use crate::{
     error::GammaError,
+    fees::ONE_BASIS_POINT,
     states::{Observation, ObservationState, PoolState, OBSERVATION_NUM},
 };
 use anchor_lang::prelude::*;
@@ -111,7 +112,7 @@ impl DynamicFee {
         observation_state: &ObservationState,
         base_fees: u64,
         pool_state: &PoolState,
-        _is_invoked_by_signed_segmenter: bool,
+        is_invoked_by_signed_segmenter: bool,
     ) -> Result<u64> {
         // 1. Price volatility calculation:
         //    - Get min, max and TWAP (Time-Weighted Average Price) over the volatility window
@@ -165,7 +166,7 @@ impl DynamicFee {
         #[cfg(feature = "enable-log")]
         msg!(
             "is_invoked_by_signed_segmenter: {}",
-            _is_invoked_by_signed_segmenter
+            is_invoked_by_signed_segmenter
         );
 
         let volatility_factor = if pool_state.volatility_factor == 0 {
@@ -194,11 +195,15 @@ impl DynamicFee {
         } else {
             pool_state.max_trade_fee_rate
         };
-        // TODO: use is_invoked_by_signed_segmenter to charge less fees for signed segmenter, once they are implemented across all protocols and this is also used by the segmenter.
 
         #[cfg(feature = "enable-log")]
         msg!("dynamic_fee: {}", dynamic_fee);
-        Ok(std::cmp::min(dynamic_fee, max_fee))
+        let mut final_fee = std::cmp::min(dynamic_fee, max_fee);
+        if is_invoked_by_signed_segmenter && final_fee > 10 * ONE_BASIS_POINT {
+            final_fee = final_fee - ONE_BASIS_POINT;
+        }
+
+        Ok(final_fee)
     }
 
     /// Gets the price range within a specified time window and computes TWAP
