@@ -45,6 +45,7 @@ pub struct Rebalance<'info> {
     pub token_vault: Box<InterfaceAccount<'info, TokenAccount>>,
 
     #[account(
+        mut,
         address = token_vault.mint
     )]
     pub token_mint: Box<InterfaceAccount<'info, Mint>>,
