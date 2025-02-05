@@ -341,6 +341,13 @@ pub fn swap_base_output<'c, 'info>(
         &[&[crate::AUTH_SEED.as_bytes(), &[pool_state.auth_bump]]],
     )?;
 
+    // Even though referral accounts are processed above, it's more convenient for 
+    // indexers to rely on the input and output token-transfer instructions having
+    // ga fixed inner-instruction index.
+    // Hence:
+    // (0) is user->vault token transfer, 
+    // (1) is vault->user token transfer, 
+    // (2) is(optionally) user->referrer token transfer
     if let Some(amount) = transfer_referral_amount {
         let info = referral_info.expect("referral_info to be non-null");
         anchor_spl::token_2022::transfer_checked(
