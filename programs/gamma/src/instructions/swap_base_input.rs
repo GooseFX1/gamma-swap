@@ -264,7 +264,8 @@ pub fn swap_base_input<'c, 'info>(
     let fund_fee = u64::try_from(result.fund_fee).or(err!(GammaError::MathOverflow))?;
     let mut dynamic_fee = u64::try_from(result.dynamic_fee).or(err!(GammaError::MathOverflow))?;
 
-    if let Some(info) = referral_info {
+    let mut transfer_referral_amount = None;
+    if let Some(ref info) = referral_info {
         let referral_amount = dynamic_fee
             .saturating_sub(protocol_fee)
             .saturating_sub(fund_fee)
@@ -291,19 +292,7 @@ pub fn swap_base_input<'c, 'info>(
                 .checked_sub(referral_amount)
                 .ok_or(GammaError::MathError)?;
 
-            anchor_spl::token_2022::transfer_checked(
-                CpiContext::new(
-                    ctx.accounts.input_token_program.to_account_info(),
-                    anchor_spl::token_2022::TransferChecked {
-                        from: ctx.accounts.input_token_account.to_account_info(),
-                        to: info.referral_token_account.to_account_info(),
-                        authority: ctx.accounts.payer.to_account_info(),
-                        mint: ctx.accounts.input_token_mint.to_account_info(),
-                    },
-                ),
-                referral_amount,
-                ctx.accounts.input_token_mint.decimals,
-            )?;
+            transfer_referral_amount = Some(referral_amount)
         }
     }
     // Save fees metric for the pool partners.
@@ -446,6 +435,23 @@ pub fn swap_base_input<'c, 'info>(
         ctx.accounts.output_token_mint.decimals,
         &[&[crate::AUTH_SEED.as_bytes(), &[pool_state.auth_bump]]],
     )?;
+
+    if let Some(amount) = transfer_referral_amount {
+        let info = referral_info.expect("referral_info to be non-null");
+        anchor_spl::token_2022::transfer_checked(
+            CpiContext::new(
+                ctx.accounts.input_token_program.to_account_info(),
+                anchor_spl::token_2022::TransferChecked {
+                    from: ctx.accounts.input_token_account.to_account_info(),
+                    to: info.referral_token_account.to_account_info(),
+                    authority: ctx.accounts.payer.to_account_info(),
+                    mint: ctx.accounts.input_token_mint.to_account_info(),
+                },
+            ),
+            amount,
+            ctx.accounts.input_token_mint.decimals,
+        )?;
+    }
 
     observation_state.update(
         oracle::block_timestamp()?,
