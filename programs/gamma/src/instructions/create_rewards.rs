@@ -107,7 +107,7 @@ pub fn create_rewards(
     }
 
     let global_reward_info = &mut ctx.accounts.global_reward_info;
-    global_reward_info.add_new_active_reward(ctx.accounts.reward_info.key(), start_time)?;
+    global_reward_info.add_new_active_reward(ctx.accounts.reward_info.key())?;
 
     let reward_info = &mut ctx.accounts.reward_info;
     reward_info.start_at = start_time;
