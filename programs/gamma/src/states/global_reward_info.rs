@@ -1,7 +1,9 @@
-use crate::borsh::maybestd::collections::VecDeque;
+use crate::{borsh::maybestd::collections::VecDeque, error::GammaError};
 use anchor_lang::prelude::*;
 
 use super::RewardInfo;
+
+pub const MAX_REWARDS: usize = 3;
 
 #[account]
 pub struct GlobalRewardInfo {
@@ -9,9 +11,10 @@ pub struct GlobalRewardInfo {
     // And the current time maybe exceeds the end time of the last boosted reward
     // There is never a proper endtime of the rewards we can even have active boosted rewards if they are not fully distributed yet.
     // Any reward that is not started yet is also consider active.
-    pub active_boosted_reward_info: [Pubkey; 3],
+    pub active_boosted_reward_info: [Pubkey; MAX_REWARDS],
 
     // This contains the minimum start time of all active boosted rewards
+    // TODO(@sushant): see if we really need this, if not remove it before we deploy to production.
     pub min_start_time: u64,
 
     pub snapshots: VecDeque<Snapshot>,
@@ -31,14 +34,19 @@ pub struct Snapshot {
 }
 
 impl GlobalRewardInfo {
-    pub fn add_new_active_reward(&mut self, reward_info: Pubkey, start_time: u64) {
-        for i in 0..3 {
+    pub fn add_new_active_reward(&mut self, reward_info: Pubkey, start_time: u64) -> Result<()> {
+        for i in 0..MAX_REWARDS {
             if self.active_boosted_reward_info[i] == Pubkey::default() {
                 self.active_boosted_reward_info[i] = reward_info;
-                return;
+                if self.min_start_time == 0 {
+                    self.min_start_time = start_time;
+                } else {
+                    self.min_start_time = self.min_start_time.min(start_time);
+                }
+                return Ok(());
             }
         }
-        self.min_start_time = self.min_start_time.min(start_time);
+        return err!(GammaError::MaxRewardsReached);
     }
 
     pub fn add_snapshot(&mut self, total_lp_amount: u64, timestamp: u64) {
@@ -52,7 +60,7 @@ impl GlobalRewardInfo {
     }
 
     pub fn remove_inactive_rewards(&mut self, reward_info: Account<RewardInfo>, current_time: u64) {
-        for i in 0..3 {
+        for i in 0..MAX_REWARDS {
             if self.active_boosted_reward_info[i] == Pubkey::default() {
                 continue;
             }
@@ -79,6 +87,8 @@ impl GlobalRewardInfo {
         if !is_reward_one_initialized && !is_reward_two_initialized && !is_reward_three_initialized
         {
             self.snapshots.clear();
+            // no rewards are active, so we can clear the min start time
+            self.min_start_time = 0;
             return;
         }
         // TODO: also drop any snapshot that is before the start time of the reward.
