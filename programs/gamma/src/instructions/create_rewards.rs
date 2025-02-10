@@ -1,7 +1,7 @@
 use crate::{
     error::GammaError,
     states::{GlobalRewardInfo, PoolState, RewardInfo},
-    utils::transfer_from_user_to_pool_vault,
+    utils::{transfer_from_user_to_pool_vault, SECONDS_IN_A_DAY},
     REWARD_VAULT_SEED,
 };
 use anchor_lang::prelude::*;
@@ -98,12 +98,21 @@ pub fn create_rewards(
     end_time: u64,
     reward_amount: u64,
 ) -> Result<()> {
+    if start_time > end_time {
+        return err!(GammaError::InvalidRewardTime);
+    }
+
+    if start_time > Clock::get()?.unix_timestamp as u64 + 5 * SECONDS_IN_A_DAY {
+        return err!(GammaError::InvalidRewardTime);
+    }
+
+    let global_reward_info = &mut ctx.accounts.global_reward_info;
+    global_reward_info.add_new_active_reward(ctx.accounts.reward_info.key())?;
+
     let reward_info = &mut ctx.accounts.reward_info;
     reward_info.start_at = start_time;
     reward_info.end_rewards_at = end_time;
-    if start_time > end_time {
-        panic!("Start time is greater than end time");
-    }
+
     reward_info.mint = ctx.accounts.reward_mint.key();
     reward_info.total_to_disburse = reward_amount;
     let time_diff = end_time
@@ -116,13 +125,6 @@ pub fn create_rewards(
 
     reward_info.total_left_in_escrow = reward_amount;
     reward_info.rewarded_by = ctx.accounts.reward_provider.key();
-
-    if start_time > Clock::get()?.unix_timestamp as u64 + 5 * 86400 {
-        panic!("Start time is too far in the future");
-    }
-
-    let global_reward_info = &mut ctx.accounts.global_reward_info;
-    global_reward_info.add_new_active_reward(ctx.accounts.reward_info.key(), start_time);
 
     transfer_from_user_to_pool_vault(
         ctx.accounts.reward_provider.to_account_info(),
