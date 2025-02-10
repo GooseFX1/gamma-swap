@@ -2,8 +2,8 @@ use crate::{
     curve::{CurveCalculator, RoundDirection},
     error::GammaError,
     states::{
-        LpChangeEvent, PartnerType, PoolState, PoolStatusBitIndex, UserPoolLiquidity,
-        USER_POOL_LIQUIDITY_SEED,
+        GlobalRewardInfo, LpChangeEvent, PartnerType, PoolState, PoolStatusBitIndex,
+        UserPoolLiquidity, USER_POOL_LIQUIDITY_SEED,
     },
     utils::{get_transfer_inverse_fee, transfer_from_user_to_pool_vault},
 };
@@ -16,6 +16,7 @@ use anchor_spl::{
 #[derive(Accounts)]
 pub struct Deposit<'info> {
     /// Owner of the liquidity provided
+    #[account(mut)]
     pub owner: Signer<'info>,
 
     /// CHECK: pool vault authority
@@ -88,6 +89,21 @@ pub struct Deposit<'info> {
         address = token_1_vault.mint
     )]
     pub vault_1_mint: Box<InterfaceAccount<'info, Mint>>,
+
+    /// Global reward info
+    #[account(
+        init_if_needed,
+        space = 8 + std::mem::size_of::<GlobalRewardInfo>(),
+        payer = owner,
+        seeds = [
+            pool_state.key().as_ref(),
+            crate::GLOBAL_REWARD_INFO_SEED.as_bytes(),
+        ],
+        bump,
+    )]
+    pub global_reward_info: Account<'info, GlobalRewardInfo>,
+
+    pub system_program: Program<'info, System>,
 }
 
 pub fn deposit(
@@ -249,5 +265,11 @@ pub fn deposit_to_gamma_pool(
         }
         pool_state.partners = pool_state_partners;
     }
+
+    accounts.global_reward_info.add_snapshot(
+        pool_state.lp_supply as u64,
+        Clock::get()?.unix_timestamp as u64,
+    );
+
     Ok(())
 }

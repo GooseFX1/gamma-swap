@@ -13,9 +13,7 @@ pub struct GlobalRewardInfo {
     // Any reward that is not started yet is also consider active.
     pub active_boosted_reward_info: [Pubkey; MAX_REWARDS],
 
-    // This contains the minimum start time of all active boosted rewards
-    // TODO(@sushant): see if we really need this, if not remove it before we deploy to production.
-    pub min_start_time: u64,
+    pub start_times: [Option<u64>; MAX_REWARDS],
 
     pub snapshots: VecDeque<Snapshot>,
 }
@@ -38,18 +36,27 @@ impl GlobalRewardInfo {
         for i in 0..MAX_REWARDS {
             if self.active_boosted_reward_info[i] == Pubkey::default() {
                 self.active_boosted_reward_info[i] = reward_info;
-                if self.min_start_time == 0 {
-                    self.min_start_time = start_time;
-                } else {
-                    self.min_start_time = self.min_start_time.min(start_time);
-                }
+                self.start_times[i] = Some(start_time);
                 return Ok(());
             }
         }
         return err!(GammaError::MaxRewardsReached);
     }
 
+    pub fn has_any_active_rewards(&self) -> bool {
+        for i in 0..MAX_REWARDS {
+            if self.active_boosted_reward_info[i] != Pubkey::default() {
+                return true;
+            }
+        }
+        return false;
+    }
+
     pub fn add_snapshot(&mut self, total_lp_amount: u64, timestamp: u64) {
+        if !self.has_any_active_rewards() {
+            return;
+        }
+
         self.snapshots.push_back(Snapshot {
             total_lp_amount,
             timestamp,
@@ -75,6 +82,7 @@ impl GlobalRewardInfo {
                     reward_info.key()
                 );
                 self.active_boosted_reward_info[i] = Pubkey::default();
+                self.start_times[i] = None;
             }
         }
     }
@@ -86,14 +94,28 @@ impl GlobalRewardInfo {
 
         if !is_reward_one_initialized && !is_reward_two_initialized && !is_reward_three_initialized
         {
+            msg!("No active rewards, clearing snapshots");
             self.snapshots.clear();
-            // no rewards are active, so we can clear the min start time
-            self.min_start_time = 0;
             return;
         }
-        // TODO: also drop any snapshot that is before the start time of the reward.
+        let min_start_time: u64 = self
+            .start_times
+            .iter()
+            .filter(|x| x.is_some())
+            .fold(u64::MAX, |a, b| a.min(b.unwrap()));
+        if min_start_time == u64::MAX {
+            msg!("No active rewards, clearing snapshots");
+            self.snapshots.clear();
+            return;
+        }
 
         while let Some(snapshot) = self.snapshots.front() {
+            let is_before_min_start_time = snapshot.timestamp < min_start_time;
+            if is_before_min_start_time {
+                self.snapshots.pop_front();
+                continue;
+            }
+
             let is_reward_one_fully_distributed_until_this_snapshot =
                 snapshot.total_lp_amount == snapshot.lp_amount_reward_0;
             let is_reward_two_fully_distributed_until_this_snapshot =
