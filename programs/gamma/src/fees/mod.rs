@@ -6,6 +6,8 @@ pub use static_fees::*;
 
 pub const ONE_BASIS_POINT: u64 = 100;
 pub const FEE_RATE_DENOMINATOR_VALUE: u64 = 1_000_000;
+// Program will only allow up to 50% of the pool to be shared with Kamino
+pub const MAX_SHARED_WITH_KAMINO_RATE: u64 = 500_000;
 
 pub fn ceil_div(token_amount: u128, fee_numerator: u128, fee_denominator: u128) -> Option<u128> {
     token_amount

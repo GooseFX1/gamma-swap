@@ -40,6 +40,13 @@ pub fn update_amm_config(ctx: Context<UpdateAmmConfig>, param: u16, value: u64) 
         5 => amm_config.create_pool_fee = value,
         6 => amm_config.disable_create_pool = if value == 0 { false } else { true },
         7 => amm_config.max_open_time = value,
+        8 => {
+            let new_secondary_admin = match ctx.remaining_accounts.iter().next() {
+                Some(account) => account.key(),
+                None => return err!(GammaError::InvalidInput),
+            };
+            set_new_secondary_admin(amm_config, new_secondary_admin)?;
+        }
         _ => return err!(GammaError::InvalidInput),
     }
 
@@ -78,6 +85,22 @@ fn set_new_protocol_owner(
         new_protocol_owner.key().to_string()
     );
     amm_config.protocol_owner = new_protocol_owner;
+    Ok(())
+}
+
+fn set_new_secondary_admin(
+    amm_config: &mut Account<AmmConfig>,
+    new_secondary_admin: Pubkey,
+) -> Result<()> {
+    require_keys_neq!(amm_config.secondary_admin, new_secondary_admin);
+    require_keys_neq!(new_secondary_admin, Pubkey::default());
+    #[cfg(feature = "enable-log")]
+    msg!(
+        "amm_config, old_secondary_admin:{}, new_owner:{}",
+        amm_config.secondary_admin.to_string(),
+        new_secondary_admin.key().to_string()
+    );
+    amm_config.secondary_admin = new_secondary_admin;
     Ok(())
 }
 
