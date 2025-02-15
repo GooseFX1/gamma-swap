@@ -260,37 +260,39 @@ pub fn swap_base_input<'c, 'info>(
         (amount_out, transfer_fee)
     };
 
-    let protocol_fee = u64::try_from(result.protocol_fee).or(err!(GammaError::MathOverflow))?;
-    let fund_fee = u64::try_from(result.fund_fee).or(err!(GammaError::MathOverflow))?;
-    let mut dynamic_fee = u64::try_from(result.dynamic_fee).or(err!(GammaError::MathOverflow))?;
+    let mut protocol_fee = u64::try_from(result.protocol_fee).or(err!(GammaError::MathOverflow))?;
+    let mut fund_fee = u64::try_from(result.fund_fee).or(err!(GammaError::MathOverflow))?;
+    let dynamic_fee = u64::try_from(result.dynamic_fee).or(err!(GammaError::MathOverflow))?;
 
     let mut transfer_referral_amount = None;
     if let Some(ref info) = referral_info {
-        let referral_amount = dynamic_fee
-            .saturating_sub(protocol_fee)
-            .saturating_sub(fund_fee)
-            .checked_mul(info.share_bps as u64)
-            .ok_or(GammaError::MathOverflow)?
-            .checked_div(10_000)
-            .unwrap_or(0);
+        let referral_result_from_protocol_fee = info.get_referral_amount(protocol_fee)?;
+        let referral_result_from_fund_fee = info.get_referral_amount(fund_fee)?;
+        let referral_amount = referral_result_from_protocol_fee
+            .referral_amount
+            .checked_add(referral_result_from_fund_fee.referral_amount)
+            .ok_or(GammaError::MathOverflow)?;
 
         let referral_transfer_fee = get_transfer_fee(
             &ctx.accounts.input_token_mint.to_account_info(),
             referral_amount,
         )?;
 
+        #[cfg(feature = "enable-log")]
+        msg!("referral_amount:{}", referral_amount, referral_transfer_fee);
+
         // We are aware of the fact that when referral fees are very small the referee will not get any tokens
         if referral_amount != 0 && referral_transfer_fee < referral_amount {
-            // subtract referral amount from dynamic fee and transfer amount
-            dynamic_fee = dynamic_fee
-                .checked_sub(referral_amount)
-                .ok_or(GammaError::MathError)?;
+            protocol_fee = referral_result_from_protocol_fee.amount_after_referral;
+            fund_fee = referral_result_from_fund_fee.amount_after_referral;
+
+            // we subtract the input transfer amount that these tokens are directly transferred from user to lp pool.
             input_transfer_amount = input_transfer_amount
                 .checked_sub(referral_amount)
-                .ok_or(GammaError::MathError)?;
+                .ok_or(GammaError::MathOverflow)?;
             actual_amount_in = actual_amount_in
                 .checked_sub(referral_amount)
-                .ok_or(GammaError::MathError)?;
+                .ok_or(GammaError::MathOverflow)?;
 
             transfer_referral_amount = Some(referral_amount)
         }
@@ -436,12 +438,12 @@ pub fn swap_base_input<'c, 'info>(
         &[&[crate::AUTH_SEED.as_bytes(), &[pool_state.auth_bump]]],
     )?;
 
-    // Even though referral accounts are processed above, it's more convenient for 
+    // Even though referral accounts are processed above, it's more convenient for
     // indexers to rely on the input and output token-transfer instructions having
     // a fixed inner-instruction index.
     // Hence:
-    // (0) is user->vault token transfer, 
-    // (1) is vault->user token transfer, 
+    // (0) is user->vault token transfer,
+    // (1) is vault->user token transfer,
     // (2) is(optionally) user->referrer token transfer
     if let Some(amount) = transfer_referral_amount {
         let info = referral_info.expect("referral_info to be non-null");
