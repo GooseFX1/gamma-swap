@@ -3,6 +3,9 @@ use referral::ReferralAccount;
 use referral::REFERRAL_ATA_SEED;
 use spl_token::state::{Account as SplTokenAccount, GenericTokenAccount};
 
+use crate::error::GammaError;
+
+pub const REFERRAL_SHARE_BPS: u64 = 10_000;
 pub struct ReferralDetails<'c, 'info> {
     pub share_bps: u16,
     pub referral_token_account: &'c AccountInfo<'info>,
@@ -58,4 +61,26 @@ pub fn extract_referral_info<'c, 'info>(
         share_bps: referral.share_bps, // the referral program guarantees that this is < 10_000
         referral_token_account,
     }))
+}
+
+pub struct ReferralResult {
+    pub referral_amount: u64,
+    pub amount_after_referral: u64,
+}
+
+impl<'c, 'info> ReferralDetails<'c, 'info> {
+    pub fn get_referral_amount(&self, amount: u64) -> Result<ReferralResult> {
+        let referral_amount = amount
+            .checked_mul(self.share_bps as u64)
+            .ok_or(GammaError::MathOverflow)?
+            .checked_div(REFERRAL_SHARE_BPS)
+            .unwrap_or(0);
+
+        let amount_after_referral = amount.checked_sub(referral_amount).unwrap_or(0);
+
+        Ok(ReferralResult {
+            referral_amount,
+            amount_after_referral,
+        })
+    }
 }
