@@ -30,8 +30,10 @@ pub struct AmmConfig {
     pub referral_project: Pubkey,
     /// Max open time for a pool in seconds
     pub max_open_time: u64,
+    // This account is not a multisig and is allowed to update certain config values on pools
+    pub secondary_admin: Pubkey,
     /// padding
-    pub padding: [u64; 11],
+    pub padding: [u64; 7],
 }
 
 impl AmmConfig {

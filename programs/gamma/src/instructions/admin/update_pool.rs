@@ -1,3 +1,5 @@
+use crate::fees::MAX_SHARED_WITH_KAMINO_RATE;
+use crate::states::AmmConfig;
 use crate::{error::GammaError, fees::FEE_RATE_DENOMINATOR_VALUE, states::PoolState};
 use anchor_lang::prelude::*;
 use anchor_lang::solana_program::clock;
@@ -6,12 +8,26 @@ use anchor_lang::solana_program::clock;
 #[instruction(param: u32, value: u64)]
 pub struct UpdatePool<'info> {
     #[account(
-        constraint = authority.key() == crate::admin::id()
+        constraint = check_authority(authority.key(), &amm_config, param)
     )]
     pub authority: Signer<'info>,
 
     #[account(mut)]
     pub pool_state: AccountLoader<'info, PoolState>,
+
+    #[account(
+        constraint = amm_config.key() == pool_state.load()?.amm_config
+    )]
+    pub amm_config: Account<'info, AmmConfig>,
+}
+
+fn check_authority(authority: Pubkey, amm_config: &AmmConfig, param: u32) -> bool {
+    let params_update_allowed_with_secondary_admin = [3, 4];
+    if params_update_allowed_with_secondary_admin.contains(&param) {
+        return authority == amm_config.secondary_admin || authority == crate::admin::id();
+    }
+
+    authority == crate::admin::id()
 }
 
 pub fn update_pool(ctx: Context<UpdatePool>, param: u32, value: u64) -> Result<()> {
@@ -43,6 +59,7 @@ fn update_max_trade_fee_rate(ctx: Context<UpdatePool>, max_trade_fee_rate: u64) 
 fn update_max_shared_token0(ctx: Context<UpdatePool>, max_shared_token0: u64) -> Result<()> {
     let mut pool_state = ctx.accounts.pool_state.load_mut()?;
     pool_state.max_shared_token0 = max_shared_token0;
+    require_gte!(MAX_SHARED_WITH_KAMINO_RATE, max_shared_token0);
     require_gt!(FEE_RATE_DENOMINATOR_VALUE, max_shared_token0);
     Ok(())
 }
@@ -50,6 +67,7 @@ fn update_max_shared_token0(ctx: Context<UpdatePool>, max_shared_token0: u64) ->
 fn update_max_shared_token1(ctx: Context<UpdatePool>, max_shared_token1: u64) -> Result<()> {
     let mut pool_state = ctx.accounts.pool_state.load_mut()?;
     pool_state.max_shared_token1 = max_shared_token1;
+    require_gte!(MAX_SHARED_WITH_KAMINO_RATE, max_shared_token1);
     require_gt!(FEE_RATE_DENOMINATOR_VALUE, max_shared_token1);
     Ok(())
 }
