@@ -40,6 +40,7 @@ pub mod create_pool_fee_reveiver {
 
 pub const AUTH_SEED: &str = "vault_and_lp_mint_auth_seed";
 pub const GLOBAL_REWARD_INFO_SEED: &str = "global_reward_info_seed";
+pub const GLOBAL_USER_LP_RECENT_CHANGE_SEED: &str = "global_user_lp_recent_change_seed";
 pub const REWARD_VAULT_SEED: &str = "reward_vault_seed";
 pub const REWARD_INFO_SEED: &str = "reward_info_seed";
 pub const USER_REWARD_INFO_SEED: &str = "user_reward_info_seed";
@@ -216,7 +217,9 @@ pub mod gamma {
         )
     }
 
-    /// Withdraw lp for token0 ande token1
+    /// Withdraw lp for token0 and token1
+    /// For rewards, in the instruction we will store for user the lp_amount changed and for pool the lp supply changed
+    /// Both are used to calculate the rewards
     ///
     /// # Arguments
     ///
@@ -239,6 +242,18 @@ pub mod gamma {
         )
     }
 
+    /// Create rewards for the pool
+    /// Initializes a new reward info account and a reward vault account
+    /// Transfers the rewards to the reward vault
+    /// Updates the global reward info account to store the new reward info
+    ///
+    /// # Arguments
+    ///
+    /// * `ctx` - The context of accounts
+    /// * `start_time` - The start time of the reward
+    /// * `end_time` - The end time of the reward
+    /// * `reward_amount` - The amount of the reward
+    ///
     pub fn create_rewards(
         ctx: Context<CreateRewards>,
         start_time: u64,
@@ -246,6 +261,30 @@ pub mod gamma {
         reward_amount: u64,
     ) -> Result<()> {
         instructions::create_rewards(ctx, start_time, end_time, reward_amount)
+    }
+
+    /// Claim rewards for the user
+    /// Transfers the amount of tokens calculated for the user to their reward token account
+    ///
+    /// # Arguments
+    ///
+    /// * `ctx` - The context of accounts
+    ///
+    pub fn claim_rewards(ctx: Context<ClaimRewards>) -> Result<()> {
+        instructions::claim_rewards(ctx)
+    }
+
+    /// Calculate rewards for the user
+    ///
+    /// * `ctx` - The context of accounts
+    ///
+    pub fn calculate_rewards(ctx: Context<CalculateRewards>) -> Result<()> {
+        instructions::calculate_rewards(ctx)
+    }
+
+    /// Migration instruction to create all necessary accounts required for rewards feature
+    pub fn migration(ctx: Context<Migration>) -> Result<()> {
+        instructions::migration(ctx)
     }
 
     /// Swap the tokens in the pool base input amount

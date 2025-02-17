@@ -2,7 +2,24 @@ use anchor_lang::prelude::*;
 
 use crate::error::GammaError;
 
-use super::{GlobalRewardInfo, RewardInfo};
+use super::{GlobalRewardInfo, RewardInfo, MAX_REWARDS};
+use borsh::maybestd::collections::VecDeque;
+
+#[account]
+pub struct GlobalUserLpRecentChange {
+    pub rewards_calculated_upto: [u64; MAX_REWARDS],
+    pub lp_snapshots: VecDeque<GlobalUserLpSnapshot>,
+}
+
+impl GlobalUserLpRecentChange {
+    pub const MIN_SIZE: usize = 8 + (MAX_REWARDS * 8) + 4;
+}
+
+#[derive(AnchorSerialize, AnchorDeserialize, Clone)]
+pub struct GlobalUserLpSnapshot {
+    pub lp_amount: u64,
+    pub timestamp: u64,
+}
 
 #[account]
 pub struct UserRewardInfo {
@@ -22,6 +39,7 @@ impl UserRewardInfo {
         &mut self,
         lp_owned_by_user: u64,
         current_lp_supply: u64,
+        user_lp_recent_change: &mut Account<'info, GlobalUserLpRecentChange>,
         global_rewards: &mut Account<'info, GlobalRewardInfo>,
         reward_info: &Account<'info, RewardInfo>,
     ) -> Result<()> {
@@ -33,44 +51,69 @@ impl UserRewardInfo {
         if reward_index.is_none() {
             return Ok(());
         }
+        let time_now = Clock::get()?.unix_timestamp as u64;
         let reward_index = reward_index.unwrap();
+        let lp_owned_by_user_snapshot = &mut user_lp_recent_change.lp_snapshots;
+        // add a virtual snapshot to the user's lp recent change.
+        lp_owned_by_user_snapshot.push_back(GlobalUserLpSnapshot {
+            lp_amount: lp_owned_by_user,
+            timestamp: time_now,
+        });
 
         let mut last_disbursed_till = reward_info.start_at.max(self.rewards_last_calculated_at);
 
-        for snapshot in &mut global_rewards.snapshots {
-            if reward_info.end_rewards_at < snapshot.timestamp {
-                break;
-            }
+        let mut has_reached_end_of_rewards = false;
 
-            match reward_index {
-                0 => {
-                    snapshot.lp_amount_reward_0 = snapshot
-                        .lp_amount_reward_0
-                        .checked_add(lp_owned_by_user)
-                        .ok_or(error!(GammaError::MathOverflow))?;
-                }
-
-                1 => {
-                    snapshot.lp_amount_reward_1 = snapshot
-                        .lp_amount_reward_1
-                        .checked_add(lp_owned_by_user)
-                        .ok_or(error!(GammaError::MathOverflow))?;
-                }
-                2 => {
-                    snapshot.lp_amount_reward_2 = snapshot
-                        .lp_amount_reward_2
-                        .checked_add(lp_owned_by_user)
-                        .ok_or(error!(GammaError::MathOverflow))?;
-                }
-                _ => {}
-            }
-
-            if last_disbursed_till > snapshot.timestamp {
+        for lp_owned_by_user_snapshot in lp_owned_by_user_snapshot {
+            if lp_owned_by_user_snapshot.timestamp < last_disbursed_till {
                 continue;
             }
 
-            let duration = snapshot
-                .timestamp
+            // This works, because at the time when lp_owned_by_user
+            for snapshot in &mut global_rewards.snapshots {
+                if has_reached_end_of_rewards {
+                    break;
+                }
+                if last_disbursed_till > snapshot.timestamp {
+                    continue;
+                }
+
+                let mut end_time = snapshot.timestamp;
+                if reward_info.end_rewards_at < snapshot.timestamp {
+                    has_reached_end_of_rewards = true;
+                    end_time = reward_info.end_rewards_at;
+                }
+
+                snapshot.lp_amount_reward[reward_index] = snapshot.lp_amount_reward[reward_index]
+                    .checked_add(lp_owned_by_user_snapshot.lp_amount)
+                    .ok_or(GammaError::MathOverflow)?;
+
+                let duration = end_time
+                    .checked_sub(last_disbursed_till)
+                    .ok_or(GammaError::MathOverflow)?;
+
+                self.total_rewards = self
+                    .total_rewards
+                    .checked_add(
+                        reward_info
+                            .emission_per_second
+                            .checked_mul(duration)
+                            .ok_or(GammaError::MathOverflow)?
+                            .checked_mul(lp_owned_by_user)
+                            .ok_or(GammaError::MathOverflow)?
+                            .checked_div(current_lp_supply)
+                            .ok_or(GammaError::MathOverflow)?,
+                    )
+                    .ok_or(GammaError::MathOverflow)?;
+
+                last_disbursed_till = end_time;
+            }
+        }
+
+        if !has_reached_end_of_rewards {
+            let end_time = std::cmp::min(time_now, reward_info.end_rewards_at);
+
+            let duration = end_time
                 .checked_sub(last_disbursed_till)
                 .ok_or(GammaError::MathOverflow)?;
 
@@ -88,31 +131,60 @@ impl UserRewardInfo {
                 )
                 .ok_or(GammaError::MathOverflow)?;
 
-            last_disbursed_till = snapshot.timestamp;
+            last_disbursed_till = end_time;
         }
+        self.rewards_last_calculated_at = last_disbursed_till;
 
-        let clock_current_time = Clock::get()?.unix_timestamp as u64;
+        user_lp_recent_change.rewards_calculated_upto[reward_index] = time_now;
 
-        let duration = clock_current_time
-            .checked_sub(last_disbursed_till)
-            .ok_or(GammaError::MathOverflow)?;
-
-        self.total_rewards = self
-            .total_rewards
-            .checked_add(
-                reward_info
-                    .emission_per_second
-                    .checked_mul(duration)
-                    .ok_or(GammaError::MathOverflow)?
-                    .checked_mul(lp_owned_by_user)
-                    .ok_or(GammaError::MathOverflow)?
-                    .checked_div(current_lp_supply)
-                    .ok_or(GammaError::MathOverflow)?,
-            )
-            .ok_or(GammaError::MathOverflow)?;
-
-        self.rewards_last_calculated_at = clock_current_time;
+        // remove the virtual snapshot.
+        user_lp_recent_change.lp_snapshots.pop_back();
 
         Ok(())
+    }
+}
+
+impl GlobalUserLpRecentChange {
+    pub fn remove_in_active_snapshots<'info>(
+        &mut self,
+        global_rewards: &mut Account<'info, GlobalRewardInfo>,
+    ) -> Result<()> {
+        if !global_rewards.has_any_active_rewards() {
+            msg!("No active rewards");
+            self.lp_snapshots.clear();
+            return Ok(());
+        }
+
+        let remove_snapshots_before = self.rewards_calculated_upto.iter().min();
+        if remove_snapshots_before.is_none() {
+            return Ok(());
+        }
+        let remove_snapshots_before = *remove_snapshots_before.unwrap();
+
+        while let Some(snapshot) = self.lp_snapshots.front() {
+            if snapshot.timestamp < remove_snapshots_before {
+                self.lp_snapshots.pop_front();
+            } else {
+                break;
+            }
+        }
+
+        Ok(())
+    }
+
+    pub fn append_snapshot<'info>(
+        &mut self,
+        lp_owned_by_user: u64,
+        timestamp: u64,
+        global_rewards: &mut Account<'info, GlobalRewardInfo>,
+    ) {
+        if !global_rewards.has_any_active_rewards() {
+            return;
+        }
+
+        self.lp_snapshots.push_back(GlobalUserLpSnapshot {
+            lp_amount: lp_owned_by_user,
+            timestamp,
+        });
     }
 }

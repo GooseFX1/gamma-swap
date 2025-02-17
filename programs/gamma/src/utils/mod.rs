@@ -1,8 +1,10 @@
 pub mod math;
+pub mod resize_account;
 pub mod swap_referral;
 pub mod token;
-
 pub use math::*;
+
+pub use resize_account::*;
 pub use swap_referral::*;
 pub use token::*;
 

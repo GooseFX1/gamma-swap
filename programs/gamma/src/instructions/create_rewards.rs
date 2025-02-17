@@ -30,27 +30,22 @@ pub struct CreateRewards<'info> {
     pub pool_state: AccountLoader<'info, PoolState>,
 
     #[account(
-        init_if_needed,
-        space = 8 + std::mem::size_of::<GlobalRewardInfo>(),
-        payer = reward_provider,
+        mut,
         seeds = [
-            pool_state.key().as_ref(),
-
             crate::GLOBAL_REWARD_INFO_SEED.as_bytes(),
+            pool_state.key().as_ref(),
         ],
         bump,
     )]
     pub global_reward_info: Account<'info, GlobalRewardInfo>,
 
     #[account(
-        init_if_needed,
-        space = 8 + std::mem::size_of::<RewardInfo>(),
-        payer = reward_provider,
+        mut,
         seeds = [
+            crate::REWARD_INFO_SEED.as_bytes(),
             pool_state.key().as_ref(),
             start_time.to_le_bytes().as_ref(),
             reward_mint.key().as_ref(),
-            crate::REWARD_INFO_SEED.as_bytes(),
         ],
         bump,
     )]
@@ -63,15 +58,12 @@ pub struct CreateRewards<'info> {
     )]
     pub reward_providers_token_account: InterfaceAccount<'info, TokenAccount>,
 
-    /// Pool vault for token_0 to deposit into
-    /// The address that holds pool tokens for token_0
+    /// For reward to deposit into.
     #[account(
         init,
         seeds = [
-            pool_state.key().as_ref(),
-            reward_mint.key().as_ref(),
-            start_time.to_le_bytes().as_ref(),
             REWARD_VAULT_SEED.as_bytes(),
+            reward_info.key().as_ref(),
         ],
         bump,
         payer = reward_provider,
@@ -107,7 +99,7 @@ pub fn create_rewards(
     }
 
     let global_reward_info = &mut ctx.accounts.global_reward_info;
-    global_reward_info.add_new_active_reward(ctx.accounts.reward_info.key())?;
+    global_reward_info.add_new_active_reward(ctx.accounts.reward_info.key(), start_time)?;
 
     let reward_info = &mut ctx.accounts.reward_info;
     reward_info.start_at = start_time;

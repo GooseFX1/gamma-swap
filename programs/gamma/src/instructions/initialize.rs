@@ -148,8 +148,8 @@ pub struct Initialize<'info> {
         space = 8 + std::mem::size_of::<GlobalRewardInfo>(),
         payer = creator,
         seeds = [
-            pool_state.key().as_ref(),
             crate::GLOBAL_REWARD_INFO_SEED.as_bytes(),
+            pool_state.key().as_ref(),
         ],
             bump,
         )]

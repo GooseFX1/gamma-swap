@@ -18,15 +18,17 @@ pub struct GlobalRewardInfo {
     pub snapshots: VecDeque<Snapshot>,
 }
 
+impl GlobalRewardInfo {
+    pub const MIN_SIZE: usize = 8 + (MAX_REWARDS * 32) + (MAX_REWARDS * (1 + 8)) + 4;
+}
+
 #[derive(AnchorSerialize, AnchorDeserialize, Clone)]
 pub struct Snapshot {
     // These is to track that the amount was calculated for the boosted rewards
     // at the time of the snapshot for the lp amount
-    // If lp amount_reward_0 is equal to total_lp_amount, then the reward has been fully distributed
+    // If lp amount_reward[0] is equal to total_lp_amount, then the reward has been fully distributed
     // and we can remove the snapshot from the queue
-    pub lp_amount_reward_0: u64,
-    pub lp_amount_reward_1: u64,
-    pub lp_amount_reward_2: u64,
+    pub lp_amount_reward: [u64; MAX_REWARDS],
     pub total_lp_amount: u64,
     pub timestamp: u64,
 }
@@ -52,7 +54,7 @@ impl GlobalRewardInfo {
         return false;
     }
 
-    pub fn add_snapshot(&mut self, total_lp_amount: u64, timestamp: u64) {
+    pub fn append_snapshot(&mut self, total_lp_amount: u64, timestamp: u64) {
         if !self.has_any_active_rewards() {
             return;
         }
@@ -60,29 +62,26 @@ impl GlobalRewardInfo {
         self.snapshots.push_back(Snapshot {
             total_lp_amount,
             timestamp,
-            lp_amount_reward_0: 0,
-            lp_amount_reward_1: 0,
-            lp_amount_reward_2: 0,
+            lp_amount_reward: [0; MAX_REWARDS],
         });
     }
 
-    pub fn remove_inactive_rewards(&mut self, reward_info: Account<RewardInfo>, current_time: u64) {
+    pub fn remove_inactive_rewards(
+        &mut self,
+        reward_info: &Account<RewardInfo>,
+        current_time: u64,
+    ) {
         for i in 0..MAX_REWARDS {
-            if self.active_boosted_reward_info[i] == Pubkey::default() {
-                continue;
-            }
-
-            if self.active_boosted_reward_info[i] != reward_info.key() {
-                continue;
-            }
-
-            if !reward_info.is_active(current_time) {
+            if self.active_boosted_reward_info[i] == reward_info.key()
+                && !reward_info.is_active(current_time)
+            {
                 msg!(
                     "Removing reward info as it is inactive and reward info is {}",
                     reward_info.key()
                 );
                 self.active_boosted_reward_info[i] = Pubkey::default();
                 self.start_times[i] = None;
+                break;
             }
         }
     }
@@ -117,11 +116,11 @@ impl GlobalRewardInfo {
             }
 
             let is_reward_one_fully_distributed_until_this_snapshot =
-                snapshot.total_lp_amount == snapshot.lp_amount_reward_0;
+                snapshot.total_lp_amount == snapshot.lp_amount_reward[0];
             let is_reward_two_fully_distributed_until_this_snapshot =
-                snapshot.total_lp_amount == snapshot.lp_amount_reward_1;
+                snapshot.total_lp_amount == snapshot.lp_amount_reward[1];
             let is_reward_three_fully_distributed_until_this_snapshot =
-                snapshot.total_lp_amount == snapshot.lp_amount_reward_2;
+                snapshot.total_lp_amount == snapshot.lp_amount_reward[2];
 
             let snapshot_is_required_for_reward_one =
                 is_reward_one_initialized && !is_reward_one_fully_distributed_until_this_snapshot;

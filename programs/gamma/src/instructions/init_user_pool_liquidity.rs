@@ -1,6 +1,8 @@
 use anchor_lang::prelude::*;
 
-use crate::states::{PartnerType, PoolState, UserPoolLiquidity, USER_POOL_LIQUIDITY_SEED};
+use crate::states::{
+    GlobalUserLpRecentChange, PartnerType, PoolState, UserPoolLiquidity, USER_POOL_LIQUIDITY_SEED,
+};
 
 #[derive(Accounts)]
 pub struct InitUserPoolLiquidity<'info> {
@@ -21,6 +23,19 @@ pub struct InitUserPoolLiquidity<'info> {
         space = UserPoolLiquidity::LEN,
     )]
     pub user_pool_liquidity: Box<Account<'info, UserPoolLiquidity>>,
+
+    #[account(
+        init,
+        space = GlobalUserLpRecentChange::MIN_SIZE,
+        payer = user,
+        seeds = [
+            crate::GLOBAL_USER_LP_RECENT_CHANGE_SEED.as_bytes(),
+            pool_state.key().as_ref(),
+            user.key().as_ref(),
+        ],
+        bump,
+    )]
+    pub global_user_lp_recent_change: Box<Account<'info, GlobalUserLpRecentChange>>,
 
     /// To create a new program account
     pub system_program: Program<'info, System>,
