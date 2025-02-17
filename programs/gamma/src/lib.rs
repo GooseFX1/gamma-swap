@@ -40,6 +40,14 @@ pub mod create_pool_fee_reveiver {
 
 pub const AUTH_SEED: &str = "vault_and_lp_mint_auth_seed";
 
+#[test]
+fn test_referral() {
+    assert_eq!(
+        referral::ID,
+        pubkey!("REFER4ZgmyYx9c6He5XfaTMiGfdLwRnkV4RPp9t9iF3")
+    );
+}
+
 #[program]
 pub mod gamma {
     use super::*;
