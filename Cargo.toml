@@ -39,7 +39,7 @@ peace-lock = "0.1"
 proptest = "1.0"
 quickcheck = "0.9"
 rand = "0.8.5"
-referral = { git = "https://github.com/GooseFX1/gfx-referral.git", branch = "make-types-public-0.30.1", features = ["cpi"] }
+referral = { git = "https://github.com/GooseFX1/gfx-referral.git", branch = "make-types-public-0.30.1", features = ["cpi", "mainnet"] }
 regex = "1"
 rust_decimal = { version = "1.36.0", features = ["maths", "c-repr"] }
 serde = { version = "1", features = ["derive"] }
