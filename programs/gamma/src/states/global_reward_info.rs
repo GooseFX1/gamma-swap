@@ -1,4 +1,4 @@
-use crate::{borsh::maybestd::collections::VecDeque, error::GammaError};
+use crate::error::GammaError;
 use anchor_lang::prelude::*;
 
 use super::RewardInfo;
@@ -13,9 +13,13 @@ pub struct GlobalRewardInfo {
     // Any reward that is not started yet is also consider active.
     pub active_boosted_reward_info: [Pubkey; MAX_REWARDS],
 
+    // This is compared with lp_supply, This value is copied to the snapshot, if the lp_supply changes.
+    // This value once it is equal to lp_supply, we can safely remove snapshot.
+    pub reward_calculated_for_lp_amount: [u64; MAX_REWARDS],
+
     pub start_times: [Option<u64>; MAX_REWARDS],
 
-    pub snapshots: VecDeque<Snapshot>,
+    pub snapshots: Vec<Snapshot>,
 }
 
 impl GlobalRewardInfo {
@@ -28,7 +32,7 @@ pub struct Snapshot {
     // at the time of the snapshot for the lp amount
     // If lp amount_reward[0] is equal to total_lp_amount, then the reward has been fully distributed
     // and we can remove the snapshot from the queue
-    pub lp_amount_reward: [u64; MAX_REWARDS],
+    pub reward_calculated_for_lp_amount: [u64; MAX_REWARDS],
     pub total_lp_amount: u64,
     pub timestamp: u64,
 }
@@ -39,6 +43,7 @@ impl GlobalRewardInfo {
             if self.active_boosted_reward_info[i] == Pubkey::default() {
                 self.active_boosted_reward_info[i] = reward_info;
                 self.start_times[i] = Some(start_time);
+                self.reward_calculated_for_lp_amount[i] = 0;
                 return Ok(());
             }
         }
@@ -59,10 +64,10 @@ impl GlobalRewardInfo {
             return;
         }
 
-        self.snapshots.push_back(Snapshot {
+        self.snapshots.push(Snapshot {
             total_lp_amount,
             timestamp,
-            lp_amount_reward: [0; MAX_REWARDS],
+            reward_calculated_for_lp_amount: self.reward_calculated_for_lp_amount,
         });
     }
 
@@ -108,19 +113,19 @@ impl GlobalRewardInfo {
             return;
         }
 
-        while let Some(snapshot) = self.snapshots.front() {
+        while let Some(snapshot) = self.snapshots.get(0) {
             let is_before_min_start_time = snapshot.timestamp < min_start_time;
             if is_before_min_start_time {
-                self.snapshots.pop_front();
+                self.snapshots.remove(0);
                 continue;
             }
 
             let is_reward_one_fully_distributed_until_this_snapshot =
-                snapshot.total_lp_amount == snapshot.lp_amount_reward[0];
+                snapshot.total_lp_amount == snapshot.reward_calculated_for_lp_amount[0];
             let is_reward_two_fully_distributed_until_this_snapshot =
-                snapshot.total_lp_amount == snapshot.lp_amount_reward[1];
+                snapshot.total_lp_amount == snapshot.reward_calculated_for_lp_amount[1];
             let is_reward_three_fully_distributed_until_this_snapshot =
-                snapshot.total_lp_amount == snapshot.lp_amount_reward[2];
+                snapshot.total_lp_amount == snapshot.reward_calculated_for_lp_amount[2];
 
             let snapshot_is_required_for_reward_one =
                 is_reward_one_initialized && !is_reward_one_fully_distributed_until_this_snapshot;
@@ -136,7 +141,7 @@ impl GlobalRewardInfo {
                 break;
             }
 
-            self.snapshots.pop_front();
+            self.snapshots.remove(0);
         }
     }
 }

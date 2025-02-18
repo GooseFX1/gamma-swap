@@ -278,7 +278,7 @@ pub fn withdraw(
     let time_now = Clock::get()?.unix_timestamp as u64;
 
     let global_reward_info = &mut ctx.accounts.global_reward_info;
-    global_reward_info.append_snapshot(pool_state.lp_supply as u64, time_now);
+    global_reward_info.append_snapshot(pool_state.lp_supply as u64, time_now); //
 
     ctx.accounts.global_user_lp_recent_change.append_snapshot(
         user_pool_liquidity.lp_tokens_owned as u64,

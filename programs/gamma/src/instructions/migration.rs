@@ -56,6 +56,6 @@ pub struct Migration<'info> {
     pub system_program: Program<'info, System>,
 }
 
-pub fn migration(ctx: Context<Migration>) -> Result<()> {
+pub fn migration(_ctx: Context<Migration>) -> Result<()> {
     Ok(())
 }

@@ -3,12 +3,11 @@ use anchor_lang::prelude::*;
 use crate::error::GammaError;
 
 use super::{GlobalRewardInfo, RewardInfo, MAX_REWARDS};
-use borsh::maybestd::collections::VecDeque;
 
 #[account]
 pub struct GlobalUserLpRecentChange {
     pub rewards_calculated_upto: [u64; MAX_REWARDS],
-    pub lp_snapshots: VecDeque<GlobalUserLpSnapshot>,
+    pub lp_snapshots: Vec<GlobalUserLpSnapshot>,
 }
 
 impl GlobalUserLpRecentChange {
@@ -54,8 +53,9 @@ impl UserRewardInfo {
         let time_now = Clock::get()?.unix_timestamp as u64;
         let reward_index = reward_index.unwrap();
         let lp_owned_by_user_snapshot = &mut user_lp_recent_change.lp_snapshots;
+        let index_of_virtual_snapshot = lp_owned_by_user_snapshot.len();
         // add a virtual snapshot to the user's lp recent change.
-        lp_owned_by_user_snapshot.push_back(GlobalUserLpSnapshot {
+        lp_owned_by_user_snapshot.push(GlobalUserLpSnapshot {
             lp_amount: lp_owned_by_user,
             timestamp: time_now,
         });
@@ -84,7 +84,8 @@ impl UserRewardInfo {
                     end_time = reward_info.end_rewards_at;
                 }
 
-                snapshot.lp_amount_reward[reward_index] = snapshot.lp_amount_reward[reward_index]
+                snapshot.reward_calculated_for_lp_amount[reward_index] = snapshot
+                    .reward_calculated_for_lp_amount[reward_index]
                     .checked_add(lp_owned_by_user_snapshot.lp_amount)
                     .ok_or(GammaError::MathOverflow)?;
 
@@ -117,6 +118,11 @@ impl UserRewardInfo {
                 .checked_sub(last_disbursed_till)
                 .ok_or(GammaError::MathOverflow)?;
 
+            global_rewards.reward_calculated_for_lp_amount[reward_index] = global_rewards
+                .reward_calculated_for_lp_amount[reward_index]
+                .checked_add(lp_owned_by_user)
+                .ok_or(GammaError::MathOverflow)?;
+
             self.total_rewards = self
                 .total_rewards
                 .checked_add(
@@ -138,7 +144,9 @@ impl UserRewardInfo {
         user_lp_recent_change.rewards_calculated_upto[reward_index] = time_now;
 
         // remove the virtual snapshot.
-        user_lp_recent_change.lp_snapshots.pop_back();
+        user_lp_recent_change
+            .lp_snapshots
+            .remove(index_of_virtual_snapshot);
 
         Ok(())
     }
@@ -161,9 +169,9 @@ impl GlobalUserLpRecentChange {
         }
         let remove_snapshots_before = *remove_snapshots_before.unwrap();
 
-        while let Some(snapshot) = self.lp_snapshots.front() {
+        while let Some(snapshot) = self.lp_snapshots.get(0) {
             if snapshot.timestamp < remove_snapshots_before {
-                self.lp_snapshots.pop_front();
+                self.lp_snapshots.remove(0);
             } else {
                 break;
             }
@@ -182,7 +190,7 @@ impl GlobalUserLpRecentChange {
             return;
         }
 
-        self.lp_snapshots.push_back(GlobalUserLpSnapshot {
+        self.lp_snapshots.push(GlobalUserLpSnapshot {
             lp_amount: lp_owned_by_user,
             timestamp,
         });
