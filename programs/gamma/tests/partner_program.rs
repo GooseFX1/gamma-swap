@@ -113,6 +113,7 @@ async fn should_track_cumulative_rates_correctly() {
     );
     assert_eq_with_copy!(pool_state.partners[0].partner_id, 0);
 
+    dbg!("init_user_pool_liquidity_with_partner");
     test_env
         .init_user_pool_liquidity_with_partner(
             &lp_depositor_asset_dash,
@@ -121,6 +122,7 @@ async fn should_track_cumulative_rates_correctly() {
         )
         .await;
 
+    dbg!("deposit");
     let lp_deposit_amount = 200000000;
     test_env
         .deposit(
@@ -150,6 +152,8 @@ async fn should_track_cumulative_rates_correctly() {
         0
     );
 
+    dbg!("withdraw");
+
     let withdraw_amount = 100000000;
     test_env
         .withdraw(
@@ -177,7 +181,8 @@ async fn should_track_cumulative_rates_correctly() {
         pool_state.partners[0].cumulative_fee_total_times_tvl_share_token_1,
         0
     );
-
+    
+    dbg!("swap_base_input");
     test_env
         .swap_base_input(
             &user,
@@ -205,6 +210,8 @@ async fn should_track_cumulative_rates_correctly() {
         (pool_state.partners[0].lp_token_linked_with_partner * pool_state.protocol_fees_token_1)
             / pool_state.lp_supply
     );
+
+    dbg!("swap_base_input_zero_for_one");
 
     test_env
         .swap_base_input(

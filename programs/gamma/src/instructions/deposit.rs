@@ -2,10 +2,10 @@ use crate::{
     curve::{CurveCalculator, RoundDirection},
     error::GammaError,
     states::{
-        LpChangeEvent, PartnerType, PoolState, PoolStatusBitIndex, UserPoolLiquidity,
-        USER_POOL_LIQUIDITY_SEED,
+        GlobalRewardInfo, GlobalUserLpRecentChange, LpChangeEvent, PartnerType, PoolState,
+        PoolStatusBitIndex, UserPoolLiquidity, USER_POOL_LIQUIDITY_SEED,
     },
-    utils::{get_transfer_inverse_fee, transfer_from_user_to_pool_vault},
+    utils::{dynamic_realloc_account, get_transfer_inverse_fee, transfer_from_user_to_pool_vault},
 };
 use anchor_lang::prelude::*;
 use anchor_spl::{
@@ -16,6 +16,7 @@ use anchor_spl::{
 #[derive(Accounts)]
 pub struct Deposit<'info> {
     /// Owner of the liquidity provided
+    #[account(mut)]
     pub owner: Signer<'info>,
 
     /// CHECK: pool vault authority
@@ -88,6 +89,30 @@ pub struct Deposit<'info> {
         address = token_1_vault.mint
     )]
     pub vault_1_mint: Box<InterfaceAccount<'info, Mint>>,
+
+    // Global reward info
+    #[account(
+        mut,
+        seeds = [
+            crate::GLOBAL_REWARD_INFO_SEED.as_bytes(),
+            pool_state.key().as_ref(),
+        ],
+        bump,
+    )]
+    pub global_reward_info: Account<'info, GlobalRewardInfo>,
+
+    #[account(
+        mut,
+        seeds = [
+            crate::GLOBAL_USER_LP_RECENT_CHANGE_SEED.as_bytes(),
+            pool_state.key().as_ref(),
+            owner.key().as_ref(),
+        ],
+        bump,
+    )]
+    pub global_user_lp_recent_change: Account<'info, GlobalUserLpRecentChange>,
+
+    pub system_program: Program<'info, System>,
 }
 
 pub fn deposit(
@@ -249,5 +274,28 @@ pub fn deposit_to_gamma_pool(
         }
         pool_state.partners = pool_state_partners;
     }
+
+    let time_now = Clock::get()?.unix_timestamp as u64;
+    accounts
+        .global_reward_info
+        .append_snapshot(pool_state.lp_supply as u64, time_now);
+
+    accounts.global_user_lp_recent_change.append_snapshot(
+        user_pool_liquidity.lp_tokens_owned as u64,
+        time_now,
+        &mut accounts.global_reward_info,
+    );
+    dynamic_realloc_account(
+        &mut accounts.global_reward_info,
+        &mut accounts.owner.to_account_info(),
+        &accounts.system_program,
+    )?;
+
+    dynamic_realloc_account(
+        &mut accounts.global_user_lp_recent_change,
+        &mut accounts.owner.to_account_info(),
+        &accounts.system_program,
+    )?;
+
     Ok(())
 }

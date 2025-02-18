@@ -1,4 +1,5 @@
 use crate::external::dlmm::lb_clmm::types::BinLiquidityReduction;
+use crate::states::{GlobalRewardInfo, GlobalUserLpRecentChange};
 use crate::{
     calculate_gamma_lp_tokens,
     instructions::deposit::{deposit_to_gamma_pool, Deposit},
@@ -136,6 +137,29 @@ pub struct MeteoraDlmmToGamma<'info> {
         address = gamma_token_1_vault.mint
     )]
     pub gamma_vault_1_mint: Box<InterfaceAccount<'info, Mint>>,
+    // Global reward info
+    #[account(
+        mut,
+        seeds = [
+            crate::GLOBAL_REWARD_INFO_SEED.as_bytes(),
+            gamma_pool_state.key().as_ref(),
+        ],
+        bump,
+    )]
+    pub global_reward_info: Account<'info, GlobalRewardInfo>,
+
+    #[account(
+        mut,
+        seeds = [
+            crate::GLOBAL_USER_LP_RECENT_CHANGE_SEED.as_bytes(),
+            gamma_pool_state.key().as_ref(),
+            gamma_owner.key().as_ref(),
+        ],
+        bump,
+    )]
+    pub global_user_lp_recent_change: Account<'info, GlobalUserLpRecentChange>,
+
+    pub system_program: Program<'info, System>,
 }
 
 pub fn meteora_dlmm_to_gamma(
@@ -206,6 +230,9 @@ pub fn meteora_dlmm_to_gamma(
         token_program_2022: ctx.accounts.token_program_2022.clone(),
         vault_0_mint: ctx.accounts.gamma_vault_0_mint.clone(),
         vault_1_mint: ctx.accounts.gamma_vault_1_mint.clone(),
+        global_reward_info: ctx.accounts.global_reward_info.clone(),
+        global_user_lp_recent_change: ctx.accounts.global_user_lp_recent_change.clone(),
+        system_program: ctx.accounts.system_program.clone(),
     };
 
     deposit_to_gamma_pool(

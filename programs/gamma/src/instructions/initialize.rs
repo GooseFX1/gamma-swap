@@ -4,8 +4,8 @@ use crate::{
     curve::CurveCalculator,
     error::GammaError,
     states::{
-        AmmConfig, ObservationState, PoolState, UserPoolLiquidity, OBSERVATION_SEED, POOL_SEED,
-        POOL_VAULT_SEED, USER_POOL_LIQUIDITY_SEED,
+        AmmConfig, GlobalRewardInfo, GlobalUserLpRecentChange, ObservationState, PoolState,
+        UserPoolLiquidity, OBSERVATION_SEED, POOL_SEED, POOL_VAULT_SEED, USER_POOL_LIQUIDITY_SEED,
     },
     utils::{create_token_account, is_supported_mint, transfer_from_user_to_pool_vault, U128},
 };
@@ -141,6 +141,32 @@ pub struct Initialize<'info> {
         space = ObservationState::LEN,
     )]
     pub observation_state: AccountLoader<'info, ObservationState>,
+
+    /// Global reward info
+    #[account(
+        init,
+        space = 8 + std::mem::size_of::<GlobalRewardInfo>(),
+        payer = creator,
+        seeds = [
+            crate::GLOBAL_REWARD_INFO_SEED.as_bytes(),
+            pool_state.key().as_ref(),
+        ],
+            bump,
+        )]
+    pub global_reward_info: Account<'info, GlobalRewardInfo>,
+
+    #[account(
+        init,
+        payer = creator,
+        space = GlobalUserLpRecentChange::MIN_SIZE,
+        seeds = [
+            crate::GLOBAL_USER_LP_RECENT_CHANGE_SEED.as_bytes(),
+            pool_state.key().as_ref(),
+            creator.key().as_ref(),
+        ],
+        bump,
+    )]
+    pub global_user_lp_recent_change: Account<'info, GlobalUserLpRecentChange>,
 
     /// Program to create mint account and mint tokens
     pub token_program: Program<'info, Token>,

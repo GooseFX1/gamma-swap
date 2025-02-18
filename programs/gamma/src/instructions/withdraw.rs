@@ -4,14 +4,16 @@ use anchor_spl::token_interface::{Mint, Token2022, TokenAccount};
 
 use crate::curve::{CurveCalculator, RoundDirection};
 use crate::states::{
-    LpChangeEvent, PartnerType, PoolStatusBitIndex, UserPoolLiquidity, USER_POOL_LIQUIDITY_SEED,
+    GlobalRewardInfo, GlobalUserLpRecentChange, LpChangeEvent, PartnerType, PoolStatusBitIndex,
+    UserPoolLiquidity, USER_POOL_LIQUIDITY_SEED,
 };
-use crate::utils::{get_transfer_fee, transfer_from_pool_vault_to_user};
+use crate::utils::{dynamic_realloc_account, get_transfer_fee, transfer_from_pool_vault_to_user};
 use crate::{error::GammaError, states::PoolState};
 
 #[derive(Accounts)]
 pub struct Withdraw<'info> {
     /// Owner of the liquidity provided
+    #[account(mut)]
     pub owner: Signer<'info>,
 
     /// CHECK: pool vault authority
@@ -93,6 +95,30 @@ pub struct Withdraw<'info> {
         address = spl_memo::id()
     )]
     pub memo_program: UncheckedAccount<'info>,
+
+    /// Global reward info
+    #[account(
+        mut,
+        seeds = [
+            crate::GLOBAL_REWARD_INFO_SEED.as_bytes(),
+            pool_state.key().as_ref(),
+        ],
+        bump,
+    )]
+    pub global_reward_info: Box<Account<'info, GlobalRewardInfo>>,
+
+    #[account(
+        mut,
+        seeds = [
+            crate::GLOBAL_USER_LP_RECENT_CHANGE_SEED.as_bytes(),
+            pool_state.key().as_ref(),
+            owner.key().as_ref(),
+        ],
+        bump,
+    )]
+    pub global_user_lp_recent_change: Account<'info, GlobalUserLpRecentChange>,
+
+    pub system_program: Program<'info, System>,
 }
 
 pub fn withdraw(
@@ -101,7 +127,6 @@ pub fn withdraw(
     minimum_token_0_amount: u64,
     minimum_token_1_amount: u64,
 ) -> Result<()> {
-    // require_gt!(ctx.accounts.lp_mint.supply, 0);
     let pool_id = ctx.accounts.pool_state.key();
     let pool_state = &mut ctx.accounts.pool_state.load_mut()?;
     if !pool_state.get_status_by_bit(PoolStatusBitIndex::Withdraw) {
@@ -250,6 +275,28 @@ pub fn withdraw(
         .ok_or(GammaError::MathOverflow)?;
 
     pool_state.recent_epoch = Clock::get()?.epoch;
+    let time_now = Clock::get()?.unix_timestamp as u64;
+
+    let global_reward_info = &mut ctx.accounts.global_reward_info;
+    global_reward_info.append_snapshot(pool_state.lp_supply as u64, time_now); //
+
+    ctx.accounts.global_user_lp_recent_change.append_snapshot(
+        user_pool_liquidity.lp_tokens_owned as u64,
+        time_now,
+        global_reward_info,
+    );
+
+    dynamic_realloc_account(
+        &mut ctx.accounts.global_reward_info,
+        &mut ctx.accounts.owner.to_account_info(),
+        &ctx.accounts.system_program,
+    )?;
+
+    dynamic_realloc_account(
+        &mut ctx.accounts.global_user_lp_recent_change,
+        &mut ctx.accounts.owner.to_account_info(),
+        &ctx.accounts.system_program,
+    )?;
 
     Ok(())
 }

@@ -1,7 +1,10 @@
 use crate::{
     calculate_gamma_lp_tokens,
     instructions::deposit::{deposit_to_gamma_pool, Deposit},
-    states::{MigrationEvent, PoolState, UserPoolLiquidity, USER_POOL_LIQUIDITY_SEED},
+    states::{
+        GlobalRewardInfo, GlobalUserLpRecentChange, MigrationEvent, PoolState, UserPoolLiquidity,
+        USER_POOL_LIQUIDITY_SEED,
+    },
 };
 use anchor_lang::prelude::*;
 use anchor_spl::{
@@ -137,6 +140,30 @@ pub struct RaydiumCpSwapToGamma<'info> {
 
     /// Token program 2022
     pub token_program_2022: Program<'info, Token2022>,
+
+    // Global reward info
+    #[account(
+        mut,
+        seeds = [
+            crate::GLOBAL_REWARD_INFO_SEED.as_bytes(),
+            gamma_pool_state.key().as_ref(),
+        ],
+        bump,
+    )]
+    pub global_reward_info: Account<'info, GlobalRewardInfo>,
+
+    #[account(
+        mut,
+        seeds = [
+            crate::GLOBAL_USER_LP_RECENT_CHANGE_SEED.as_bytes(),
+            gamma_pool_state.key().as_ref(),
+            gamma_owner.key().as_ref(),
+        ],
+        bump,
+    )]
+    pub global_user_lp_recent_change: Account<'info, GlobalUserLpRecentChange>,
+
+    pub system_program: Program<'info, System>,
 }
 
 pub fn raydium_cp_swap_to_gamma<'a, 'b, 'c, 'info>(
@@ -212,6 +239,9 @@ pub fn raydium_cp_swap_to_gamma<'a, 'b, 'c, 'info>(
         token_program_2022: ctx.accounts.token_program_2022.clone(),
         vault_0_mint: ctx.accounts.gamma_vault_0_mint.clone(),
         vault_1_mint: ctx.accounts.gamma_vault_1_mint.clone(),
+        global_reward_info: ctx.accounts.global_reward_info.clone(),
+        global_user_lp_recent_change: ctx.accounts.global_user_lp_recent_change.clone(),
+        system_program: ctx.accounts.system_program.clone(),
     };
 
     // Deposit into Gamma pool

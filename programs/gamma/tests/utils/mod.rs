@@ -9,7 +9,7 @@ use gamma::states::{
     ObservationState, AMM_CONFIG_SEED, OBSERVATION_NUM, OBSERVATION_SEED, POOL_LP_MINT_SEED,
     POOL_SEED, POOL_VAULT_SEED, USER_POOL_LIQUIDITY_SEED,
 };
-use gamma::AUTH_SEED;
+use gamma::{AUTH_SEED, GLOBAL_REWARD_INFO_SEED, GLOBAL_USER_LP_RECENT_CHANGE_SEED};
 use solana_program_runtime::invoke_context::BuiltinFunctionWithContext;
 use solana_sdk::instruction::Instruction;
 use solana_sdk::program_option::COption;
@@ -699,6 +699,25 @@ impl TestEnv {
         )
         .0;
 
+        let global_reward_info = Pubkey::find_program_address(
+            &[
+                GLOBAL_REWARD_INFO_SEED.as_bytes(),
+                pool_account_key.to_bytes().as_ref(),
+            ],
+            &gamma::id(),
+        )
+        .0;
+
+        let global_user_lp_recent_change = Pubkey::find_program_address(
+            &[
+                GLOBAL_USER_LP_RECENT_CHANGE_SEED.as_bytes(),
+                pool_account_key.to_bytes().as_ref(),
+                user.pubkey().to_bytes().as_ref(),
+            ],
+            &gamma::id(),
+        )
+        .0;
+
         let accounts = gamma::accounts::Initialize {
             creator: user.pubkey(),
             amm_config: amm_config_key,
@@ -719,6 +738,8 @@ impl TestEnv {
             associated_token_program: spl_associated_token_account::id(),
             system_program: system_program::ID,
             rent: sysvar::rent::id(),
+            global_reward_info,
+            global_user_lp_recent_change,
         };
 
         let data = gamma::instruction::Initialize {
@@ -804,6 +825,25 @@ impl TestEnv {
         )
         .0;
 
+        let global_user_lp_recent_change = Pubkey::find_program_address(
+            &[
+                GLOBAL_USER_LP_RECENT_CHANGE_SEED.as_bytes(),
+                pool_id.to_bytes().as_ref(),
+                user.pubkey().to_bytes().as_ref(),
+            ],
+            &gamma::id(),
+        )
+        .0;
+
+        let global_reward_info = Pubkey::find_program_address(
+            &[
+                GLOBAL_REWARD_INFO_SEED.as_bytes(),
+                pool_account_key.to_bytes().as_ref(),
+            ],
+            &gamma::id(),
+        )
+        .0;
+
         let accounts = gamma::accounts::Deposit {
             owner: user.pubkey(),
             authority,
@@ -818,6 +858,9 @@ impl TestEnv {
             token_program_2022: spl_token_2022::id(),
             vault_0_mint: self.token_0_mint,
             vault_1_mint: self.token_1_mint,
+            global_reward_info,
+            global_user_lp_recent_change,
+            system_program: system_program::ID,
         };
 
         let data = gamma::instruction::Deposit {
@@ -897,6 +940,25 @@ impl TestEnv {
             .get_or_create_associated_token_account(user.pubkey(), self.token_1_mint.clone(), &user)
             .await;
 
+        let global_user_lp_recent_change = Pubkey::find_program_address(
+            &[
+                GLOBAL_USER_LP_RECENT_CHANGE_SEED.as_bytes(),
+                pool_id.to_bytes().as_ref(),
+                user.pubkey().to_bytes().as_ref(),
+            ],
+            &gamma::id(),
+        )
+        .0;
+
+        let global_reward_info = Pubkey::find_program_address(
+            &[
+                GLOBAL_REWARD_INFO_SEED.as_bytes(),
+                pool_account_key.to_bytes().as_ref(),
+            ],
+            &gamma::id(),
+        )
+        .0;
+
         let accounts = gamma::accounts::Withdraw {
             owner: user.pubkey(),
             authority,
@@ -910,7 +972,10 @@ impl TestEnv {
             token_program_2022: spl_token_2022::id(),
             vault_0_mint: self.token_0_mint,
             vault_1_mint: self.token_1_mint,
+            global_user_lp_recent_change,
             memo_program: spl_memo::id(),
+            global_reward_info,
+            system_program: system_program::ID,
         };
 
         let data = gamma::instruction::Withdraw {
@@ -951,11 +1016,27 @@ impl TestEnv {
         )
         .0;
 
+        dbg!(
+            "global_user_lp_recent_change_seed",
+            GLOBAL_USER_LP_RECENT_CHANGE_SEED
+        );
+        let global_user_lp_recent_change = Pubkey::find_program_address(
+            &[
+                GLOBAL_USER_LP_RECENT_CHANGE_SEED.as_bytes(),
+                pool_id.to_bytes().as_ref(),
+                user.pubkey().to_bytes().as_ref(),
+            ],
+            &gamma::id(),
+        )
+        .0;
+        dbg!("global_user_lp_recent_change", global_user_lp_recent_change);
+
         let accounts: gamma::accounts::InitUserPoolLiquidity =
             gamma::accounts::InitUserPoolLiquidity {
                 user: user.pubkey(),
                 pool_state: pool_id,
                 user_pool_liquidity,
+                global_user_lp_recent_change,
                 system_program: system_program::ID,
             };
 
