@@ -39,6 +39,9 @@ pub mod create_pool_fee_reveiver {
 }
 
 pub const AUTH_SEED: &str = "vault_and_lp_mint_auth_seed";
+pub const REWARD_VAULT_SEED: &str = "reward_vault_seed";
+pub const REWARD_INFO_SEED: &str = "reward_info_seed";
+pub const USER_REWARD_INFO_SEED: &str = "user_reward_info_seed";
 
 #[test]
 fn test_referral() {
@@ -273,6 +276,45 @@ pub mod gamma {
         amount_out: u64,
     ) -> Result<()> {
         instructions::swap_base_output(ctx, max_amount_in, amount_out)
+    }
+
+    /// Create rewards for the pool
+    /// Initializes a new reward info account and a reward vault account
+    /// Transfers the rewards to the reward vault
+    ///
+    /// # Arguments
+    ///
+    /// * `ctx` - The context of accounts
+    /// * `start_time` - The start time of the reward
+    /// * `end_time` - The end time of the reward
+    /// * `reward_amount` - The amount of the reward
+    ///
+    pub fn create_rewards(
+        ctx: Context<CreateRewards>,
+        start_time: u64,
+        end_time: u64,
+        reward_amount: u64,
+    ) -> Result<()> {
+        instructions::create_rewards(ctx, start_time, end_time, reward_amount)
+    }
+
+    /// Claim rewards for the user
+    /// Transfers the amount of tokens calculated for the user to their reward token account
+    ///
+    /// # Arguments
+    ///
+    /// * `ctx` - The context of accounts
+    ///
+    pub fn claim_rewards(ctx: Context<ClaimRewards>) -> Result<()> {
+        instructions::claim_rewards(ctx)
+    }
+
+    /// Calculate rewards for the user
+    ///
+    /// * `ctx` - The context of accounts
+    ///
+    pub fn calculate_rewards(ctx: Context<CalculateRewards>) -> Result<()> {
+        instructions::calculate_rewards(ctx)
     }
 
     /********************* Migration Instructions *********************/
