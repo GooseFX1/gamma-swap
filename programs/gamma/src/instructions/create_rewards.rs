@@ -79,26 +79,14 @@ pub fn create_rewards(
     end_time: u64,
     reward_amount: u64,
 ) -> Result<()> {
-    if start_time > end_time {
+    let current_time = Clock::get()?.unix_timestamp as u64;
+    if start_time <= current_time {
         return err!(GammaError::InvalidRewardTime);
     }
 
-    let reward_info = &mut ctx.accounts.reward_info;
-    reward_info.start_at = start_time;
-    reward_info.end_rewards_at = end_time;
-
-    reward_info.mint = ctx.accounts.reward_mint.key();
-    let time_diff = end_time
-        .checked_sub(start_time)
-        .ok_or(GammaError::MathOverflow)?;
-
-    reward_info.emission_per_second = reward_amount
-        .checked_div(time_diff)
-        .ok_or(GammaError::MathOverflow)?;
-
-    reward_info.total_to_disburse = reward_amount;
-
-    reward_info.rewarded_by = ctx.accounts.reward_provider.key();
+    if start_time > end_time {
+        return err!(GammaError::InvalidRewardTime);
+    }
 
     transfer_from_user_to_pool_vault(
         ctx.accounts.reward_provider.to_account_info(),
@@ -115,6 +103,25 @@ pub fn create_rewards(
         reward_amount,
         ctx.accounts.reward_mint.decimals,
     )?;
+    ctx.accounts.reward_vault.reload()?;
+    
+    let amount_in_vault = ctx.accounts.reward_vault.amount;
+    let reward_info = &mut ctx.accounts.reward_info;
+    reward_info.start_at = start_time;
+    reward_info.end_rewards_at = end_time;
+
+    reward_info.mint = ctx.accounts.reward_mint.key();
+    let time_diff = end_time
+        .checked_sub(start_time)
+        .ok_or(GammaError::MathOverflow)?;
+
+    reward_info.emission_per_second = amount_in_vault
+        .checked_div(time_diff)
+        .ok_or(GammaError::MathOverflow)?;
+
+    reward_info.total_to_disburse = amount_in_vault;
+
+    reward_info.rewarded_by = ctx.accounts.reward_provider.key();
 
     Ok(())
 }
