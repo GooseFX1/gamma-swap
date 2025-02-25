@@ -61,7 +61,6 @@ pub struct ClaimRewards<'info> {
         mut,
         seeds = [
             USER_REWARD_INFO_SEED.as_bytes(),
-            pool_state.key().as_ref(),
             reward_info.key().as_ref(),
             user.key().as_ref(),
         ],

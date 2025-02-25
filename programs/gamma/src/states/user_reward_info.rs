@@ -1,6 +1,8 @@
 use anchor_lang::prelude::*;
+use rust_decimal::Decimal;
 
-use crate::error::GammaError;
+use crate::{error::GammaError, LOCK_LP_AMOUNT};
+use rust_decimal::prelude::{FromPrimitive, ToPrimitive};
 
 use super::RewardInfo;
 
@@ -38,18 +40,33 @@ impl UserRewardInfo {
             .checked_sub(last_disbursed_till)
             .ok_or(GammaError::MathOverflow)?;
 
-        let rewards_to_add = reward_info
-            .emission_per_second
-            .checked_mul(duration)
+        let total_to_disburse =
+            Decimal::from_u64(reward_info.total_to_disburse).ok_or(GammaError::MathOverflow)?;
+
+        let max_duration = reward_info.get_time_diff()?;
+        let duration_decimal = Decimal::from_u64(duration).ok_or(GammaError::MathOverflow)?;
+        let lp_owned_by_user_decimal =
+            Decimal::from_u64(lp_owned_by_user).ok_or(GammaError::MathOverflow)?;
+
+        let current_lp_supply_decimal = Decimal::from_u64(current_lp_supply)
             .ok_or(GammaError::MathOverflow)?
-            .checked_mul(lp_owned_by_user)
+            // The locked liquidity is not eligible for rewards
+            .checked_sub(LOCK_LP_AMOUNT.into())
+            .ok_or(GammaError::MathOverflow)?;
+
+        let rewards_to_add = total_to_disburse
+            .checked_mul(duration_decimal)
             .ok_or(GammaError::MathOverflow)?
-            .checked_div(current_lp_supply)
+            .checked_mul(lp_owned_by_user_decimal)
+            .ok_or(GammaError::MathOverflow)?
+            .checked_div(current_lp_supply_decimal)
+            .ok_or(GammaError::MathOverflow)?
+            .checked_div(max_duration)
             .ok_or(GammaError::MathOverflow)?;
 
         self.total_rewards = self
             .total_rewards
-            .checked_add(rewards_to_add)
+            .checked_add(rewards_to_add.to_u64().ok_or(GammaError::MathOverflow)?)
             .ok_or(GammaError::MathOverflow)?;
 
         self.rewards_last_calculated_at = end_time;
