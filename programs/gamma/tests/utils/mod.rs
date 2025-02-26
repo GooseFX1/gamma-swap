@@ -9,7 +9,7 @@ use gamma::states::{
     ObservationState, AMM_CONFIG_SEED, OBSERVATION_NUM, OBSERVATION_SEED, POOL_LP_MINT_SEED,
     POOL_SEED, POOL_VAULT_SEED, USER_POOL_LIQUIDITY_SEED,
 };
-use gamma::AUTH_SEED;
+use gamma::{AUTH_SEED, REWARD_INFO_SEED, REWARD_VAULT_SEED, USER_REWARD_INFO_SEED};
 use solana_program_runtime::invoke_context::BuiltinFunctionWithContext;
 use solana_sdk::instruction::Instruction;
 use solana_sdk::program_option::COption;
@@ -1178,6 +1178,175 @@ impl TestEnv {
             amount_out,
             max_amount_in,
         };
+
+        let transaction = self
+            .encode_instruction_and_sign_transaction(data, accounts, user)
+            .await;
+
+        self.program_test_context
+            .banks_client
+            .process_transaction(transaction)
+            .await
+            .unwrap();
+    }
+
+    pub async fn create_rewards(
+        &mut self,
+        user: &Keypair,
+        pool_id: Pubkey,
+        start_time: u64,
+        end_time: u64,
+        reward_mint: Pubkey,
+        reward_amount: u64,
+    ) {
+        let (authority, __bump) =
+            Pubkey::find_program_address(&[AUTH_SEED.as_bytes()], &gamma::id());
+
+        let (reward_info_key, _) = Pubkey::find_program_address(
+            &[
+                REWARD_INFO_SEED.as_bytes(),
+                pool_id.to_bytes().as_ref(),
+                &start_time.to_le_bytes(),
+                reward_mint.to_bytes().as_ref(),
+            ],
+            &gamma::id(),
+        );
+
+        let (reward_vault_key, _) = Pubkey::find_program_address(
+            &[
+                REWARD_VAULT_SEED.as_bytes(),
+                reward_info_key.to_bytes().as_ref(),
+            ],
+            &gamma::id(),
+        );
+
+        let reward_providers_token_account = self
+            .get_or_create_associated_token_account(user.pubkey(), reward_mint, user)
+            .await;
+
+        let accounts = gamma::accounts::CreateRewards {
+            reward_provider: user.pubkey(),
+            authority,
+            pool_state: pool_id,
+            reward_info: reward_info_key,
+            reward_vault: reward_vault_key,
+            reward_providers_token_account,
+            reward_mint,
+            token_program: spl_token::id(),
+            token_program_2022: spl_token_2022::id(),
+            system_program: system_program::ID,
+        };
+
+        let data = gamma::instruction::CreateRewards {
+            start_time,
+            end_time,
+            reward_amount,
+        };
+
+        let transaction = self
+            .encode_instruction_and_sign_transaction(data, accounts, user)
+            .await;
+
+        self.program_test_context
+            .banks_client
+            .process_transaction(transaction)
+            .await
+            .unwrap();
+    }
+
+    pub async fn calculate_rewards(
+        &mut self,
+        user: &Keypair,
+        pool_id: Pubkey,
+        reward_info_key: Pubkey,
+    ) {
+        let user_pool_liquidity = Pubkey::find_program_address(
+            &[
+                USER_POOL_LIQUIDITY_SEED.as_bytes(),
+                pool_id.to_bytes().as_ref(),
+                user.pubkey().to_bytes().as_ref(),
+            ],
+            &gamma::ID,
+        )
+        .0;
+
+        let (user_reward_info_key, _) = Pubkey::find_program_address(
+            &[
+                USER_REWARD_INFO_SEED.as_bytes(),
+                reward_info_key.to_bytes().as_ref(),
+                user.pubkey().to_bytes().as_ref(),
+            ],
+            &gamma::id(),
+        );
+
+        let accounts = gamma::accounts::CalculateRewards {
+            user: user.pubkey(),
+            user_reward_info: user_reward_info_key,
+            user_pool_liquidity,
+            pool_state: pool_id,
+            reward_info: reward_info_key,
+            system_program: system_program::ID,
+        };
+
+        let data = gamma::instruction::CalculateRewards {};
+
+        let transaction = self
+            .encode_instruction_and_sign_transaction(data, accounts, user)
+            .await;
+
+        self.program_test_context
+            .banks_client
+            .process_transaction(transaction)
+            .await
+            .unwrap();
+    }
+
+    pub async fn claim_rewards(
+        &mut self,
+        user: &Keypair,
+        pool_id: Pubkey,
+        reward_info_key: Pubkey,
+        reward_mint: Pubkey,
+    ) {
+        let (authority, __bump) =
+            Pubkey::find_program_address(&[AUTH_SEED.as_bytes()], &gamma::id());
+
+        let (user_reward_info_key, _) = Pubkey::find_program_address(
+            &[
+                USER_REWARD_INFO_SEED.as_bytes(),
+                reward_info_key.to_bytes().as_ref(),
+                user.pubkey().to_bytes().as_ref(),
+            ],
+            &gamma::id(),
+        );
+
+        let (reward_vault_key, _) = Pubkey::find_program_address(
+            &[
+                REWARD_VAULT_SEED.as_bytes(),
+                reward_info_key.to_bytes().as_ref(),
+            ],
+            &gamma::id(),
+        );
+
+        let user_token_account = self
+            .get_or_create_associated_token_account(user.pubkey(), reward_mint, user)
+            .await;
+
+        let accounts = gamma::accounts::ClaimRewards {
+            user: user.pubkey(),
+            user_reward_info: user_reward_info_key,
+            authority,
+            pool_state: pool_id,
+            reward_info: reward_info_key,
+            reward_vault: reward_vault_key,
+            user_token_account,
+            reward_mint,
+            token_program: spl_token::id(),
+            token_program_2022: spl_token_2022::id(),
+            system_program: system_program::ID,
+        };
+
+        let data = gamma::instruction::ClaimRewards {};
 
         let transaction = self
             .encode_instruction_and_sign_transaction(data, accounts, user)
