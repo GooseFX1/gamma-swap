@@ -117,5 +117,7 @@ pub fn create_rewards(
 
     reward_info.rewarded_by = ctx.accounts.reward_provider.key();
 
+    reward_info.pool = ctx.accounts.pool_state.key();
+
     Ok(())
 }

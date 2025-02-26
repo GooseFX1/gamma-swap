@@ -6,6 +6,7 @@ use rust_decimal::prelude::FromPrimitive;
 
 #[account]
 pub struct RewardInfo {
+    pub pool: Pubkey,
     pub start_at: u64, // Start time for the reward UNIX timestamp.
     pub end_rewards_at: u64,
     pub mint: Pubkey,
