@@ -42,7 +42,7 @@ pub const AUTH_SEED: &str = "vault_and_lp_mint_auth_seed";
 pub const REWARD_VAULT_SEED: &str = "reward_vault_seed";
 pub const REWARD_INFO_SEED: &str = "reward_info_seed";
 pub const USER_REWARD_INFO_SEED: &str = "user_reward_info_seed";
-
+pub const LOCK_LP_AMOUNT: u64 = 100;
 #[test]
 fn test_referral() {
     assert_eq!(

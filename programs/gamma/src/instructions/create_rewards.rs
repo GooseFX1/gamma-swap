@@ -29,7 +29,9 @@ pub struct CreateRewards<'info> {
     pub pool_state: AccountLoader<'info, PoolState>,
 
     #[account(
-        mut,
+        init,
+        payer = reward_provider,
+        space = 8 + std::mem::size_of::<RewardInfo>(),
         seeds = [
             crate::REWARD_INFO_SEED.as_bytes(),
             pool_state.key().as_ref(),
@@ -104,21 +106,13 @@ pub fn create_rewards(
         ctx.accounts.reward_mint.decimals,
     )?;
     ctx.accounts.reward_vault.reload()?;
-    
+
     let amount_in_vault = ctx.accounts.reward_vault.amount;
     let reward_info = &mut ctx.accounts.reward_info;
     reward_info.start_at = start_time;
     reward_info.end_rewards_at = end_time;
 
     reward_info.mint = ctx.accounts.reward_mint.key();
-    let time_diff = end_time
-        .checked_sub(start_time)
-        .ok_or(GammaError::MathOverflow)?;
-
-    reward_info.emission_per_second = amount_in_vault
-        .checked_div(time_diff)
-        .ok_or(GammaError::MathOverflow)?;
-
     reward_info.total_to_disburse = amount_in_vault;
 
     reward_info.rewarded_by = ctx.accounts.reward_provider.key();

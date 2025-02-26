@@ -8,6 +8,7 @@ use crate::{
         POOL_VAULT_SEED, USER_POOL_LIQUIDITY_SEED,
     },
     utils::{create_token_account, is_supported_mint, transfer_from_user_to_pool_vault, U128},
+    LOCK_LP_AMOUNT,
 };
 use anchor_lang::{
     accounts::interface_account::InterfaceAccount,
@@ -263,7 +264,6 @@ pub fn initialize(
         .ok_or(GammaError::MathOverflow)?
         .integer_sqrt()
         .as_u64();
-    let lock_lp_amount = 100;
     #[cfg(feature = "enable-log")]
     msg!(
         "liquidity: {}, vault_0_amount: {}, vault_1_amount: {}",
@@ -324,7 +324,7 @@ pub fn initialize(
     user_pool_liquidity.token_0_deposited = u128::from(init_amount_0);
     user_pool_liquidity.token_1_deposited = u128::from(init_amount_1);
     user_pool_liquidity.lp_tokens_owned = u128::from(liquidity)
-        .checked_sub(lock_lp_amount)
+        .checked_sub(LOCK_LP_AMOUNT.into())
         .ok_or(GammaError::MathOverflow)?;
 
     Ok(())
