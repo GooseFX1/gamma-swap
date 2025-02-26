@@ -86,7 +86,7 @@ pub fn create_rewards(
         return err!(GammaError::InvalidRewardTime);
     }
 
-    if start_time > end_time {
+    if start_time >= end_time {
         return err!(GammaError::InvalidRewardTime);
     }
 

@@ -31,10 +31,7 @@ impl UserRewardInfo {
 
         let last_disbursed_till = reward_info.start_at.max(self.rewards_last_calculated_at);
 
-        let mut end_time = time_now;
-        if reward_info.end_rewards_at < time_now {
-            end_time = reward_info.end_rewards_at;
-        }
+        let end_time = time_now.min(reward_info.end_rewards_at);
 
         let duration = end_time
             .checked_sub(last_disbursed_till)
