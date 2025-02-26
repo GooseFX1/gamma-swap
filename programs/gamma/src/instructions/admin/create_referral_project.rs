@@ -11,9 +11,13 @@ use referral::InitializeProjectParams;
 #[derive(Accounts)]
 #[instruction(index: u16)]
 pub struct CreateReferralProject<'info> {
-    /// Address to be set as protocol owner.
-    #[account(address = crate::admin::id() @ GammaError::InvalidOwner)]
-    pub owner: Signer<'info>,
+    /// Admin signer for this operation
+    #[account(constraint = [crate::admin::ID, amm_config.secondary_admin].contains(&owner.key()) @ GammaError::InvalidOwner)]
+    pub admin: Signer<'info>,
+
+    /// CHECK: Address to be set as protocol owner
+    #[account(address = crate::admin::ID)]
+    pub owner: UncheckedAccount<'info>,
 
     #[account(mut)]
     pub payer: Signer<'info>,
