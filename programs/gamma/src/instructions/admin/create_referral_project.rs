@@ -27,6 +27,7 @@ pub struct CreateReferralProject<'info> {
     pub amm_config: Account<'info, AmmConfig>,
 
     /// CHECK: The project account to be created
+    #[account(mut)]
     pub project: UncheckedAccount<'info>,
 
     pub system_program: Program<'info, System>,
