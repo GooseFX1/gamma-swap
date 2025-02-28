@@ -184,8 +184,9 @@ pub fn create_referral_project_instr(
     });
     let accounts = anchor_lang::ToAccountMetas::to_account_metas(
         &gamma_accounts::CreateReferralProject {
-            owner: signer,
+            owner: gamma::admin::ID,
             payer: signer,
+            admin: signer,
             amm_config,
             project,
             system_program: system_program::ID,

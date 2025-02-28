@@ -127,9 +127,13 @@ pub enum GammaCommands {
         create_pool_fee: u64,
     },
     CreateReferralProject {
+        #[clap(short, long)]
         amm_config: Pubkey,
+        #[clap(short, long)]
         referral_program: Pubkey,
+        #[clap(short, long)]
         name: String,
+        #[clap(short, long)]
         default_share_bps: u16,
     },
     InitializePool {
