@@ -153,9 +153,13 @@ pub fn rebalance_kamino<'c, 'info>(
             .ok_or(GammaError::MathOverflow)?;
 
         if deposit_withdraw_amounts.is_token_0 {
-            pool_state.withdrawn_kamino_profit_token_0 = amount_changed_in_kamino;
+            pool_state.withdrawn_kamino_profit_token_0 = amount_changed_in_kamino
+                .checked_add(pool_state.withdrawn_kamino_profit_token_0)
+                .ok_or(GammaError::MathOverflow)?;
         } else {
-            pool_state.withdrawn_kamino_profit_token_1 = amount_changed_in_kamino;
+            pool_state.withdrawn_kamino_profit_token_1 = amount_changed_in_kamino
+                .checked_add(pool_state.withdrawn_kamino_profit_token_1)
+                .ok_or(GammaError::MathOverflow)?;
         }
     } else {
         let amount_changed = if deposit_withdraw_amounts.should_deposit {
