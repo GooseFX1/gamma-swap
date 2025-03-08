@@ -345,11 +345,14 @@ where
 
     // Verify gamma_pool_destination_collateral seeds are correct
     let pool_state_key = ctx.accounts.pool_state.key();
-    let token_vault_key = token_vault.key();
+    let reserve_liquidity_mint = match token0_or_token1 {
+        true => ctx.accounts.vault_0_mint.to_account_info(),
+        false => ctx.accounts.vault_1_mint.to_account_info(),
+    };
     let expected_seeds = [
         POOL_KAMINO_DEPOSITS_SEED.as_bytes(),
         pool_state_key.as_ref(),
-        token_vault_key.as_ref(),
+        reserve_liquidity_mint.key.as_ref(),
     ];
     let pubkey_derived =
         Pubkey::find_program_address(&expected_seeds, &ctx.accounts.kamino_program.key()).0;
@@ -357,10 +360,6 @@ where
         return err!(ErrorCode::ConstraintSeeds);
     }
 
-    let reserve_liquidity_mint = match token0_or_token1 {
-        true => ctx.accounts.vault_0_mint.to_account_info(),
-        false => ctx.accounts.vault_1_mint.to_account_info(),
-    };
     let signer_seeds: &[&[&[u8]]] = &[&[crate::AUTH_SEED.as_bytes(), &[pool_state.auth_bump]]];
 
     let liquidity_token_program =
