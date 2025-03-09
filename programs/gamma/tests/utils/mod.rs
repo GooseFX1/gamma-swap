@@ -240,6 +240,12 @@ impl TestEnv {
             );
         }
 
+        program_test.add_program(
+            "kamino",
+            solana_sdk::pubkey!("KLend2g3cP87fffoy8q1mQqGKjrxjC8boSyAYavgmjD"),
+            None,
+        );
+
         // TODO: Add metadata program
         // program_test.add_program(
         //     "../../artifacts/metadata_program",
@@ -911,6 +917,8 @@ impl TestEnv {
             vault_0_mint: self.token_0_mint,
             vault_1_mint: self.token_1_mint,
             memo_program: spl_memo::id(),
+            instruction_sysvar_account: sysvar::instructions::id(),
+            kamino_program: solana_sdk::pubkey!("KLend2g3cP87fffoy8q1mQqGKjrxjC8boSyAYavgmjD"),
         };
 
         let data = gamma::instruction::Withdraw {

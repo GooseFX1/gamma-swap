@@ -216,7 +216,7 @@ pub fn rebalance_kamino<'c, 'info>(
     Ok(())
 }
 
-fn get_amounts_in_kamino_after_rebalance<'info>(
+pub fn get_amounts_in_kamino_after_rebalance<'info>(
     kamino_reserve: AccountInfo<'info>,
     gamma_pool_destination_collateral: &mut Box<InterfaceAccount<'info, TokenAccount>>,
 ) -> Result<u64> {
@@ -403,4 +403,50 @@ pub fn withdraw_from_kamino<'c, 'info>(
         amount,
     )?;
     Ok(())
+}
+
+pub fn calculate_amount_to_be_withdrawn_from_kamino_in_withdraw_instruction_in_liquidity_tokens<
+    'info,
+>(
+    pool_state: &PoolState,
+    amount_being_withdrawn: u64,
+    token_vault: &InterfaceAccount<'info, TokenAccount>,
+) -> Result<u64> {
+    let is_token_0 = token_vault.key() == pool_state.token_0_vault;
+    let amount_in_kamino_before_withdraw = match is_token_0 {
+        true => pool_state.token_0_amount_in_kamino,
+        false => pool_state.token_1_amount_in_kamino,
+    };
+
+    if amount_in_kamino_before_withdraw == 0 {
+        return Ok(0);
+    }
+
+    let amount_in_pool_before_withdraw = match is_token_0 {
+        true => pool_state.token_0_vault_amount,
+        false => pool_state.token_1_vault_amount,
+    };
+
+    let max_deposit_allowed_rate = match is_token_0 {
+        true => pool_state.max_shared_token0,
+        false => pool_state.max_shared_token1,
+    };
+
+    let amount_in_pool_after_withdraw = amount_in_pool_before_withdraw
+        .checked_sub(amount_being_withdrawn)
+        .ok_or(GammaError::MathOverflow)?;
+
+    let max_deposit_possible_after_withdraw: u64 = u128::from(amount_in_pool_after_withdraw)
+        .checked_mul(u128::from(max_deposit_allowed_rate))
+        .ok_or(GammaError::MathOverflow)?
+        .checked_div(u128::from(FEE_RATE_DENOMINATOR_VALUE))
+        .ok_or(GammaError::MathOverflow)?
+        .try_into()
+        .map_err(|_| GammaError::MathOverflow)?;
+
+    let amount_to_be_withdrawn_from_kamino = amount_in_kamino_before_withdraw
+        .checked_sub(max_deposit_possible_after_withdraw)
+        .ok_or(GammaError::MathOverflow)?;
+
+    return Ok(amount_to_be_withdrawn_from_kamino);
 }

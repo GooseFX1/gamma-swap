@@ -232,12 +232,15 @@ pub mod gamma {
     /// * `minimum_token_0_amount` -  Minimum amount of token 0 to receive, prevents excessive slippage
     /// * `minimum_token_1_amount` -  Minimum amount of token 1 to receive, prevents excessive slippage
     ///
-    pub fn withdraw(
-        ctx: Context<Withdraw>,
+    pub fn withdraw<'c, 'info>(
+        ctx: Context<'_, '_, 'c, 'info, Withdraw<'info>>,
         lp_token_amount: u64,
         minimum_token_0_amount: u64,
         minimum_token_1_amount: u64,
-    ) -> Result<()> {
+    ) -> Result<()>
+    where
+        'c: 'info,
+    {
         instructions::withdraw(
             ctx,
             lp_token_amount,
