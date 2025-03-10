@@ -192,8 +192,8 @@ where
         change_type: 1
     });
 
-    withdraw_from_kamino_if_needed(&ctx, pool_state, token_0_amount, true)?;
-    withdraw_from_kamino_if_needed(&ctx, pool_state, token_1_amount, false)?;
+    let end_index = withdraw_from_kamino_if_needed(&ctx, pool_state, token_0_amount, true, 0)?;
+    withdraw_from_kamino_if_needed(&ctx, pool_state, token_1_amount, false, end_index)?;
 
     pool_state.lp_supply = pool_state
         .lp_supply
@@ -276,7 +276,7 @@ pub struct RemainingKaminoAccounts<'info> {
     /// Account is checked in cpi
     /// CHECK: kamino reserve token 1
     #[account(mut)]
-    pub kamino_reserve_token: AccountInfo<'info>,
+    pub kamino_reserve: AccountInfo<'info>,
 
     /// CHECK: The account address is checked in the cpi.
     #[account(mut)]
@@ -302,12 +302,15 @@ pub struct RemainingKaminoAccounts<'info> {
     pub gamma_pool_destination_collateral: Box<InterfaceAccount<'info, TokenAccount>>,
 }
 
+// Returns the end index of the remaining accounts,
+// Any future reads to remaining accounts should start from that index.
 pub fn withdraw_from_kamino_if_needed<'c, 'info>(
     ctx: &Context<'_, '_, 'c, 'info, Withdraw<'info>>,
     pool_state: &mut PoolState,
     token_amount_being_withdrawn: u64,
     token0_or_token1: bool,
-) -> Result<()>
+    start_index: usize,
+) -> Result<usize>
 where
     'c: 'info,
 {
@@ -325,15 +328,11 @@ where
         )?;
 
     if amount_to_withdraw_from_kamino_in_liquidity_tokens == 0 {
-        return Ok(());
+        return Ok(0);
     }
 
-    let start_index = match token0_or_token1 {
-        true => 0,
-        false => 6,
-    };
     let kamino_accounts = RemainingKaminoAccounts {
-        kamino_reserve_token: remaining_accounts[start_index].to_account_info(),
+        kamino_reserve: remaining_accounts[start_index].to_account_info(),
         kamino_lending_market: remaining_accounts[start_index + 1].to_account_info(),
         lending_market_authority: remaining_accounts[start_index + 2].to_account_info(),
         reserve_liquidity_supply: remaining_accounts[start_index + 3].to_account_info(),
@@ -373,7 +372,7 @@ where
         ctx.accounts.kamino_program.to_account_info(),
         crate::external::kamino::kamino::cpi::accounts::RedeemReserveCollateral {
             owner: ctx.accounts.authority.to_account_info(),
-            reserve: kamino_accounts.kamino_reserve_token.to_account_info(),
+            reserve: kamino_accounts.kamino_reserve.to_account_info(),
             lending_market: kamino_accounts.kamino_lending_market,
             reserve_liquidity_mint,
             reserve_liquidity_supply: kamino_accounts.reserve_liquidity_supply,
@@ -391,7 +390,7 @@ where
     );
 
     let amount_in_collateral_tokens = crate::external::kamino::liquidity_to_collateral(
-        &kamino_accounts.kamino_reserve_token,
+        &kamino_accounts.kamino_reserve,
         amount_to_withdraw_from_kamino_in_liquidity_tokens,
     )?;
 
@@ -414,5 +413,5 @@ where
             .ok_or(GammaError::MathOverflow)?;
     }
 
-    Ok(())
+    Ok(start_index + 6)
 }
