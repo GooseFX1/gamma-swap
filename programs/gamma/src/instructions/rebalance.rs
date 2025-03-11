@@ -444,9 +444,8 @@ pub fn calculate_amount_to_be_withdrawn_from_kamino_in_withdraw_instruction_in_l
         .try_into()
         .map_err(|_| GammaError::MathOverflow)?;
 
-    let amount_to_be_withdrawn_from_kamino = amount_in_kamino_before_withdraw
-        .checked_sub(max_deposit_possible_after_withdraw)
-        .ok_or(GammaError::MathOverflow)?;
+    let amount_to_be_withdrawn_from_kamino =
+        amount_in_kamino_before_withdraw.saturating_sub(max_deposit_possible_after_withdraw);
 
     return Ok(amount_to_be_withdrawn_from_kamino);
 }
