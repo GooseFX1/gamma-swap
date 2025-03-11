@@ -354,8 +354,7 @@ where
         pool_state_key.as_ref(),
         reserve_liquidity_mint.key.as_ref(),
     ];
-    let pubkey_derived =
-        Pubkey::find_program_address(&expected_seeds, &ctx.accounts.kamino_program.key()).0;
+    let pubkey_derived = Pubkey::find_program_address(&expected_seeds, &crate::id()).0;
     if pubkey_derived != kamino_accounts.gamma_pool_destination_collateral.key() {
         return err!(ErrorCode::ConstraintSeeds);
     }
