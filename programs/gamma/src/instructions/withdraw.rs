@@ -82,12 +82,14 @@ pub struct Withdraw<'info> {
 
     /// The mint of token_0 vault
     #[account(
+        mut,
         address = token_0_vault.mint
     )]
     pub vault_0_mint: Box<InterfaceAccount<'info, Mint>>,
 
     /// The mint of token_1 vault
     #[account(
+        mut,
         address = token_1_vault.mint
     )]
     pub vault_1_mint: Box<InterfaceAccount<'info, Mint>>,
