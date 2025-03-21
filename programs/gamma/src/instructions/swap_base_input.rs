@@ -350,6 +350,10 @@ pub fn swap_base_input<'c, 'info>(
                 .cumulative_volume_token_0
                 .checked_add(actual_amount_in as u128)
                 .ok_or(GammaError::MathOverflow)?;
+            pool_state.cumulative_volume_token_1 = pool_state
+                .cumulative_volume_token_1
+                .checked_add(output_transfer_amount as u128)
+                .ok_or(GammaError::MathOverflow)?;
 
             pool_state.token_0_vault_amount = pool_state
                 .token_0_vault_amount
@@ -380,6 +384,10 @@ pub fn swap_base_input<'c, 'info>(
             pool_state.cumulative_volume_token_1 = pool_state
                 .cumulative_volume_token_1
                 .checked_add(actual_amount_in as u128)
+                .ok_or(GammaError::MathOverflow)?;
+            pool_state.cumulative_volume_token_0 = pool_state
+                .cumulative_volume_token_0
+                .checked_add(output_transfer_amount as u128)
                 .ok_or(GammaError::MathOverflow)?;
 
             pool_state.token_1_vault_amount = pool_state
