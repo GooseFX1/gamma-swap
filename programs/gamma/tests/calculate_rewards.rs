@@ -314,4 +314,10 @@ async fn should_split_rewards_between_users() {
     let user2_reward_info: UserRewardInfo = test_env.fetch_account(user2_reward_info_key).await;
     assert_eq!(user2_reward_info.total_rewards, 1000000000 / 2);
     assert_eq!(user_reward_info.total_rewards, 1000000000 / 2); // 999240121?
+
+    assert_eq!(user_reward_info.reward_info, reward_info_key);
+    assert_eq!(user2_reward_info.reward_info, reward_info_key);
+    assert_eq!(user_reward_info.pool_state, pool_id);
+    assert_eq!(user2_reward_info.pool_state, pool_id);
+    assert_eq!(user_reward_info.user, user.pubkey());
 }

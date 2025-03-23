@@ -1309,7 +1309,7 @@ impl TestEnv {
             .unwrap();
     }
 
-    pub async fn claim_rewards(
+    pub async fn  claim_rewards(
         &mut self,
         user: &Keypair,
         pool_id: Pubkey,

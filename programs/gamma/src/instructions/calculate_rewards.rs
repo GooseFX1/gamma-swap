@@ -64,5 +64,9 @@ pub fn calculate_rewards(ctx: Context<CalculateRewards>) -> Result<()> {
         &ctx.accounts.reward_info,
     )?;
 
+    user_reward_info.reward_info = ctx.accounts.reward_info.key();
+    user_reward_info.user = ctx.accounts.user.key();
+    user_reward_info.pool_state = ctx.accounts.pool_state.key();
+
     Ok(())
 }
