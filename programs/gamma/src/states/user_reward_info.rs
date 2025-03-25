@@ -8,8 +8,11 @@ use super::RewardInfo;
 
 #[account]
 pub struct UserRewardInfo {
-    pub total_claimed: u64,              // Total rewards claimed by the user.
-    pub total_rewards: u64,              // Total rewards calculated for the user.
+    pub user: Pubkey,                    // The user that is claiming the rewards.
+    pub reward_info: Pubkey,          // The account that holds the rewards for the user.
+    pub pool_state: Pubkey, // The pool state that the user is claiming the rewards from.
+    pub total_claimed: u64, // Total rewards claimed by the user.
+    pub total_rewards: u64, // Total rewards calculated for the user.
     pub rewards_last_calculated_at: u64, // Last time the rewards were calculated.
 }
 
