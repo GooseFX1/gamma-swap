@@ -1268,6 +1268,17 @@ impl TestEnv {
         pool_id: Pubkey,
         reward_info_key: Pubkey,
     ) {
+        self.calculate_rewards_with_signer(user, pool_id, reward_info_key, user)
+            .await;
+    }
+
+    pub async fn calculate_rewards_with_signer(
+        &mut self,
+        user: &Keypair,
+        pool_id: Pubkey,
+        reward_info_key: Pubkey,
+        signer: &Keypair,
+    ) {
         let user_pool_liquidity = Pubkey::find_program_address(
             &[
                 USER_POOL_LIQUIDITY_SEED.as_bytes(),
@@ -1288,6 +1299,7 @@ impl TestEnv {
         );
 
         let accounts = gamma::accounts::CalculateRewards {
+            signer: signer.pubkey(),
             user: user.pubkey(),
             user_reward_info: user_reward_info_key,
             user_pool_liquidity,
@@ -1299,7 +1311,7 @@ impl TestEnv {
         let data = gamma::instruction::CalculateRewards {};
 
         let transaction = self
-            .encode_instruction_and_sign_transaction(data, accounts, user)
+            .encode_instruction_and_sign_transaction(data, accounts, signer)
             .await;
 
         self.program_test_context
@@ -1309,7 +1321,7 @@ impl TestEnv {
             .unwrap();
     }
 
-    pub async fn  claim_rewards(
+    pub async fn claim_rewards(
         &mut self,
         user: &Keypair,
         pool_id: Pubkey,

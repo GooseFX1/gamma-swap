@@ -10,11 +10,7 @@ import { readFileSync, writeFileSync } from "fs";
 const setUp = () => {
   anchor.setProvider(anchor.AnchorProvider.env());
   const idl = IDL as Gamma;
-  const program = new Program<Gamma>(
-    idl,
-    "GAMMA7meSFWaBXF25oSUgmGRwaW6sCMFLmBNiMSdbHVT",
-    anchor.getProvider()
-  );
+  const program = new Program<Gamma>(idl, anchor.getProvider());
   return program;
 };
 // before runnning create this empty file:

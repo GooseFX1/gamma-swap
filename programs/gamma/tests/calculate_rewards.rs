@@ -321,3 +321,116 @@ async fn should_split_rewards_between_users() {
     assert_eq!(user2_reward_info.pool_state, pool_id);
     assert_eq!(user_reward_info.user, user.pubkey());
 }
+
+#[tokio::test]
+async fn test_calculate_rewards_signer() {
+    let user = Keypair::new();
+    let signer = Keypair::new();
+    let reward_provider = Keypair::new();
+    let admin = get_admin();
+    let amm_index = 0;
+    let mut test_env = TestEnv::new(vec![
+        user.pubkey(),
+        admin.pubkey(),
+        reward_provider.pubkey(),
+        signer.pubkey(),
+    ])
+    .await;
+    test_env
+        .create_config(&admin, amm_index, 100, 20, 5, 0)
+        .await;
+
+    let user_token_0_account = test_env
+        .get_or_create_associated_token_account(user.pubkey(), test_env.token_0_mint, &user)
+        .await;
+    test_env
+        .mint_base_tokens(user_token_0_account, 100000, test_env.token_0_mint)
+        .await;
+
+    let user_token_1_account = test_env
+        .get_or_create_associated_token_account(user.pubkey(), test_env.token_1_mint, &user)
+        .await;
+    test_env
+        .mint_base_tokens(user_token_1_account, 100000, test_env.token_1_mint)
+        .await;
+
+    let pool_id = test_env
+        .initialize_pool(
+            &user,
+            amm_index,
+            1000,
+            2000,
+            0,
+            gamma::create_pool_fee_reveiver::id(),
+        )
+        .await;
+
+    test_env
+        .deposit(&user, pool_id, amm_index, 1, 999999, 99999)
+        .await;
+
+    let reward_mint = Keypair::new();
+    test_env
+        .create_token_mint(&reward_mint, &test_env.mint_authority.pubkey(), 9)
+        .await;
+
+    let reward_provider_token_account = test_env
+        .get_or_create_associated_token_account(
+            reward_provider.pubkey(),
+            reward_mint.pubkey(),
+            &reward_provider,
+        )
+        .await;
+    let reward_amount = 1000000000;
+    test_env
+        .mint_base_tokens(
+            reward_provider_token_account,
+            reward_amount,
+            reward_mint.pubkey(),
+        )
+        .await;
+
+    let timestamp_now = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_secs();
+
+    let start_time = timestamp_now + 10;
+    let end_time = timestamp_now + 3000;
+    test_env
+        .create_rewards(
+            &reward_provider,
+            pool_id,
+            start_time,
+            end_time,
+            reward_mint.pubkey(),
+            reward_amount,
+        )
+        .await;
+
+    let (reward_info_key, _) = Pubkey::find_program_address(
+        &[
+            REWARD_INFO_SEED.as_bytes(),
+            pool_id.to_bytes().as_ref(),
+            &start_time.to_le_bytes(),
+            reward_mint.pubkey().to_bytes().as_ref(),
+        ],
+        &gamma::id(),
+    );
+    test_env
+        .calculate_rewards_with_signer(&user, pool_id, reward_info_key, &signer)
+        .await;
+
+    let (user_reward_info_key, _) = Pubkey::find_program_address(
+        &[
+            USER_REWARD_INFO_SEED.as_bytes(),
+            reward_info_key.to_bytes().as_ref(),
+            user.pubkey().to_bytes().as_ref(),
+        ],
+        &gamma::id(),
+    );
+
+    let user_reward_info: UserRewardInfo = test_env.fetch_account(user_reward_info_key).await;
+    // Zero as it is before the start time of the reward
+    assert_eq!(user_reward_info.total_rewards, 0);
+}
