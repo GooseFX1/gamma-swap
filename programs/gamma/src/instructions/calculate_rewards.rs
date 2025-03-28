@@ -7,7 +7,11 @@ use anchor_lang::prelude::*;
 #[derive(Accounts)]
 pub struct CalculateRewards<'info> {
     #[account(mut)]
-    pub user: Signer<'info>,
+    pub signer: Signer<'info>,
+
+    /// User for which we are calculating rewards
+    /// CHECK: Does not require any validation
+    pub user: AccountInfo<'info>,
 
     #[account()]
     pub pool_state: AccountLoader<'info, PoolState>,
@@ -26,7 +30,7 @@ pub struct CalculateRewards<'info> {
     #[account(
         init_if_needed,
         space = 8 + std::mem::size_of::<UserRewardInfo>(),
-        payer = user,
+        payer = signer,
         seeds = [
             USER_REWARD_INFO_SEED.as_bytes(),
             reward_info.key().as_ref(),
