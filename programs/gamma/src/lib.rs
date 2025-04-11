@@ -38,6 +38,8 @@ pub mod create_pool_fee_reveiver {
     declare_id!("8PhehuioLjhJ35A5eavazJSwoXcA4J7WwzgoWDBDFSuY");
 }
 
+pub const CALCULATE_REWARDS_ADMIN: Pubkey = pubkey!("5CW8MEhPPxiRmwWgigwpCKCHaZDLX62BkrneijrxoKkR");
+
 pub const AUTH_SEED: &str = "vault_and_lp_mint_auth_seed";
 pub const REWARD_VAULT_SEED: &str = "reward_vault_seed";
 pub const REWARD_INFO_SEED: &str = "reward_info_seed";
