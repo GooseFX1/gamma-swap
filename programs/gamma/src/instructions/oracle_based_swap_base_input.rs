@@ -1,120 +1,17 @@
-use crate::curve::calculator::CurveCalculator;
+use super::Swap;
+use crate::curve::OracleBasedSwapCalculator;
 use crate::curve::TradeDirection;
 use crate::error::GammaError;
 use crate::external::dflow_segmenter::is_invoked_by_segmenter;
+use crate::instructions::SwapRemainingAccounts;
 use crate::states::oracle;
-use crate::states::AmmConfig;
-use crate::states::ObservationState;
-use crate::states::PoolState;
 use crate::states::PoolStatusBitIndex;
 use crate::states::SwapEvent;
 use crate::utils::{swap_referral::*, token::*};
 use anchor_lang::prelude::*;
 use anchor_lang::solana_program;
-use anchor_spl::token_interface::{Mint, TokenAccount, TokenInterface};
 
-#[derive(Accounts)]
-pub struct Swap<'info> {
-    /// The user performing the swap
-    pub payer: Signer<'info>,
-
-    /// CHECK: pool vault authority
-    #[account(
-        seeds = [
-            crate::AUTH_SEED.as_bytes(),
-        ],
-        bump,
-    )]
-    pub authority: UncheckedAccount<'info>,
-
-    /// The factory state to read protocol fees
-    #[account(address = pool_state.load()?.amm_config)]
-    pub amm_config: Box<Account<'info, AmmConfig>>,
-
-    /// The program account of the pool in which the swap will be performed
-    #[account(mut)]
-    pub pool_state: AccountLoader<'info, PoolState>,
-
-    /// The user token account for input token
-    #[account(mut)]
-    pub input_token_account: Box<InterfaceAccount<'info, TokenAccount>>,
-
-    /// The user token account for output token
-    #[account(mut)]
-    pub output_token_account: Box<InterfaceAccount<'info, TokenAccount>>,
-
-    /// The vault token account for input token
-    #[account(
-        mut,
-        constraint = input_vault.key() == pool_state.load()?.token_0_vault || input_vault.key() == pool_state.load()?.token_1_vault
-    )]
-    pub input_vault: Box<InterfaceAccount<'info, TokenAccount>>,
-
-    /// The vault token account for output token
-    #[account(
-        mut,
-        constraint = output_vault.key() == pool_state.load()?.token_0_vault || output_vault.key() == pool_state.load()?.token_1_vault
-    )]
-    pub output_vault: Box<InterfaceAccount<'info, TokenAccount>>,
-
-    /// SPL program for input token transfers
-    pub input_token_program: Interface<'info, TokenInterface>,
-
-    /// SPL program for output token transfers
-    pub output_token_program: Interface<'info, TokenInterface>,
-
-    /// The mint of input token
-    #[account(
-        address = input_vault.mint
-    )]
-    pub input_token_mint: Box<InterfaceAccount<'info, Mint>>,
-
-    /// The mint of output token
-    #[account(
-        address = output_vault.mint
-    )]
-    pub output_token_mint: Box<InterfaceAccount<'info, Mint>>,
-    /// The program account for the most recent oracle observation
-    #[account(mut, address = pool_state.load()?.observation_key)]
-    pub observation_state: AccountLoader<'info, ObservationState>,
-}
-
-pub struct SwapRemainingAccounts<'info> {
-    pub registered_segmenter: Option<AccountInfo<'info>>,
-    pub registry: Option<AccountInfo<'info>>,
-    pub referral_account: Option<AccountInfo<'info>>,
-    pub referral_token_account: Option<AccountInfo<'info>>,
-}
-
-pub fn decode_account_info<'info>(
-    remaining_accounts: &[AccountInfo<'info>],
-    index: usize,
-) -> Option<AccountInfo<'info>> {
-    match remaining_accounts.get(index) {
-        // If the account is the program account, return None
-        // This is also how anchor internally handles optional accounts.
-        // This flexible approach allows users to provide accounts at any index (e.g., accounts 2,3)
-        // without requiring them to provide earlier optional accounts (e.g., accounts 0,1)
-        Some(account) => match account.key.eq(&crate::id()) {
-            false => Some(account.clone()),
-            true => None,
-        },
-        None => None,
-    }
-}
-
-impl<'info> SwapRemainingAccounts<'info> {
-    pub fn new(remaining_accounts: &[AccountInfo<'info>]) -> Self {
-        Self {
-            registered_segmenter: decode_account_info(remaining_accounts, 0),
-            registry: decode_account_info(remaining_accounts, 1),
-            referral_account: decode_account_info(remaining_accounts, 2),
-            referral_token_account: decode_account_info(remaining_accounts, 3),
-        }
-    }
-}
-
-pub fn swap_base_input<'c, 'info>(
+pub fn oracle_based_swap_base_input<'c, 'info>(
     ctx: Context<'_, '_, 'c, 'info, Swap<'info>>,
     amount_in: u64,
     minimum_amount_out: u64,
@@ -181,9 +78,6 @@ pub fn swap_base_input<'c, 'info>(
         } else {
             return err!(GammaError::InvalidVault);
         };
-    let constant_before = u128::from(total_input_token_amount)
-        .checked_mul(u128::from(total_output_token_amount))
-        .ok_or(GammaError::MathOverflow)?;
 
     let mut observation_state = ctx.accounts.observation_state.load_mut()?;
 
@@ -201,7 +95,7 @@ pub fn swap_base_input<'c, 'info>(
         );
     }
 
-    let result = match CurveCalculator::swap_base_input(
+    let result = match OracleBasedSwapCalculator::swap_base_input(
         u128::from(actual_amount_in),
         u128::from(total_input_token_amount),
         u128::from(total_output_token_amount),
@@ -215,23 +109,14 @@ pub fn swap_base_input<'c, 'info>(
         Err(_) => return err!(GammaError::ZeroTradingTokens),
     };
 
-    let constant_after = u128::from(
-        result
-            .new_swap_source_amount
-            .checked_sub(result.dynamic_fee)
-            .ok_or(GammaError::MathOverflow)?,
-    )
-    .checked_mul(u128::from(result.new_swap_destination_amount))
-    .ok_or(GammaError::MathOverflow)?;
-    // #[cfg(feature = "enable-log")]
+    #[cfg(feature = "enable-log")]
     msg!(
-        "actual_amount_in:{} source_amount_swapped:{}, destination_amount_swapped:{}, dynamic_fee: {}, constant_before:{},constant_after:{}",
+        "actual_amount_in:{} source_amount_swapped:{}, destination_amount_swapped:{}, dynamic_fee: {}",
         actual_amount_in,
         result.source_amount_swapped,
         result.destination_amount_swapped,
         result.dynamic_fee,
-        constant_before,
-        constant_after
+        
     );
     let source_amount_swapped = match u64::try_from(result.source_amount_swapped) {
         Ok(value) => value,
@@ -425,7 +310,6 @@ pub fn swap_base_input<'c, 'info>(
         base_input: true,
         dynamic_fee: result.dynamic_fee
     });
-    require_gte!(constant_after, constant_before);
     transfer_from_user_to_pool_vault(
         ctx.accounts.payer.to_account_info(),
         ctx.accounts.input_token_account.to_account_info(),

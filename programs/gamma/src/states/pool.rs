@@ -150,8 +150,24 @@ pub struct PoolState {
     // To keep track of the profit we made from kamino, in terms of the token0 or token1.
     pub withdrawn_kamino_profit_token_0: u64,
     pub withdrawn_kamino_profit_token_1: u64,
+
+    /// Scaled to 9 decimal places.
+    /// This means `token0/token1`
+    pub oracle_price_token_0_by_token_1: u128,
+    pub oracle_price_updated_at: u64,
+
+    // Max VALUE is FEE_RATE_DENOMINATOR_VALUE.
+    pub acceptable_price_difference: u32,
+    // It is the percentage of total amount that can be swapped at the oracle price.
+    pub max_amount_swappable_at_oracle_price: u32,
+
+    // The minimum trade rate for the swaps happening at the oracle price.
+    pub min_trade_rate_at_oracle_price: u32,
+    // The price premium for the swaps happening at the oracle price.
+    pub price_premium_for_swap_at_oracle_price: u32,
+
     /// padding
-    pub padding: [u64; 8],
+    pub padding: [u64; 3],
 }
 
 impl PoolState {
@@ -210,10 +226,10 @@ impl PoolState {
         self.max_shared_token1 = 0;
         self.token_0_amount_in_kamino = 0;
         self.token_1_amount_in_kamino = 0;
-
+        self.oracle_price_updated_at = 0;
         self.partners = [PartnerInfo::default(); 1];
 
-        self.padding = [0u64; 8];
+        self.padding = [0u64; 3];
         Ok(())
     }
 

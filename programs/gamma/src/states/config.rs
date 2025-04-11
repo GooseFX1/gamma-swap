@@ -32,8 +32,10 @@ pub struct AmmConfig {
     pub max_open_time: u64,
     // This account is not a multisig and is allowed to update certain config values on pools
     pub secondary_admin: Pubkey,
+    // The max allowed time difference for the oracle price update
+    pub max_oracle_price_update_time_diff: u64,
     /// padding
-    pub padding: [u64; 7],
+    pub padding: [u64; 6],
 }
 
 impl AmmConfig {

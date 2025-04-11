@@ -6,6 +6,14 @@ pub use static_fees::*;
 
 pub const ONE_BASIS_POINT: u64 = 100;
 pub const FEE_RATE_DENOMINATOR_VALUE: u64 = 1_000_000;
+
+// This means that we are quoting more than the oracle price so max can be 0.1%
+pub const MAX_ORACLE_PRICE_PREMIUM: u64 = 1000;
+// Max of 10%
+pub const MAX_ORACLE_PRICE_DIFFERENCE: u64 = 100_000;
+// Max of 10%
+pub const MAX_AMOUNT_SWAPPABLE_AT_ORACLE_PRICE: u64 = 100_000;
+
 // Program will only allow up to 50% of the pool to be shared with Kamino
 pub const MAX_SHARED_WITH_KAMINO_RATE: u64 = 500_000;
 

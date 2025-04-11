@@ -179,7 +179,11 @@ pub fn swap_base_output<'c, 'info>(
         )?;
 
         #[cfg(feature = "enable-log")]
-        msg!("referral_amount:{}", referral_amount, referral_transfer_fee);
+        msg!(
+            "referral_amount:{}, referral_transfer_fee:{}",
+            referral_amount,
+            referral_transfer_fee
+        );
 
         // We are aware of the fact that when referral fees are very small the referee will not get any tokens
         if referral_amount != 0 && referral_transfer_fee < referral_amount {
@@ -254,7 +258,7 @@ pub fn swap_base_output<'c, 'info>(
                 .cumulative_volume_token_1
                 .checked_add(output_transfer_amount as u128)
                 .ok_or(GammaError::MathOverflow)?;
-            
+
             pool_state.token_0_vault_amount = pool_state
                 .token_0_vault_amount
                 .checked_add(source_amount_swapped)

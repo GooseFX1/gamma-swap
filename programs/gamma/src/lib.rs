@@ -45,6 +45,7 @@ pub const REWARD_VAULT_SEED: &str = "reward_vault_seed";
 pub const REWARD_INFO_SEED: &str = "reward_info_seed";
 pub const USER_REWARD_INFO_SEED: &str = "user_reward_info_seed";
 pub const LOCK_LP_AMOUNT: u64 = 100;
+
 #[test]
 fn test_referral() {
     assert_eq!(
@@ -56,7 +57,7 @@ fn test_referral() {
 #[program]
 pub mod gamma {
     use super::*;
-    use crate::fees::FEE_RATE_DENOMINATOR_VALUE;
+    use fees::FEE_RATE_DENOMINATOR_VALUE;
 
     /// The configuation of AMM protocol, include trade fee and protocol fee
     /// # Arguments
@@ -283,6 +284,22 @@ pub mod gamma {
         instructions::swap_base_output(ctx, max_amount_in, amount_out)
     }
 
+    /// Swap the tokens in the pool base input amount, using oracle price and Curve calculator combined.
+    ///
+    /// # Arguments
+    ///
+    /// * `ctx`- The context of accounts
+    /// * `amount_in` -  input amount to transfer, output to DESTINATION is based on the exchange rate
+    /// * `minimum_amount_out` -  Minimum amount of output token, prevents excessive slippage
+    ///
+    pub fn oracle_based_swap_base_input<'c, 'info>(
+        ctx: Context<'_, '_, 'c, 'info, Swap<'info>>,
+        amount_in: u64,
+        minimum_amount_out: u64,
+    ) -> Result<()> {
+        instructions::oracle_based_swap_base_input(ctx, amount_in, minimum_amount_out)
+    }
+
     /// Create rewards for the pool
     /// Initializes a new reward info account and a reward vault account
     /// Transfers the rewards to the reward vault
@@ -320,6 +337,13 @@ pub mod gamma {
     ///
     pub fn calculate_rewards(ctx: Context<CalculateRewards>) -> Result<()> {
         instructions::calculate_rewards(ctx)
+    }
+
+    pub fn oracle_price_update(
+        ctx: Context<OraclePriceUpdate>,
+        oracle_price_token_0_by_token_1: u128,
+    ) -> Result<()> {
+        instructions::oracle_price_update(ctx, oracle_price_token_0_by_token_1)
     }
 
     /********************* Migration Instructions *********************/
