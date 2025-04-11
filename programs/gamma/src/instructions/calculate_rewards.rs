@@ -69,6 +69,13 @@ pub fn calculate_rewards(ctx: Context<CalculateRewards>) -> Result<()> {
     if ctx.accounts.user_reward_info.rewards_last_calculated_at >= current_time {
         return Ok(());
     }
+    // Start accrual of rewards from the time user first deposit.
+    // This prevents the user from creating a invest at the end of rewards and getting
+    // boosted rewards for the full period.
+    if ctx.accounts.user_reward_info.rewards_last_calculated_at == 0 {
+        ctx.accounts.user_reward_info.rewards_last_calculated_at =
+            ctx.accounts.user_pool_liquidity.first_investment_at;
+    }
 
     let user_reward_info = &mut ctx.accounts.user_reward_info;
     user_reward_info.calculate_claimable_rewards(

@@ -39,11 +39,13 @@ pub fn init_user_pool_liquidity(
         },
         None => None,
     };
+    let current_time = Clock::get()?.unix_timestamp as u64;
 
     user_pool_liquidity.initialize(
         ctx.accounts.user.key(),
         ctx.accounts.pool_state.key(),
         partner,
+        current_time,
     );
     Ok(())
 }
