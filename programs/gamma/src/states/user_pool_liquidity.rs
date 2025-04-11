@@ -16,7 +16,7 @@ pub struct UserPoolLiquidity {
     pub lp_tokens_owned: u128,
     pub partner: Option<PartnerType>,
     pub first_investment_at: u64,
-    pub padding: [u8; 22],
+    pub padding: [u8; 15],
 }
 
 impl UserPoolLiquidity {
@@ -38,6 +38,6 @@ impl UserPoolLiquidity {
         self.lp_tokens_owned = 0;
         self.partner = partner;
         self.first_investment_at = current_time;
-        self.padding = [0u8; 22];
+        self.padding = [0u8; 15];
     }
 }
