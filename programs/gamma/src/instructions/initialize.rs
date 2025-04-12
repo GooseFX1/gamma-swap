@@ -316,10 +316,12 @@ pub fn initialize(
     )?;
 
     let user_pool_liquidity = &mut ctx.accounts.user_pool_liquidity;
+    let current_time = Clock::get()?.unix_timestamp as u64;
     user_pool_liquidity.initialize(
         ctx.accounts.creator.key(),
         ctx.accounts.pool_state.key(),
         None,
+        current_time,
     );
     user_pool_liquidity.token_0_deposited = u128::from(init_amount_0);
     user_pool_liquidity.token_1_deposited = u128::from(init_amount_1);

@@ -1,5 +1,9 @@
 use crate::{
-    states::{PoolState, RewardInfo, UserPoolLiquidity, UserRewardInfo, USER_POOL_LIQUIDITY_SEED},
+    error::GammaError,
+    states::{
+        AmmConfig, PoolState, RewardInfo, UserPoolLiquidity, UserRewardInfo,
+        USER_POOL_LIQUIDITY_SEED,
+    },
     USER_REWARD_INFO_SEED,
 };
 use anchor_lang::prelude::*;
@@ -55,10 +59,22 @@ pub struct CalculateRewards<'info> {
 }
 
 pub fn calculate_rewards(ctx: Context<CalculateRewards>) -> Result<()> {
+    #[cfg(not(feature = "test-sbf"))]
+    if ctx.accounts.signer.key() != crate::CALCULATE_REWARDS_ADMIN {
+        return err!(GammaError::InvalidOwner);
+    }
+
     let pool_state = &mut ctx.accounts.pool_state.load()?;
     let current_time = Clock::get()?.unix_timestamp as u64;
     if ctx.accounts.user_reward_info.rewards_last_calculated_at >= current_time {
         return Ok(());
+    }
+    // Start accrual of rewards from the time user first deposit.
+    // This prevents the user from creating a invest at the end of rewards and getting
+    // boosted rewards for the full period.
+    if ctx.accounts.user_reward_info.rewards_last_calculated_at == 0 {
+        ctx.accounts.user_reward_info.rewards_last_calculated_at =
+            ctx.accounts.user_pool_liquidity.first_investment_at;
     }
 
     let user_reward_info = &mut ctx.accounts.user_reward_info;
