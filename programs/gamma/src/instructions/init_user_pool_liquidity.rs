@@ -34,7 +34,7 @@ pub fn init_user_pool_liquidity(
 
     let partner = match partner {
         Some(partner_value) => match partner_value.as_str() {
-            "AssetDash" => Some(PartnerType::AssetDash),
+            "Zeus" => Some(PartnerType::Zeus),
             _ => None,
         },
         None => None,

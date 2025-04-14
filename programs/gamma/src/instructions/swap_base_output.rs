@@ -200,20 +200,12 @@ pub fn swap_base_output<'c, 'info>(
     // Save fees metric for the pool partners.
     let mut partners = pool_state.partners;
     for partner in partners.iter_mut() {
-        // we multiply by 100000 to keep decimals.
-        let decimal_number = 100000;
-        let tvl_share = partner
-            .lp_token_linked_with_partner
-            .checked_mul(decimal_number)
+        let partner_fee = u64::try_from((protocol_fee as u128)
+            .checked_mul(partner.lp_token_linked_with_partner as u128)
             .ok_or(GammaError::MathOverflow)?
-            .checked_div(pool_state.lp_supply)
-            .ok_or(GammaError::MathOverflow)?;
-
-        let partner_fee = protocol_fee
-            .checked_mul(tvl_share)
-            .ok_or(GammaError::MathOverflow)?
-            .checked_div(decimal_number)
-            .ok_or(GammaError::MathOverflow)?;
+            .checked_div(pool_state.lp_supply as u128)
+            .ok_or(GammaError::MathOverflow)?)
+            .map_err(|_| GammaError::MathError)?;
 
         match trade_direction {
             TradeDirection::ZeroForOne => {

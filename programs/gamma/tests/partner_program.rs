@@ -109,7 +109,7 @@ async fn should_track_cumulative_rates_correctly() {
     assert_eq_with_copy!(pool_state.partners[0].lp_token_linked_with_partner, 0);
     assert_eq_with_copy!(
         PartnerType::new(pool_state.partners[0].partner_id),
-        PartnerType::AssetDash
+        PartnerType::Zeus
     );
     assert_eq_with_copy!(pool_state.partners[0].partner_id, 0);
 
@@ -117,7 +117,7 @@ async fn should_track_cumulative_rates_correctly() {
         .init_user_pool_liquidity_with_partner(
             &lp_depositor_asset_dash,
             pool_id,
-            Some("AssetDash".to_string()),
+            Some("Zeus".to_string()),
         )
         .await;
 

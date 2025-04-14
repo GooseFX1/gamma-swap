@@ -28,14 +28,14 @@ pub enum PoolStatusBitFlag {
 #[repr(u64)]
 pub enum PartnerType {
     #[default]
-    AssetDash = 0,
+    Zeus = 0,
 }
 
 impl PartnerType {
     pub fn new(value: u64) -> Self {
         match value {
-            0 => PartnerType::AssetDash,
-            _ => PartnerType::AssetDash,
+            0 => PartnerType::Zeus,
+            _ => PartnerType::Zeus,
         }
     }
 }
