@@ -1936,6 +1936,7 @@ dependencies = [
  "rust_decimal",
  "serde",
  "serde_json",
+ "solana-client",
  "solana-program-runtime",
  "solana-program-test",
  "solana-sdk",

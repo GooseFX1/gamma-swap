@@ -319,6 +319,108 @@ impl TestEnv {
         testenv
     }
 
+    pub async fn new_with_loaded_accounts(
+        mut accounts: Vec<Pubkey>,
+        programs: Vec<ProgramInfo>,
+        loaded_accounts: Vec<Pubkey>,
+    ) -> TestEnv {
+        let mut program_test = ProgramTest::new("gamma", gamma::id(), None);
+
+        for program in programs {
+            program_test.add_program(
+                &program.program_name,
+                program.program_id,
+                program.process_instruction,
+            );
+        }
+
+        program_test.add_program(
+            "kamino",
+            solana_sdk::pubkey!("KLend2g3cP87fffoy8q1mQqGKjrxjC8boSyAYavgmjD"),
+            None,
+        );
+
+        // TODO: Add metadata program
+        // program_test.add_program(
+        //     "../../artifacts/metadata_program",
+        //     gamma::program_utils::mpl_token_metadata::ID,
+        //     None,
+        // );
+
+        accounts.push(get_wallet().pubkey());
+        let mint_authority = Keypair::new();
+        accounts.push(mint_authority.pubkey());
+
+        accounts.iter().for_each(|pubkey| {
+            program_test.add_account(
+                pubkey.to_owned(),
+                Account {
+                    lamports: INITIAL_ACCOUNT_LAMPORTS,
+                    ..Default::default()
+                },
+            )
+        });
+
+        let client = solana_client::nonblocking::rpc_client::RpcClient::new(
+            "https://yearling-adorne-fast-mainnet.helius-rpc.com".to_string(),
+        );
+        for pubkey in loaded_accounts {
+            let account = client.get_account(&pubkey).await.unwrap();
+            program_test.add_account(pubkey.to_owned(), account);
+        }
+
+        let mut token_account_data = vec![0; 165];
+
+        let data = spl_token::state::Account {
+            mint: Pubkey::new_unique(),
+            owner: Pubkey::new_unique(),
+            amount: 0,
+            delegate: COption::None,
+            state: spl_token::state::AccountState::Initialized,
+            is_native: COption::None,
+            delegated_amount: 0,
+            close_authority: COption::None,
+        };
+
+        data.pack_into_slice(&mut token_account_data);
+
+        program_test.add_account(
+            gamma::create_pool_fee_reveiver::ID,
+            Account {
+                lamports: INITIAL_ACCOUNT_LAMPORTS,
+                owner: spl_token::id(),
+                data: token_account_data,
+                ..Default::default()
+            },
+        );
+
+        let context = program_test.start_with_context().await;
+
+        let mints = [Keypair::new(), Keypair::new()];
+        let (token0, token1) = if mints[0].pubkey() < mints[1].pubkey() {
+            (mints[0].insecure_clone(), mints[1].insecure_clone())
+        } else {
+            (mints[1].insecure_clone(), mints[0].insecure_clone())
+        };
+
+        let mut testenv = TestEnv {
+            program_test_context: context,
+            mint_authority,
+            token_0_mint: token0.pubkey(),
+            token_1_mint: token1.pubkey(),
+            treasury: Pubkey::new_unique(),
+        };
+
+        testenv
+            .create_token_mint(&token0, &testenv.mint_authority.pubkey(), 6)
+            .await;
+        testenv
+            .create_token_mint(&token1, &testenv.mint_authority.pubkey(), 6)
+            .await;
+
+        testenv
+    }
+
     pub async fn new(accounts: Vec<Pubkey>) -> TestEnv {
         TestEnv::new_with_config(accounts, vec![]).await
     }
@@ -1268,13 +1370,13 @@ impl TestEnv {
         pool_id: Pubkey,
         reward_info_key: Pubkey,
     ) {
-        self.calculate_rewards_with_signer(user, pool_id, reward_info_key, user)
+        self.calculate_rewards_with_signer(user.pubkey(), pool_id, reward_info_key, user)
             .await;
     }
 
     pub async fn calculate_rewards_with_signer(
         &mut self,
-        user: &Keypair,
+        user: Pubkey,
         pool_id: Pubkey,
         reward_info_key: Pubkey,
         signer: &Keypair,
@@ -1283,7 +1385,7 @@ impl TestEnv {
             &[
                 USER_POOL_LIQUIDITY_SEED.as_bytes(),
                 pool_id.to_bytes().as_ref(),
-                user.pubkey().to_bytes().as_ref(),
+                user.to_bytes().as_ref(),
             ],
             &gamma::ID,
         )
@@ -1293,14 +1395,14 @@ impl TestEnv {
             &[
                 USER_REWARD_INFO_SEED.as_bytes(),
                 reward_info_key.to_bytes().as_ref(),
-                user.pubkey().to_bytes().as_ref(),
+                user.to_bytes().as_ref(),
             ],
             &gamma::id(),
         );
 
         let accounts = gamma::accounts::CalculateRewards {
             signer: signer.pubkey(),
-            user: user.pubkey(),
+            user,
             user_reward_info: user_reward_info_key,
             user_pool_liquidity,
             pool_state: pool_id,

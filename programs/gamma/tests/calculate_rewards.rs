@@ -1,5 +1,6 @@
 use std::time::{SystemTime, UNIX_EPOCH};
 
+use anchor_lang::pubkey;
 use gamma::{
     states::{UserPoolLiquidity, UserRewardInfo, USER_POOL_LIQUIDITY_SEED},
     REWARD_INFO_SEED, USER_REWARD_INFO_SEED,
@@ -418,7 +419,7 @@ async fn test_calculate_rewards_signer() {
         &gamma::id(),
     );
     test_env
-        .calculate_rewards_with_signer(&user, pool_id, reward_info_key, &signer)
+        .calculate_rewards_with_signer(user.pubkey(), pool_id, reward_info_key, &signer)
         .await;
 
     let (user_reward_info_key, _) = Pubkey::find_program_address(
@@ -601,4 +602,30 @@ async fn should_only_calculate_rewards_from_first_investment() {
     let user2_reward_info: UserRewardInfo = test_env.fetch_account(user2_reward_info_key).await;
     assert_ne!(user2_reward_info.total_rewards, 1000000000 / 2);
     assert!(user2_reward_info.total_rewards < 1200000);
+}
+
+#[tokio::test]
+async fn test_calculate_rewards_with_boosted_rewards() {
+    let user = Keypair::new();
+    let mut test_env = TestEnv::new_with_loaded_accounts(
+        vec![user.pubkey()],
+        vec![],
+        vec![
+            pubkey!("BbSbfX9wJgj2a8uNeMqDN7DaV7HAK6fYAuYUGobXxhG3"),
+            pubkey!("CyK256TZTwELBABZ8vpnAKbKo3pD8oQgvW4RSt8PCRJ8"),
+            pubkey!("DYFzMWzoscDJWDBjCGrWZfkNr9MhjiDY1usByAFzctEY"),
+            pubkey!("9xz18HNTXNiV96EiWjFjowAfc3qxpo767r7oWNkFM2XE"),
+            pubkey!("4yFovxLYTNVpR7jWJBDoxfwkTudyCFpDQYvKCmu1u9m8"),
+        ],
+    )
+    .await;
+
+    test_env
+        .calculate_rewards_with_signer(
+            pubkey!("BbSbfX9wJgj2a8uNeMqDN7DaV7HAK6fYAuYUGobXxhG3"),
+            pubkey!("CyK256TZTwELBABZ8vpnAKbKo3pD8oQgvW4RSt8PCRJ8"),
+            pubkey!("DYFzMWzoscDJWDBjCGrWZfkNr9MhjiDY1usByAFzctEY"),
+            &user,
+        )
+        .await;
 }
