@@ -9,7 +9,7 @@ use super::RewardInfo;
 #[account]
 pub struct UserRewardInfo {
     pub user: Pubkey,                    // The user that is claiming the rewards.
-    pub reward_info: Pubkey,          // The account that holds the rewards for the user.
+    pub reward_info: Pubkey,             // The account that holds the rewards for the user.
     pub pool_state: Pubkey, // The pool state that the user is claiming the rewards from.
     pub total_claimed: u64, // Total rewards claimed by the user.
     pub total_rewards: u64, // Total rewards calculated for the user.
@@ -35,7 +35,6 @@ impl UserRewardInfo {
         let last_disbursed_till = reward_info.start_at.max(self.rewards_last_calculated_at);
 
         let end_time = time_now.min(reward_info.end_rewards_at);
-
         let duration = end_time
             .checked_sub(last_disbursed_till)
             .ok_or(GammaError::MathOverflow)?;
@@ -54,14 +53,18 @@ impl UserRewardInfo {
             .checked_sub(LOCK_LP_AMOUNT.into())
             .ok_or(GammaError::MathOverflow)?;
 
-        let rewards_to_add = total_to_disburse
-            .checked_mul(duration_decimal)
-            .ok_or(GammaError::MathOverflow)?
-            .checked_mul(lp_owned_by_user_decimal)
-            .ok_or(GammaError::MathOverflow)?
+        let lp_ratio = lp_owned_by_user_decimal
             .checked_div(current_lp_supply_decimal)
-            .ok_or(GammaError::MathOverflow)?
+            .ok_or(GammaError::MathOverflow)?;
+
+        let time_ratio = duration_decimal
             .checked_div(max_duration)
+            .ok_or(GammaError::MathOverflow)?;
+
+        let rewards_to_add = total_to_disburse
+            .checked_mul(time_ratio)
+            .ok_or(GammaError::MathOverflow)?
+            .checked_mul(lp_ratio)
             .ok_or(GammaError::MathOverflow)?;
 
         self.total_rewards = self

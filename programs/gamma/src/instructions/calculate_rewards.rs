@@ -1,9 +1,6 @@
 use crate::{
     error::GammaError,
-    states::{
-        AmmConfig, PoolState, RewardInfo, UserPoolLiquidity, UserRewardInfo,
-        USER_POOL_LIQUIDITY_SEED,
-    },
+    states::{PoolState, RewardInfo, UserPoolLiquidity, UserRewardInfo, USER_POOL_LIQUIDITY_SEED},
     USER_REWARD_INFO_SEED,
 };
 use anchor_lang::prelude::*;

@@ -42,6 +42,7 @@ proptest = { workspace = true }
 quickcheck = { workspace = true }
 rand = { workspace = true }
 solana-sdk = {workspace=true}
+solana-client = {workspace=true}
 solana-program-test= {workspace=true}
 solana-program-runtime={workspace=true}
 static_init = {workspace=true}
