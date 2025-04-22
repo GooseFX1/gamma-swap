@@ -1480,4 +1480,208 @@ impl TestEnv {
             .await
             .unwrap();
     }
+
+    pub async fn oracle_based_swap_base_input(
+        &mut self,
+        user: &Keypair,
+        pool_id: Pubkey,
+        amm_config_index: u16,
+        amount_in: u64,
+        minimum_amount_out: u64,
+        trade_direction: TradeDirection,
+    ) {
+        let (authority, __bump) =
+            Pubkey::find_program_address(&[AUTH_SEED.as_bytes()], &gamma::id());
+        let (amm_config_key, __bump) = Pubkey::find_program_address(
+            &[AMM_CONFIG_SEED.as_bytes(), &amm_config_index.to_be_bytes()],
+            &gamma::ID,
+        );
+
+        let user_token_0_account: Pubkey = self
+            .get_or_create_associated_token_account(user.pubkey(), self.token_0_mint.clone(), &user)
+            .await;
+
+        let user_token_1_account = self
+            .get_or_create_associated_token_account(user.pubkey(), self.token_1_mint.clone(), &user)
+            .await;
+
+        let (token_0_vault, __bump) = Pubkey::find_program_address(
+            &[
+                POOL_VAULT_SEED.as_bytes(),
+                pool_id.to_bytes().as_ref(),
+                self.token_0_mint.to_bytes().as_ref(),
+            ],
+            &gamma::ID,
+        );
+        let (token_1_vault, __bump) = Pubkey::find_program_address(
+            &[
+                POOL_VAULT_SEED.as_bytes(),
+                pool_id.to_bytes().as_ref(),
+                self.token_1_mint.to_bytes().as_ref(),
+            ],
+            &gamma::ID,
+        );
+        let (observation_key, __bump) = Pubkey::find_program_address(
+            &[OBSERVATION_SEED.as_bytes(), pool_id.to_bytes().as_ref()],
+            &gamma::ID,
+        );
+
+        let (
+            input_token_account,
+            output_token_account,
+            input_token_mint,
+            output_token_mint,
+            input_vault,
+            output_vault,
+            input_token_program,
+            output_token_program,
+        ) = match trade_direction {
+            TradeDirection::ZeroForOne => (
+                user_token_0_account,
+                user_token_1_account,
+                self.token_0_mint,
+                self.token_1_mint,
+                token_0_vault,
+                token_1_vault,
+                spl_token::id(),
+                spl_token::id(),
+            ),
+            TradeDirection::OneForZero => (
+                user_token_1_account,
+                user_token_0_account,
+                self.token_1_mint,
+                self.token_0_mint,
+                token_1_vault,
+                token_0_vault,
+                spl_token::id(),
+                spl_token::id(),
+            ),
+        };
+
+        let accounts = gamma::accounts::Swap {
+            payer: user.pubkey(),
+            authority,
+            amm_config: amm_config_key,
+            pool_state: pool_id,
+            observation_state: observation_key,
+            input_token_account,
+            output_token_account,
+            input_vault,
+            output_vault,
+            input_token_program,
+            output_token_program,
+            input_token_mint,
+            output_token_mint,
+        };
+
+        let data = gamma::instruction::OracleBasedSwapBaseInput {
+            amount_in,
+            minimum_amount_out,
+        };
+
+        let transaction = self
+            .encode_instruction_and_sign_transaction(data, accounts, user)
+            .await;
+
+        self.program_test_context
+            .banks_client
+            .process_transaction(transaction)
+            .await
+            .unwrap();
+    }
+
+    pub async fn oracle_price_update(
+        &mut self,
+        user: &Keypair,
+        pool_id: Pubkey,
+        amm_config_index: u16,
+        oracle_price_token_0_by_token_1: u128,
+    ) {
+        let (amm_config_key, __bump) = Pubkey::find_program_address(
+            &[AMM_CONFIG_SEED.as_bytes(), &amm_config_index.to_be_bytes()],
+            &gamma::ID,
+        );
+        let accounts = gamma::accounts::OraclePriceUpdate {
+            authority: user.pubkey(),
+            pool_state: pool_id,
+            amm_config: amm_config_key,
+        };
+
+        let data = gamma::instruction::OraclePriceUpdate {
+            oracle_price_token_0_by_token_1,
+        };
+
+        let transaction = self
+            .encode_instruction_and_sign_transaction(data, accounts, user)
+            .await;
+
+        self.program_test_context
+            .banks_client
+            .process_transaction(transaction)
+            .await
+            .unwrap();
+    }
+
+    pub async fn update_pool(
+        &mut self,
+        user: &Keypair,
+        pool_id: Pubkey,
+        amm_config_index: u16,
+        param: u32,
+        value: u64,
+    ) {
+        let (amm_config_key, __bump) = Pubkey::find_program_address(
+            &[AMM_CONFIG_SEED.as_bytes(), &amm_config_index.to_be_bytes()],
+            &gamma::ID,
+        );
+        let accounts = gamma::accounts::UpdatePool {
+            authority: user.pubkey(),
+            pool_state: pool_id,
+            amm_config: amm_config_key,
+        };
+
+        let data = gamma::instruction::UpdatePool { param, value };
+
+        let transaction = self
+            .encode_instruction_and_sign_transaction(data, accounts, user)
+            .await;
+
+        self.program_test_context
+            .banks_client
+            .process_transaction(transaction)
+            .await
+            .unwrap();
+    }
+
+    pub async fn update_amm_config(
+        &mut self,
+        user: &Keypair,
+        amm_config_index: u16,
+        param: u16,
+        value: u64,
+    ) {
+        let (amm_config_key, __bump) = Pubkey::find_program_address(
+            &[AMM_CONFIG_SEED.as_bytes(), &amm_config_index.to_be_bytes()],
+            &gamma::ID,
+        );
+        let accounts = gamma::accounts::UpdateAmmConfig {
+            owner: user.pubkey(),
+            amm_config: amm_config_key,
+        };
+
+        let data = gamma::instruction::UpdateAmmConfig {
+            param: param as u16,
+            value,
+        };
+
+        let transaction = self
+            .encode_instruction_and_sign_transaction(data, accounts, user)
+            .await;
+
+        self.program_test_context
+            .banks_client
+            .process_transaction(transaction)
+            .await
+            .unwrap();
+    }
 }

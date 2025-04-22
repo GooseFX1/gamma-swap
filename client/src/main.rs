@@ -37,6 +37,7 @@ pub struct ClientConfig {
     payer_path: String,
     admin_path: String,
     gamma_program: Pubkey,
+    kamino_program: Pubkey,
     slippage: f64,
 }
 
@@ -63,6 +64,10 @@ fn load_cfg(opts: &Opts) -> Result<ClientConfig, Box<dyn std::error::Error>> {
         .gamma_program
         .clone()
         .unwrap_or_else(|| env::var("GAMMA_PROGRAM").expect("GAMMA_PROGRAM must be set"));
+    let kamino_program_str = opts
+        .kamino_program
+        .clone()
+        .unwrap_or_else(|| env::var("KAMINO_PROGRAM").expect("KAMINO_PROGRAM must be set"));
     let slippage = opts.slippage.unwrap_or_else(|| {
         env::var("SLIPPAGE")
             .expect("SLIPPAGE must be set")
@@ -72,6 +77,8 @@ fn load_cfg(opts: &Opts) -> Result<ClientConfig, Box<dyn std::error::Error>> {
 
     let gamma_program =
         Pubkey::from_str(&gamma_program_str).map_err(|_| "Invalid GAMMA_PROGRAM pubkey")?;
+    let kamino_program =
+        Pubkey::from_str(&kamino_program_str).map_err(|_| "Invalid KAMINO_PROGRAM pubkey")?;
 
     Ok(ClientConfig {
         http_url,
@@ -79,6 +86,7 @@ fn load_cfg(opts: &Opts) -> Result<ClientConfig, Box<dyn std::error::Error>> {
         payer_path,
         admin_path,
         gamma_program,
+        kamino_program,
         slippage,
     })
 }
@@ -104,6 +112,9 @@ pub struct Opts {
 
     #[clap(long, env = "GAMMA_PROGRAM")]
     gamma_program: Option<String>,
+
+    #[clap(long, env = "KAMINO_PROGRAM")]
+    kamino_program: Option<String>,
 
     #[clap(long, env = "SLIPPAGE")]
     slippage: Option<f64>,

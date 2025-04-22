@@ -68,6 +68,27 @@ impl DynamicFee {
         ))
     }
 
+    pub fn dynamic_fee_rate(
+        block_timestamp: u64,
+        observation_state: &ObservationState,
+        fee_type: FeeType,
+        base_fees: u64,
+        pool_state: &PoolState,
+        is_invoked_by_signed_segmenter: bool,
+    ) -> Result<u64> {
+        // TODO: use is_invoked_by_signed_segmenter to charge less fees for signed segmenter, once they are implemented across all protocols and this is also used by the segmenter.
+        let dynamic_fee_rate = Self::calculate_dynamic_fee(
+            block_timestamp,
+            observation_state,
+            fee_type,
+            base_fees,
+            pool_state,
+            is_invoked_by_signed_segmenter,
+        )?;
+
+        Ok(dynamic_fee_rate)
+    }
+
     /// Calculates the dynamic fee based on the specified fee type
     ///
     /// # Arguments

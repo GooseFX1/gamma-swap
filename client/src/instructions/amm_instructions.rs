@@ -307,6 +307,8 @@ pub fn withdraw_instr(
             vault_1_mint: token_1_mint,
             // lp_mint: token_lp_mint,
             memo_program: spl_memo::id(),
+            instruction_sysvar_account: sysvar::instructions::id(),
+            kamino_program: config.kamino_program,
         })
         .args(gamma_instructions::Withdraw {
             lp_token_amount,
@@ -444,9 +446,7 @@ pub fn init_user_pool_liquidity_instr(
             user_pool_liquidity,
             system_program: system_program::id(),
         })
-        .args(gamma_instructions::InitUserPoolLiquidity {
-            partner: None,
-        })
+        .args(gamma_instructions::InitUserPoolLiquidity { partner: None })
         .instructions()?;
     Ok(instructions)
 }

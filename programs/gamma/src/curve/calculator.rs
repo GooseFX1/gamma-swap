@@ -7,15 +7,6 @@ use crate::{curve::constant_product::ConstantProductCurve, fees::StaticFee};
 use anchor_lang::prelude::*;
 use std::fmt::Debug;
 
-/// Helper function for mapping to GammaError::CalculationFailure
-pub fn map_zero_to_none(x: u128) -> Option<u128> {
-    if x == 0 {
-        None
-    } else {
-        Some(x)
-    }
-}
-
 /// The direction of a trade, since curves can be specialized to treat each
 /// token differently (by adding offsets or weights)
 #[derive(Clone, Copy, Debug, PartialEq)]
