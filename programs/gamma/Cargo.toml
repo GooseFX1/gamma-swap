@@ -21,6 +21,7 @@ solana=[]
 anchor-debug=[]
 test-sbf=[]
 idl-build = ["anchor-lang/idl-build", "anchor-spl/idl-build"]
+serde=["no-entrypoint", "dep:serde"]
 
 [dependencies]
 anchor-lang = { workspace = true }
@@ -34,6 +35,7 @@ spl-memo = { workspace = true }
 spl-token = { workspace = true }
 uint = { workspace = true }
 bytemuck={workspace=true}
+serde = { workspace = true, optional = true , features = ["derive"]}
 fixed={workspace=true}
 fixed-macro={workspace=true}
 

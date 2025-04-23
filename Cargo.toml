@@ -2,6 +2,7 @@
 members = [
     "programs/*",
     "client", 
+    "gamma-wasm"
 ]
 resolver = "2"
 
@@ -70,5 +71,6 @@ base64 = "0.21.0"
 solana-bpf-simulator = { git = "https://github.com/dovahcrow/solana-bpf-simulator" }
 
 gamma = { path = "programs/gamma", features = ["no-entrypoint"] }
-fixed = { version = "=1.23.1" }
+fixed = { version = "1.23.1" }
 fixed-macro = "1.1"
+half = "=2.4.1"
