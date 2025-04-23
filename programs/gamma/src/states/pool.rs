@@ -68,10 +68,14 @@ pub struct PoolState {
     /// Vault to store Token B of the pool
     pub token_1_vault: Pubkey,
 
-    /// Pool tokens are issued when Token A or Token B are deposited
-    /// Pool tokens can be withdrawn back to the original Token A or Token B
-    // pub lp_mint: Pubkey,
-    pub _padding1: [u8; 32],
+    /// Scaled to 9 decimal places.
+    /// This means `token0/token1`
+    pub oracle_price_token_0_by_token_1: u128, // 16
+    pub oracle_price_updated_at: u64,     // 8
+    pub acceptable_price_difference: u32, // 4
+    // It is the percentage of total amount that can be swapped at the oracle price.
+    pub max_amount_swappable_at_oracle_price: u32, // 4
+
     /// Mint info of Token A
     pub token_0_mint: Pubkey,
     /// Mint info of Token B
@@ -140,8 +144,12 @@ pub struct PoolState {
     pub max_shared_token0: u64,
     pub max_shared_token1: u64,
 
-    // This will store the partner information, like how much token0 and token1 they was invested from their platforms.
-    pub partners: [PartnerInfo; 1],
+    // The minimum trade rate for the swaps happening at the oracle price.
+    // Max VALUE is FEE_RATE_DENOMINATOR_VALUE.
+    pub min_trade_rate_at_oracle_price: u32, // 4
+    // The price premium for the swaps happening at the oracle price.
+    pub price_premium_for_swap_at_oracle_price: u32, // 4
+    pub _padding3: [u8; 24],                         // 24
 
     // Keeps track of the absolute amount we put in kamino, in terms of the token0 or token1.
     // This is important to make sure that when kamino collateral price decreases in rate cases we don't deposit more.
@@ -151,23 +159,11 @@ pub struct PoolState {
     pub withdrawn_kamino_profit_token_0: u64,
     pub withdrawn_kamino_profit_token_1: u64,
 
-    /// Scaled to 9 decimal places.
-    /// This means `token0/token1`
-    pub oracle_price_token_0_by_token_1: u128,
-    pub oracle_price_updated_at: u64,
-
-    // Max VALUE is FEE_RATE_DENOMINATOR_VALUE.
-    pub acceptable_price_difference: u32,
-    // It is the percentage of total amount that can be swapped at the oracle price.
-    pub max_amount_swappable_at_oracle_price: u32,
-
-    // The minimum trade rate for the swaps happening at the oracle price.
-    pub min_trade_rate_at_oracle_price: u32,
-    // The price premium for the swaps happening at the oracle price.
-    pub price_premium_for_swap_at_oracle_price: u32,
+    // This will store the partner information, like how much token0 and token1 they was invested from their platforms.
+    pub partners: [PartnerInfo; 1],
 
     /// padding
-    pub padding: [u64; 3],
+    pub padding: [u64; 4],
 }
 
 impl PoolState {
@@ -229,7 +225,7 @@ impl PoolState {
         self.oracle_price_updated_at = 0;
         self.partners = [PartnerInfo::default(); 1];
 
-        self.padding = [0u64; 3];
+        self.padding = [0u64; 4];
         Ok(())
     }
 

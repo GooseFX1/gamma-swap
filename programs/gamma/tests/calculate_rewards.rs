@@ -2,7 +2,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use anchor_lang::pubkey;
 use gamma::{
-    states::{UserPoolLiquidity, UserRewardInfo, USER_POOL_LIQUIDITY_SEED},
+    states::{PoolState, UserPoolLiquidity, UserRewardInfo, USER_POOL_LIQUIDITY_SEED},
     REWARD_INFO_SEED, USER_REWARD_INFO_SEED,
 };
 use solana_program_test::tokio;
@@ -628,4 +628,9 @@ async fn test_calculate_rewards_with_boosted_rewards() {
             &user,
         )
         .await;
+
+    let pool_state: PoolState = test_env
+        .fetch_account(pubkey!("CyK256TZTwELBABZ8vpnAKbKo3pD8oQgvW4RSt8PCRJ8"))
+        .await;
+    dbg!(&pool_state);
 }
