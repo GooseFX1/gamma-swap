@@ -121,7 +121,7 @@ impl OracleBasedSwapCalculator {
     ) -> Result<SwapResult> {
         let oracle_price_updated_at = pool_state.oracle_price_updated_at;
         let difference = block_timestamp.saturating_sub(oracle_price_updated_at);
-        if difference > amm_config.max_oracle_price_update_time_diff
+        if difference > pool_state.max_oracle_price_update_time_diff as u64
             || block_timestamp < oracle_price_updated_at
             || oracle_price_updated_at == 0
             || pool_state.oracle_price_token_0_by_token_1 == 0
