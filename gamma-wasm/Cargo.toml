@@ -1,0 +1,22 @@
+[package]
+name = "gamma-wasm"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+anchor-lang = { workspace = true }
+gamma = { workspace = true, features = ["serde"]}
+wasm-bindgen = "0.2.99"
+serde = { workspace = true }
+serde-wasm-bindgen = "0.6.5"
+web-time = "1.1.0"
+
+[profile.release]
+lto = true           # Enable link-time optimization
+opt-level = 's'      # Optimize for size
+panic = 'abort'      # Remove panic unwinding code
+codegen-units = 1    # More aggressive optimizations
+strip = true         # Strip symbols from binary
