@@ -151,7 +151,7 @@ pub struct PoolState {
     pub price_premium_for_swap_at_oracle_price: u32, // 4
     // The max allowed time difference for the oracle price update
     pub max_oracle_price_update_time_diff: u32,
-    pub _padding3: [u8; 20], // 24
+    pub _padding3: [u8; 20], // 20
 
     // Keeps track of the absolute amount we put in kamino, in terms of the token0 or token1.
     // This is important to make sure that when kamino collateral price decreases in rate cases we don't deposit more.
