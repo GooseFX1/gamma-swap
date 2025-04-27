@@ -607,8 +607,9 @@ async fn should_only_calculate_rewards_from_first_investment() {
 #[tokio::test]
 async fn test_calculate_rewards_with_boosted_rewards() {
     let user = Keypair::new();
+    let admin = get_admin();
     let mut test_env = TestEnv::new_with_loaded_accounts(
-        vec![user.pubkey()],
+        vec![user.pubkey(), admin.pubkey()],
         vec![],
         vec![
             pubkey!("BbSbfX9wJgj2a8uNeMqDN7DaV7HAK6fYAuYUGobXxhG3"),
