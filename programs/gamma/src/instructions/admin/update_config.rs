@@ -47,7 +47,6 @@ pub fn update_amm_config(ctx: Context<UpdateAmmConfig>, param: u16, value: u64) 
             };
             set_new_secondary_admin(amm_config, new_secondary_admin)?;
         }
-        9 => amm_config.max_oracle_price_update_time_diff = value,
         _ => return err!(GammaError::InvalidInput),
     }
 
