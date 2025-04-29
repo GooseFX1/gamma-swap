@@ -3,6 +3,7 @@ use crate::curve::OracleBasedSwapCalculator;
 use crate::curve::TradeDirection;
 use crate::error::GammaError;
 use crate::external::dflow_segmenter::is_invoked_by_segmenter;
+use crate::fees::FEE_RATE_DENOMINATOR_VALUE;
 use crate::instructions::SwapRemainingAccounts;
 use crate::states::oracle;
 use crate::states::PoolStatusBitIndex;
@@ -164,7 +165,11 @@ pub fn oracle_based_swap_base_input<'c, 'info>(
         )?;
 
         #[cfg(feature = "enable-log")]
-        msg!("referral_amount:{}, referral_transfer_fee:{}", referral_amount, referral_transfer_fee);
+        msg!(
+            "referral_amount:{}, referral_transfer_fee:{}",
+            referral_amount,
+            referral_transfer_fee
+        );
 
         // We are aware of the fact that when referral fees are very small the referee will not get any tokens
         if referral_amount != 0 && referral_transfer_fee < referral_amount {
@@ -182,46 +187,22 @@ pub fn oracle_based_swap_base_input<'c, 'info>(
             transfer_referral_amount = Some(referral_amount)
         }
     }
-    // Save fees metric for the pool partners.
-    let mut partners = pool_state.partners;
-    for partner in partners.iter_mut() {
-        // we multiply by 100000 to keep decimals.
-        let decimal_number = 100000;
-        let tvl_share = partner
-            .lp_token_linked_with_partner
-            .checked_mul(decimal_number)
-            .ok_or(GammaError::MathOverflow)?
-            .checked_div(pool_state.lp_supply)
-            .ok_or(GammaError::MathOverflow)?;
 
-        let partner_fee = protocol_fee
-            .checked_mul(tvl_share)
-            .ok_or(GammaError::MathOverflow)?
-            .checked_div(decimal_number)
-            .ok_or(GammaError::MathOverflow)?;
-
-        match trade_direction {
-            TradeDirection::ZeroForOne => {
-                partner.cumulative_fee_total_times_tvl_share_token_0 = partner
-                    .cumulative_fee_total_times_tvl_share_token_0
-                    .checked_add(partner_fee)
-                    .ok_or(GammaError::MathOverflow)?;
-            }
-            TradeDirection::OneForZero => {
-                partner.cumulative_fee_total_times_tvl_share_token_1 = partner
-                    .cumulative_fee_total_times_tvl_share_token_1
-                    .checked_add(partner_fee)
-                    .ok_or(GammaError::MathOverflow)?;
-            }
-        }
-    }
-    pool_state.partners = partners;
+    let partner_protocol_fee = ((pool_state.partner_share_rate as u128 * protocol_fee as u128)
+        / FEE_RATE_DENOMINATOR_VALUE as u128) as u64;
+    protocol_fee = protocol_fee
+        .checked_sub(partner_protocol_fee)
+        .ok_or(GammaError::MathOverflow)?;
 
     match trade_direction {
         TradeDirection::ZeroForOne => {
             pool_state.protocol_fees_token_0 = pool_state
                 .protocol_fees_token_0
                 .checked_add(protocol_fee)
+                .ok_or(GammaError::MathOverflow)?;
+            pool_state.partner_protocol_fees_token_0 = pool_state
+                .partner_protocol_fees_token_0
+                .checked_add(partner_protocol_fee)
                 .ok_or(GammaError::MathOverflow)?;
             pool_state.fund_fees_token_0 = pool_state
                 .fund_fees_token_0
@@ -257,6 +238,10 @@ pub fn oracle_based_swap_base_input<'c, 'info>(
             pool_state.protocol_fees_token_1 = pool_state
                 .protocol_fees_token_1
                 .checked_add(protocol_fee)
+                .ok_or(GammaError::MathOverflow)?;
+            pool_state.partner_protocol_fees_token_1 = pool_state
+                .partner_protocol_fees_token_1
+                .checked_add(partner_protocol_fee)
                 .ok_or(GammaError::MathOverflow)?;
             pool_state.fund_fees_token_1 = pool_state
                 .fund_fees_token_1

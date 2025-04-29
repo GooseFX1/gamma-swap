@@ -199,7 +199,7 @@ pub mod gamma {
 
     pub fn init_user_pool_liquidity(
         ctx: Context<InitUserPoolLiquidity>,
-        partner: Option<String>,
+        partner: Option<Pubkey>,
     ) -> Result<()> {
         instructions::init_user_pool_liquidity(ctx, partner)
     }
@@ -349,6 +349,76 @@ pub mod gamma {
 
     pub fn migrate_reward_info(ctx: Context<MigrateRewardInfo>, amount: u64) -> Result<()> {
         instructions::migrate_reward_info(ctx, amount)
+    }
+    
+    /// Creates a new `Partner` account associated with a certain pool
+    ///
+    /// * `ctx` - The context of accounts
+    /// * `name` - The name associated with the partner
+    /// * `token_0_token_account` - Token account for receiving token0 tokens
+    /// * `token_1_token_account` - Token account for receiving token1 tokens
+    ///
+    pub fn initialize_partner(
+        ctx: Context<InitializePartner>,
+        name: [u8; 32],
+        token_0_token_account: Pubkey,
+        token_1_token_account: Pubkey,
+    ) -> Result<()> {
+        instructions::initialize_partner(ctx, name, token_0_token_account, token_1_token_account)
+    }
+
+    /// Initializes a new `PoolPartnerInfos` account unique to a particular pool
+    ///
+    /// * `ctx` - The context of accounts
+    /// * `partner_share_rate` - A fraction representing the partner's share of protocol fees
+    ///
+    pub fn initialize_pool_partners(
+        ctx: Context<InitializePoolPartners>,
+        partner_share_rate: u64,
+    ) -> Result<()> {
+        instructions::initialize_pool_partners(ctx, partner_share_rate)
+    }
+
+    /// Updates claimable fee amounts for all `PartnerInfo`s in a `PoolPartnerInfos` account
+    ///
+    /// * `ctx` - The context of accounts
+    ///
+    pub fn update_partner_fees(ctx: Context<UpdatePartnerFees>) -> Result<()> {
+        instructions::update_partner_fees(ctx)
+    }
+
+    /// Claim fees for a particular partner
+    ///
+    /// * `ctx` - The context of accounts
+    ///
+    pub fn claim_partner_fees(ctx: Context<ClaimPartnerFees>) -> Result<()> {
+        instructions::claim_partner_fees(ctx)
+    }
+
+    /// Authority-permissioned instruction to update certain fields in a pool, e.g token-accounts
+    ///
+    /// * `ctx` - The context of accounts
+    /// * `token_account_0` - (optional) update for the token_0_token_account field
+    /// * `token_account_1` - (optional) update for the token_1_token_account field
+    ///
+    pub fn update_partner(
+        ctx: Context<UpdatePartner>,
+        token_account_0: Option<Pubkey>,
+        token_account_1: Option<Pubkey>,
+    ) -> Result<()> {
+        instructions::update_partner(ctx, token_account_0, token_account_1)
+    }
+
+    /// Admin-permissioned instruction to add a new partner to a pool
+    ///
+    /// * `ctx` - The context of accounts
+    ///
+    pub fn add_partner(ctx: Context<AddPartner>) -> Result<()> {
+        instructions::add_partner(ctx)
+    }
+
+    pub fn realloc_reward_info(ctx: Context<ExtendRewardInfo>) -> Result<()> {
+        instructions::realloc_reward_info(ctx)
     }
 
     /********************* Migration Instructions *********************/

@@ -24,37 +24,6 @@ pub enum PoolStatusBitFlag {
     Disable,
 }
 
-#[derive(Default, Debug, PartialEq, Eq, Clone, Copy, AnchorDeserialize, AnchorSerialize)]
-#[repr(u64)]
-pub enum PartnerType {
-    #[default]
-    AssetDash = 0,
-}
-
-impl PartnerType {
-    pub fn new(value: u64) -> Self {
-        match value {
-            0 => PartnerType::AssetDash,
-            _ => PartnerType::AssetDash,
-        }
-    }
-}
-
-#[zero_copy(unsafe)]
-#[repr(packed)]
-#[derive(Default, Debug)]
-pub struct PartnerInfo {
-    pub partner_id: u64,
-    // This stores the LP tokens that are linked with the partner, i.e owned by customers of the partner.
-    pub lp_token_linked_with_partner: u64,
-
-    // This keeps track of tvl_share * fee_we_earned_with_swap_token0
-    pub cumulative_fee_total_times_tvl_share_token_0: u64,
-
-    // This keeps track of tvl_share * fee_we_earned_with_swap_token1
-    pub cumulative_fee_total_times_tvl_share_token_1: u64,
-}
-
 #[account(zero_copy(unsafe))]
 #[repr(packed)]
 #[derive(Default, Debug)]
@@ -161,11 +130,15 @@ pub struct PoolState {
     pub withdrawn_kamino_profit_token_0: u64,
     pub withdrawn_kamino_profit_token_1: u64,
 
-    // This will store the partner information, like how much token0 and token1 they was invested from their platforms.
-    pub partners: [PartnerInfo; 1],
+    /// Fraction of protocol tokens shared with partners. Denominator is 1_000_000
+    pub partner_share_rate: u64,
+    /// amount of protocol fees owed to referral partners(token0)
+    pub partner_protocol_fees_token_0: u64,
+    /// amount of protocol fees owed to referral partners(token1)
+    pub partner_protocol_fees_token_1: u64,
 
     /// padding
-    pub padding: [u64; 4],
+    pub padding: [u64; 5],
 }
 
 impl PoolState {
@@ -225,9 +198,11 @@ impl PoolState {
         self.token_0_amount_in_kamino = 0;
         self.token_1_amount_in_kamino = 0;
         self.oracle_price_updated_at = 0;
-        self.partners = [PartnerInfo::default(); 1];
+        self.partner_share_rate = 0;
+        self.partner_protocol_fees_token_0 = 0;
+        self.partner_protocol_fees_token_1 = 0;
 
-        self.padding = [0u64; 4];
+        self.padding = [0u64; 5];
         Ok(())
     }
 

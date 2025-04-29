@@ -2,7 +2,10 @@ use crate::external::dlmm::lb_clmm::types::BinLiquidityReduction;
 use crate::{
     calculate_gamma_lp_tokens,
     instructions::deposit::{deposit_to_gamma_pool, Deposit},
-    states::{MigrationEvent, PoolState, UserPoolLiquidity, USER_POOL_LIQUIDITY_SEED},
+    states::{
+        MigrationEvent, PoolPartnerInfos, PoolState, UserPoolLiquidity, PARTNER_INFOS_SEED,
+        USER_POOL_LIQUIDITY_SEED,
+    },
 };
 use anchor_lang::prelude::*;
 use anchor_spl::{
@@ -136,6 +139,13 @@ pub struct MeteoraDlmmToGamma<'info> {
         address = gamma_token_1_vault.mint
     )]
     pub gamma_vault_1_mint: Box<InterfaceAccount<'info, Mint>>,
+
+    #[account(
+        mut,
+        seeds = [PARTNER_INFOS_SEED.as_bytes(), gamma_pool_state.key().as_ref()],
+        bump,
+    )]
+    pub pool_partners: AccountLoader<'info, PoolPartnerInfos>,
 }
 
 pub fn meteora_dlmm_to_gamma(
@@ -206,6 +216,7 @@ pub fn meteora_dlmm_to_gamma(
         token_program_2022: ctx.accounts.token_program_2022.clone(),
         vault_0_mint: ctx.accounts.gamma_vault_0_mint.clone(),
         vault_1_mint: ctx.accounts.gamma_vault_1_mint.clone(),
+        pool_partners: ctx.accounts.pool_partners.clone(),
     };
 
     deposit_to_gamma_pool(

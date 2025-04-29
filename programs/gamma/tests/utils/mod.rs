@@ -6,8 +6,8 @@ use anchor_spl::token::TokenAccount;
 use anchor_spl::token_2022::spl_token_2022;
 use gamma::curve::TradeDirection;
 use gamma::states::{
-    ObservationState, AMM_CONFIG_SEED, OBSERVATION_NUM, OBSERVATION_SEED, POOL_LP_MINT_SEED,
-    POOL_SEED, POOL_VAULT_SEED, USER_POOL_LIQUIDITY_SEED,
+    ObservationState, AMM_CONFIG_SEED, OBSERVATION_NUM, OBSERVATION_SEED, PARTNER_INFOS_SEED,
+    POOL_LP_MINT_SEED, POOL_SEED, POOL_VAULT_SEED, USER_POOL_LIQUIDITY_SEED,
 };
 use gamma::{AUTH_SEED, REWARD_INFO_SEED, REWARD_VAULT_SEED, USER_REWARD_INFO_SEED};
 use solana_program_runtime::invoke_context::BuiltinFunctionWithContext;
@@ -117,7 +117,7 @@ where
 pub async fn get_signed_transaction(
     program_context: &mut ProgramTestContext,
     instructions: &[Instruction],
-    signer: &Keypair,
+    signers: &[&Keypair],
 ) -> Transaction {
     let blockhash = program_context
         .banks_client
@@ -130,8 +130,9 @@ pub async fn get_signed_transaction(
         .await
         .unwrap();
 
-    let mut tx = Transaction::new_with_payer(instructions, Some(&signer.pubkey()));
-    tx.partial_sign(&[signer], recent_blockhash);
+    let payer = signers.get(0).map(|s| s.pubkey());
+    let mut tx = Transaction::new_with_payer(instructions, payer.as_ref());
+    tx.partial_sign(signers, recent_blockhash);
     tx
 }
 
@@ -622,7 +623,7 @@ impl TestEnv {
         let mint_tx = get_signed_transaction(
             &mut self.program_test_context,
             &[mint_ix],
-            &self.mint_authority,
+            &[&self.mint_authority],
         )
         .await;
 
@@ -684,14 +685,14 @@ impl TestEnv {
         &mut self,
         data: AnchorInstruction,
         accounts: AnchorAccounts,
-        signer: &Keypair,
+        signers: &[&Keypair],
     ) -> Transaction
     where
         AnchorInstruction: InstructionData,
         AnchorAccounts: ToAccountMetas,
     {
         let instruction = get_instruction(data, accounts);
-        get_signed_transaction(&mut self.program_test_context, &[instruction], &signer).await
+        get_signed_transaction(&mut self.program_test_context, &[instruction], signers).await
     }
 
     pub async fn create_config(
@@ -725,7 +726,7 @@ impl TestEnv {
         };
 
         let transaction = self
-            .encode_instruction_and_sign_transaction(data, accounts, user)
+            .encode_instruction_and_sign_transaction(data, accounts, &[user])
             .await;
 
         self.program_test_context
@@ -806,6 +807,11 @@ impl TestEnv {
             &gamma::ID,
         )
         .0;
+        let pool_partners = Pubkey::find_program_address(
+            &[PARTNER_INFOS_SEED.as_bytes(), pool_account_key.as_ref()],
+            &gamma::id(),
+        )
+        .0;
 
         let accounts = gamma::accounts::Initialize {
             creator: user.pubkey(),
@@ -821,6 +827,7 @@ impl TestEnv {
             token_1_vault,
             create_pool_fee: create_pool_fee,
             observation_state: observation_key,
+            pool_partners,
             token_program: spl_token::id(),
             token_0_program: spl_token::id(),
             token_1_program: spl_token::id(),
@@ -838,7 +845,7 @@ impl TestEnv {
         };
 
         let transaction = self
-            .encode_instruction_and_sign_transaction(data, accounts, user)
+            .encode_instruction_and_sign_transaction(data, accounts, &[user])
             .await;
 
         self.program_test_context
@@ -911,6 +918,11 @@ impl TestEnv {
             &gamma::id(),
         )
         .0;
+        let pool_partners = Pubkey::find_program_address(
+            &[PARTNER_INFOS_SEED.as_bytes(), pool_id.as_ref()],
+            &gamma::id(),
+        )
+        .0;
 
         let accounts = gamma::accounts::Deposit {
             owner: user.pubkey(),
@@ -926,6 +938,7 @@ impl TestEnv {
             token_program_2022: spl_token_2022::id(),
             vault_0_mint: self.token_0_mint,
             vault_1_mint: self.token_1_mint,
+            pool_partners,
         };
 
         let data = gamma::instruction::Deposit {
@@ -935,7 +948,7 @@ impl TestEnv {
         };
 
         let transaction = self
-            .encode_instruction_and_sign_transaction(data, accounts, user)
+            .encode_instruction_and_sign_transaction(data, accounts, &[user])
             .await;
 
         self.program_test_context
@@ -996,6 +1009,11 @@ impl TestEnv {
             &gamma::id(),
         )
         .0;
+        let pool_partners = Pubkey::find_program_address(
+            &[PARTNER_INFOS_SEED.as_bytes(), pool_id.as_ref()],
+            &gamma::id(),
+        )
+        .0;
 
         let user_token_0_account: Pubkey = self
             .get_or_create_associated_token_account(user.pubkey(), self.token_0_mint.clone(), &user)
@@ -1021,6 +1039,7 @@ impl TestEnv {
             memo_program: spl_memo::id(),
             instruction_sysvar_account: sysvar::instructions::id(),
             kamino_program: solana_sdk::pubkey!("KLend2g3cP87fffoy8q1mQqGKjrxjC8boSyAYavgmjD"),
+            pool_partners,
         };
 
         let data = gamma::instruction::Withdraw {
@@ -1030,7 +1049,7 @@ impl TestEnv {
         };
 
         let transaction = self
-            .encode_instruction_and_sign_transaction(data, accounts, user)
+            .encode_instruction_and_sign_transaction(data, accounts, &[user])
             .await;
 
         self.program_test_context
@@ -1049,7 +1068,7 @@ impl TestEnv {
         &mut self,
         user: &Keypair,
         pool_id: Pubkey,
-        partner: Option<String>,
+        partner: Option<Pubkey>,
     ) {
         let user_pool_liquidity = Pubkey::find_program_address(
             &[
@@ -1060,6 +1079,11 @@ impl TestEnv {
             &gamma::id(),
         )
         .0;
+        let pool_partners = Pubkey::find_program_address(
+            &[PARTNER_INFOS_SEED.as_bytes(), pool_id.as_ref()],
+            &gamma::id(),
+        )
+        .0;
 
         let accounts: gamma::accounts::InitUserPoolLiquidity =
             gamma::accounts::InitUserPoolLiquidity {
@@ -1067,12 +1091,13 @@ impl TestEnv {
                 pool_state: pool_id,
                 user_pool_liquidity,
                 system_program: system_program::ID,
+                pool_partners,
             };
 
         let data = gamma::instruction::InitUserPoolLiquidity { partner };
 
         let transaction = self
-            .encode_instruction_and_sign_transaction(data, accounts, user)
+            .encode_instruction_and_sign_transaction(data, accounts, &[user])
             .await;
 
         self.program_test_context
@@ -1181,7 +1206,7 @@ impl TestEnv {
         };
 
         let transaction = self
-            .encode_instruction_and_sign_transaction(data, accounts, user)
+            .encode_instruction_and_sign_transaction(data, accounts, &[user])
             .await;
 
         self.program_test_context
@@ -1290,7 +1315,7 @@ impl TestEnv {
         };
 
         let transaction = self
-            .encode_instruction_and_sign_transaction(data, accounts, user)
+            .encode_instruction_and_sign_transaction(data, accounts, &[user])
             .await;
 
         self.program_test_context
@@ -1331,7 +1356,7 @@ impl TestEnv {
         );
 
         let reward_providers_token_account = self
-            .get_or_create_associated_token_account(user.pubkey(), reward_mint, user)
+            .get_or_create_associated_token_account(user.pubkey(), reward_mint, &user)
             .await;
 
         let accounts = gamma::accounts::CreateRewards {
@@ -1354,7 +1379,7 @@ impl TestEnv {
         };
 
         let transaction = self
-            .encode_instruction_and_sign_transaction(data, accounts, user)
+            .encode_instruction_and_sign_transaction(data, accounts, &[user])
             .await;
 
         self.program_test_context
@@ -1413,7 +1438,7 @@ impl TestEnv {
         let data = gamma::instruction::CalculateRewards {};
 
         let transaction = self
-            .encode_instruction_and_sign_transaction(data, accounts, signer)
+            .encode_instruction_and_sign_transaction(data, accounts, &[signer])
             .await;
 
         self.program_test_context
@@ -1471,7 +1496,7 @@ impl TestEnv {
         let data = gamma::instruction::ClaimRewards {};
 
         let transaction = self
-            .encode_instruction_and_sign_transaction(data, accounts, user)
+            .encode_instruction_and_sign_transaction(data, accounts, &[user])
             .await;
 
         self.program_test_context
@@ -1580,7 +1605,7 @@ impl TestEnv {
         };
 
         let transaction = self
-            .encode_instruction_and_sign_transaction(data, accounts, user)
+            .encode_instruction_and_sign_transaction(data, accounts, &[user])
             .await;
 
         self.program_test_context
@@ -1612,7 +1637,7 @@ impl TestEnv {
         };
 
         let transaction = self
-            .encode_instruction_and_sign_transaction(data, accounts, user)
+            .encode_instruction_and_sign_transaction(data, accounts, &[user])
             .await;
 
         self.program_test_context
@@ -1643,7 +1668,7 @@ impl TestEnv {
         let data = gamma::instruction::UpdatePool { param, value };
 
         let transaction = self
-            .encode_instruction_and_sign_transaction(data, accounts, user)
+            .encode_instruction_and_sign_transaction(data, accounts, &[user])
             .await;
 
         self.program_test_context
@@ -1675,7 +1700,7 @@ impl TestEnv {
         };
 
         let transaction = self
-            .encode_instruction_and_sign_transaction(data, accounts, user)
+            .encode_instruction_and_sign_transaction(data, accounts, &[user])
             .await;
 
         self.program_test_context
@@ -1684,4 +1709,243 @@ impl TestEnv {
             .await
             .unwrap();
     }
+
+    pub async fn initialize_partner(
+        &mut self,
+        user: &Keypair,
+        pool_id: Pubkey,
+        name: &str,
+        token_0_token_account: Pubkey,
+        token_1_token_account: Pubkey,
+    ) -> Pubkey {
+        let partner = Keypair::new();
+        let pool_partners = derive_pool_partners_pda(pool_id).0;
+
+        let accounts = gamma::accounts::InitializePartner {
+            payer: user.pubkey(),
+            authority: user.pubkey(),
+            pool_state: pool_id,
+            pool_partners,
+            partner: partner.pubkey(),
+            system_program: system_program::ID,
+        };
+
+        let data = gamma::instruction::InitializePartner {
+            name: string_to_bytes(name).unwrap(),
+            token_0_token_account,
+            token_1_token_account,
+        };
+
+        let transaction = self
+            .encode_instruction_and_sign_transaction(data, accounts, &[user, &partner])
+            .await;
+
+        self.program_test_context
+            .banks_client
+            .process_transaction(transaction)
+            .await
+            .unwrap();
+
+        partner.pubkey()
+    }
+
+    pub async fn initialize_pool_partners(
+        &mut self,
+        user: &Keypair,
+        pool_id: Pubkey,
+        partner_share_rate: u64,
+    ) {
+        let pool_partners = derive_pool_partners_pda(pool_id).0;
+
+        let accounts = gamma::accounts::InitializePoolPartners {
+            payer: user.pubkey(),
+            pool_state: pool_id,
+            pool_partners,
+            system_program: system_program::ID,
+        };
+
+        let data = gamma::instruction::InitializePoolPartners { partner_share_rate };
+
+        let transaction = self
+            .encode_instruction_and_sign_transaction(data, accounts, &[user])
+            .await;
+
+        self.program_test_context
+            .banks_client
+            .process_transaction(transaction)
+            .await
+            .unwrap();
+    }
+
+    pub async fn update_partner_fees(&mut self, user: &Keypair, pool_id: Pubkey) {
+        let pool_partners = derive_pool_partners_pda(pool_id).0;
+
+        let accounts = gamma::accounts::UpdatePartnerFees {
+            pool_partners,
+            pool_state: pool_id,
+        };
+        let data = gamma::instruction::UpdatePartnerFees;
+
+        let transaction = self
+            .encode_instruction_and_sign_transaction(data, accounts, &[user])
+            .await;
+
+        self.program_test_context
+            .banks_client
+            .process_transaction(transaction)
+            .await
+            .unwrap();
+    }
+
+    pub async fn claim_partner_fees(
+        &mut self,
+        user: &Keypair,
+        pool_id: Pubkey,
+        partner: Pubkey,
+        token_0_token_account: Pubkey,
+        token_1_token_account: Pubkey,
+    ) {
+        let (authority, __bump) =
+            Pubkey::find_program_address(&[AUTH_SEED.as_bytes()], &gamma::id());
+        let pool_partners = derive_pool_partners_pda(pool_id).0;
+
+        let (token_0_vault, __bump) = Pubkey::find_program_address(
+            &[
+                POOL_VAULT_SEED.as_bytes(),
+                pool_id.to_bytes().as_ref(),
+                self.token_0_mint.to_bytes().as_ref(),
+            ],
+            &gamma::ID,
+        );
+        let (token_1_vault, __bump) = Pubkey::find_program_address(
+            &[
+                POOL_VAULT_SEED.as_bytes(),
+                pool_id.to_bytes().as_ref(),
+                self.token_1_mint.to_bytes().as_ref(),
+            ],
+            &gamma::ID,
+        );
+
+        let accounts = gamma::accounts::ClaimPartnerFees {
+            partner,
+            authority,
+            pool_state: pool_id,
+            token_0_vault,
+            token_1_vault,
+            vault_0_mint: self.token_0_mint,
+            vault_1_mint: self.token_1_mint,
+            pool_partners,
+            token_0_token_account,
+            token_1_token_account,
+            token_program: spl_token::ID,
+            token_program_2022: spl_token_2022::ID,
+        };
+
+        let data = gamma::instruction::ClaimPartnerFees;
+
+        let transaction = self
+            .encode_instruction_and_sign_transaction(data, accounts, &[user])
+            .await;
+
+        self.program_test_context
+            .banks_client
+            .process_transaction(transaction)
+            .await
+            .unwrap();
+    }
+
+    pub async fn update_partner(
+        &mut self,
+        user: &Keypair,
+        partner: Pubkey,
+        token_account_0: Option<Pubkey>,
+        token_account_1: Option<Pubkey>,
+    ) {
+        let accounts = gamma::accounts::UpdatePartner {
+            authority: user.pubkey(),
+            partner,
+        };
+
+        let data = gamma::instruction::UpdatePartner {
+            token_account_0,
+            token_account_1,
+        };
+
+        let transaction = self
+            .encode_instruction_and_sign_transaction(data, accounts, &[user])
+            .await;
+
+        self.program_test_context
+            .banks_client
+            .process_transaction(transaction)
+            .await
+            .unwrap();
+    }
+
+    pub async fn add_partner(
+        &mut self,
+        user: &Keypair,
+        amm_config_index: u16,
+        pool_id: Pubkey,
+        partner: Pubkey,
+    ) {
+        let (amm_config, __bump) = Pubkey::find_program_address(
+            &[AMM_CONFIG_SEED.as_bytes(), &amm_config_index.to_be_bytes()],
+            &gamma::ID,
+        );
+        let pool_partners = derive_pool_partners_pda(pool_id).0;
+
+        let accounts = gamma::accounts::AddPartner {
+            authority: user.pubkey(),
+            amm_config,
+            pool_state: pool_id,
+            pool_partners,
+            partner,
+        };
+
+        let data = gamma::instruction::AddPartner;
+
+        let transaction = self
+            .encode_instruction_and_sign_transaction(data, accounts, &[user])
+            .await;
+
+        self.program_test_context
+            .banks_client
+            .process_transaction(transaction)
+            .await
+            .unwrap();
+    }
+}
+
+fn string_to_bytes(s: &str) -> Result<[u8; 32], &'static str> {
+    let bytes = s.as_bytes();
+    if bytes.len() > 32 {
+        return Err("String too long");
+    }
+    let mut result = [0u8; 32];
+    result[..bytes.len()].copy_from_slice(bytes);
+    Ok(result)
+}
+
+pub fn bytes_to_string(bytes: &[u8; 32]) -> Result<String, std::str::Utf8Error> {
+    let len = bytes.iter().rposition(|&b| b != 0).map_or(0, |i| i + 1);
+    std::str::from_utf8(&bytes[..len]).map(|s| s.to_string())
+}
+
+pub fn derive_pool_partners_pda(pool_id: Pubkey) -> (Pubkey, u8) {
+    Pubkey::find_program_address(
+        &[PARTNER_INFOS_SEED.as_bytes(), pool_id.as_ref()],
+        &gamma::id(),
+    )
+}
+
+pub fn derive_user_pool_liquidity(pool_id: &Pubkey, user: &Pubkey) -> (Pubkey, u8) {
+    Pubkey::find_program_address(
+        &[
+            USER_POOL_LIQUIDITY_SEED.as_bytes(),
+            pool_id.to_bytes().as_ref(),
+            user.to_bytes().as_ref(),
+        ],
+        &gamma::id(),
+    )
 }

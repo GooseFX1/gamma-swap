@@ -45,4 +45,3 @@ impl CheckedCeilDiv for u128 {
         Some((quotient, rhs))
     }
 }
-

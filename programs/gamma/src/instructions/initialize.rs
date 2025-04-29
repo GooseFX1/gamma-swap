@@ -4,8 +4,8 @@ use crate::{
     curve::CurveCalculator,
     error::GammaError,
     states::{
-        AmmConfig, ObservationState, PoolState, UserPoolLiquidity, OBSERVATION_SEED, POOL_SEED,
-        POOL_VAULT_SEED, USER_POOL_LIQUIDITY_SEED,
+        AmmConfig, ObservationState, PoolPartnerInfos, PoolState, UserPoolLiquidity,
+        OBSERVATION_SEED, PARTNER_INFOS_SEED, POOL_SEED, POOL_VAULT_SEED, USER_POOL_LIQUIDITY_SEED,
     },
     utils::{create_token_account, is_supported_mint, transfer_from_user_to_pool_vault, U128},
     LOCK_LP_AMOUNT,
@@ -142,6 +142,16 @@ pub struct Initialize<'info> {
         space = ObservationState::LEN,
     )]
     pub observation_state: AccountLoader<'info, ObservationState>,
+
+    /// account storing partner infos
+    #[account(
+        init,
+        seeds = [PARTNER_INFOS_SEED.as_bytes(), pool_state.key().as_ref()],
+        bump,
+        payer = creator,
+        space = PoolPartnerInfos::LEN
+    )]
+    pub pool_partners: AccountLoader<'info, PoolPartnerInfos>,
 
     /// Program to create mint account and mint tokens
     pub token_program: Program<'info, Token>,
@@ -314,6 +324,9 @@ pub fn initialize(
         &ctx.accounts.token_1_mint,
         ctx.accounts.observation_state.key(),
     )?;
+
+    let mut pool_partners = ctx.accounts.pool_partners.load_init()?;
+    pool_partners.initialize()?;
 
     let user_pool_liquidity = &mut ctx.accounts.user_pool_liquidity;
     let current_time = Clock::get()?.unix_timestamp as u64;
