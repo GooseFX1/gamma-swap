@@ -417,10 +417,6 @@ pub mod gamma {
         instructions::add_partner(ctx)
     }
 
-    pub fn realloc_reward_info(ctx: Context<ExtendRewardInfo>) -> Result<()> {
-        instructions::realloc_reward_info(ctx)
-    }
-
     /********************* Migration Instructions *********************/
 
     /// Migrate from Meteora Dlmm to Gamma
