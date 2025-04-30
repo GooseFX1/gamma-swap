@@ -11,6 +11,7 @@ pub struct AddPartner<'info> {
     #[account(address = pool_state.load()?.amm_config)]
     pub amm_config: Account<'info, AmmConfig>,
 
+    #[account(mut)]
     pub pool_state: AccountLoader<'info, PoolState>,
 
     #[account(
@@ -31,13 +32,10 @@ pub fn add_partner(ctx: Context<AddPartner>) -> Result<()> {
         return err!(GammaError::PartnerAlreadyExistsForPool);
     }
 
-    let pool_state = ctx.accounts.pool_state.load()?;
-    // Update global `last-observed-amounts` so that the new partner is only eligible
-    // for fees after now
-    partners.update_fee_amounts(
-        pool_state.partner_protocol_fees_token_0,
-        pool_state.partner_protocol_fees_token_1,
-    )?;
+    let mut pool_state = ctx.accounts.pool_state.load_mut()?;
+    // Update global `last_observed` variables so that the new partner is only
+    // eligible accumulated after now
+    partners.update_fee_amounts(&mut pool_state)?;
     partners.add_new(ctx.accounts.partner.key())?;
 
     Ok(())

@@ -1,6 +1,8 @@
 use crate::error::GammaError;
 use anchor_lang::prelude::*;
 
+use super::PoolState;
+
 pub const PARTNER_SIZE: usize = 5;
 pub const PARTNER_INFOS_SEED: &str = "partner_infos";
 
@@ -100,18 +102,60 @@ impl PoolPartnerInfos {
             .sum::<u64>()
     }
 
-    pub fn update_fee_amounts(
-        &mut self,
-        partner_protocol_fees_token_0: u64,
-        partner_protocol_fees_token_1: u64,
-    ) -> Result<()> {
+    pub fn update_fee_amounts(&mut self, pool: &mut PoolState) -> Result<()> {
         let total_partner_linked_lp_tokens = self.total_partner_linked_lp_tokens();
-        if total_partner_linked_lp_tokens == 0 {
-            return Ok(());
+        #[cfg(feature = "enable-log")]
+        {
+            let last_observed_fee_amount_token_0 = self.last_observed_fee_amount_token_0;
+            let last_observed_fee_amount_token_1 = self.last_observed_fee_amount_token_1;
+
+            let partner_protocol_fees_token_0 = pool.partner_protocol_fees_token_0;
+            let partner_protocol_fees_token_1 = pool.partner_protocol_fees_token_1;
+
+            msg!(
+                "partner_fees_0: {}, partner_fees_1: {}, total_linked_lp: {}, last_observed_0: {}, last_observed_1: {}",
+                partner_protocol_fees_token_0,
+                partner_protocol_fees_token_1,
+                total_partner_linked_lp_tokens,
+                last_observed_fee_amount_token_0,
+                last_observed_fee_amount_token_1
+            );
         }
 
-        let last_observed_fee_amount_token_0 = self.last_observed_fee_amount_token_0;
-        let last_observed_fee_amount_token_1 = self.last_observed_fee_amount_token_1;
+        let accumulated_fees_token_0 = pool
+            .partner_protocol_fees_token_0
+            .checked_sub(self.last_observed_fee_amount_token_0)
+            .ok_or(GammaError::MathOverflow)?;
+        let accumulated_fees_token_1 = pool
+            .partner_protocol_fees_token_1
+            .checked_sub(self.last_observed_fee_amount_token_1)
+            .ok_or(GammaError::MathOverflow)?;
+
+        if total_partner_linked_lp_tokens == 0 {
+            // Fees go back to protocol
+            pool.protocol_fees_token_0 = pool
+                .protocol_fees_token_0
+                .checked_add(accumulated_fees_token_0)
+                .ok_or(GammaError::MathOverflow)?;
+            pool.protocol_fees_token_1 = pool
+                .protocol_fees_token_1
+                .checked_add(accumulated_fees_token_1)
+                .ok_or(GammaError::MathOverflow)?;
+
+            pool.partner_protocol_fees_token_0 = pool
+                .partner_protocol_fees_token_0
+                .checked_sub(accumulated_fees_token_0)
+                .ok_or(GammaError::MathOverflow)?;
+            pool.partner_protocol_fees_token_1 = pool
+                .partner_protocol_fees_token_1
+                .checked_sub(accumulated_fees_token_1)
+                .ok_or(GammaError::MathOverflow)?;
+
+            self.last_observed_fee_amount_token_0 = pool.partner_protocol_fees_token_0;
+            self.last_observed_fee_amount_token_1 = pool.partner_protocol_fees_token_1;
+
+            return Ok(());
+        }
 
         let infos = self
             .infos
@@ -120,42 +164,28 @@ impl PoolPartnerInfos {
 
         for info in infos {
             let lp_token_linked_with_partner = info.lp_token_linked_with_partner;
+            #[cfg(feature = "enable-log")]
+            msg!("lp-linked: {}", lp_token_linked_with_partner);
 
-            msg!(
-                "token_0: ({} - {}) * ({} / {}",
-                partner_protocol_fees_token_0,
-                last_observed_fee_amount_token_0,
-                lp_token_linked_with_partner,
-                total_partner_linked_lp_tokens
-            );
-            let earnings_token_0_numerator = (partner_protocol_fees_token_0 as u128)
-                .checked_sub(last_observed_fee_amount_token_0 as u128)
-                .ok_or(GammaError::MathError)?
+            let earnings_token_0 = (accumulated_fees_token_0 as u128)
                 .checked_mul(lp_token_linked_with_partner as u128)
-                .ok_or(GammaError::MathError)?;
-            let earnings_token_0 = earnings_token_0_numerator
+                .ok_or(GammaError::MathError)?
                 .checked_div(total_partner_linked_lp_tokens as u128)
                 .and_then(|r| u64::try_from(r).ok())
                 .ok_or(GammaError::MathError)?;
-            msg!("token_0 earnings={}", earnings_token_0);
 
-            msg!(
-                "token_1: ({} - {}) * ({} / {}",
-                partner_protocol_fees_token_1,
-                last_observed_fee_amount_token_1,
-                lp_token_linked_with_partner,
-                total_partner_linked_lp_tokens
-            );
-            let earnings_token_1_numerator = (partner_protocol_fees_token_1 as u128)
-                .checked_sub(last_observed_fee_amount_token_1 as u128)
-                .ok_or(GammaError::MathError)?
+            #[cfg(feature = "enable-log")]
+            msg!("token_0_earned={}", earnings_token_0);
+
+            let earnings_token_1 = (accumulated_fees_token_1 as u128)
                 .checked_mul(lp_token_linked_with_partner as u128)
-                .ok_or(GammaError::MathError)?;
-            let earnings_token_1 = earnings_token_1_numerator
+                .ok_or(GammaError::MathError)?
                 .checked_div(total_partner_linked_lp_tokens as u128)
                 .and_then(|r| u64::try_from(r).ok())
                 .ok_or(GammaError::MathError)?;
-            msg!("token_1 earnings={}", earnings_token_1);
+
+            #[cfg(feature = "enable-log")]
+            msg!("token_1_earned={}", earnings_token_1);
 
             info.total_earned_fee_amount_token_0 = info
                 .total_earned_fee_amount_token_0
@@ -167,8 +197,8 @@ impl PoolPartnerInfos {
                 .ok_or(GammaError::MathOverflow)?;
         }
 
-        self.last_observed_fee_amount_token_0 = partner_protocol_fees_token_0;
-        self.last_observed_fee_amount_token_1 = partner_protocol_fees_token_1;
+        self.last_observed_fee_amount_token_0 = pool.partner_protocol_fees_token_0;
+        self.last_observed_fee_amount_token_1 = pool.partner_protocol_fees_token_1;
 
         Ok(())
     }

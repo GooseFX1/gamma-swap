@@ -126,7 +126,7 @@ where
 {
     // require_gt!(ctx.accounts.lp_mint.supply, 0);
     let pool_id = ctx.accounts.pool_state.key();
-    let pool_state = &mut ctx.accounts.pool_state.load_mut()?;
+    let mut pool_state = &mut ctx.accounts.pool_state.load_mut()?;
     if !pool_state.get_status_by_bit(PoolStatusBitIndex::Withdraw) {
         return err!(GammaError::NotApproved);
     }
@@ -225,14 +225,11 @@ where
     if let Some(user_partner) = user_pool_liquidity.partner {
         let mut partners = ctx.accounts.pool_partners.load_mut()?;
         // Always update claimable amounts before modifying lp-tokens-linked
-        partners.update_fee_amounts(
-            pool_state.partner_protocol_fees_token_0,
-            pool_state.partner_protocol_fees_token_1,
-        )?;
+        partners.update_fee_amounts(&mut pool_state)?;
         if let Some(partner) = partners.info_mut(&user_partner) {
             partner.lp_token_linked_with_partner = partner
                 .lp_token_linked_with_partner
-                .checked_add(lp_token_amount)
+                .checked_sub(lp_token_amount)
                 .ok_or(GammaError::MathOverflow)?;
         }
     }

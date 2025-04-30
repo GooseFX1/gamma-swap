@@ -118,7 +118,7 @@ pub fn deposit_to_gamma_pool(
     maximum_token_1_amount: u64,
 ) -> Result<()> {
     let pool_id = accounts.pool_state.key();
-    let pool_state = &mut accounts.pool_state.load_mut()?;
+    let mut pool_state = &mut accounts.pool_state.load_mut()?;
     if !pool_state.get_status_by_bit(PoolStatusBitIndex::Deposit) {
         return err!(GammaError::NotApproved);
     }
@@ -246,10 +246,7 @@ pub fn deposit_to_gamma_pool(
     if let Some(user_partner) = user_pool_liquidity.partner {
         let mut partners = accounts.pool_partners.load_mut()?;
         // Always update claimable amounts before modifying lp-tokens-linked
-        partners.update_fee_amounts(
-            pool_state.partner_protocol_fees_token_0,
-            pool_state.partner_protocol_fees_token_1,
-        )?;
+        partners.update_fee_amounts(&mut pool_state)?;
         if let Some(partner) = partners.info_mut(&user_partner) {
             partner.lp_token_linked_with_partner = partner
                 .lp_token_linked_with_partner

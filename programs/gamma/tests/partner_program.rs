@@ -214,6 +214,10 @@ async fn should_track_cumulative_rates_correctly() {
     test_env
         .add_partner(&admin, amm_index, pool_id, partner2)
         .await;
+    let pool_partners = test_env
+        .fetch_account::<PoolPartnerInfos>(pool_partners_key)
+        .await;
+    assert_eq_with_copy!(pool_partners.total_partner_linked_lp_tokens(), 0);
 
     test_env
         .init_user_pool_liquidity_with_partner(&depositor1, pool_id, Some(partner1))
@@ -223,6 +227,33 @@ async fn should_track_cumulative_rates_correctly() {
         .await;
     let depositor1_user_liquidity = derive_user_pool_liquidity(&pool_id, &depositor1.pubkey()).0;
     let depositor2_user_liquidity = derive_user_pool_liquidity(&pool_id, &depositor2.pubkey()).0;
+
+    test_env
+        .swap_base_input(
+            &user,
+            pool_id,
+            amm_index,
+            1000000000,
+            0,
+            TradeDirection::OneForZero,
+        )
+        .await;
+    test_env
+        .swap_base_input(
+            &user,
+            pool_id,
+            amm_index,
+            10000000,
+            0,
+            TradeDirection::ZeroForOne,
+        )
+        .await;
+
+    let pool = test_env.fetch_account::<PoolState>(pool_id).await;
+    let protocol_fees_0 = pool.protocol_fees_token_0;
+    let protocol_fees_1 = pool.protocol_fees_token_1;
+    let partner_protocol_fees_0 = pool.partner_protocol_fees_token_0;
+    let partner_protocol_fees_1 = pool.partner_protocol_fees_token_1;
 
     let depositor1_amount = 200000000;
     test_env
@@ -236,6 +267,42 @@ async fn should_track_cumulative_rates_correctly() {
         )
         .await;
 
+    // A fee update was triggered by the above deposit, but there is no partner-linked deposits in pool yet.
+    // Partners MUST not receive a share of accumulated protocol-fees for when total-lp-linked was zero
+    let pool = test_env.fetch_account::<PoolState>(pool_id).await;
+    let partner_infos = test_env
+        .fetch_account::<PoolPartnerInfos>(pool_partners_key)
+        .await;
+    let partner1_info = partner_infos.info(&partner1).unwrap();
+    let partner2_info = partner_infos.info(&partner2).unwrap();
+
+    // assert that partners got no share of fees
+    assert_eq_with_copy!(partner1_info.total_earned_fee_amount_token_0, 0);
+    assert_eq_with_copy!(partner1_info.total_earned_fee_amount_token_1, 0);
+    assert_eq_with_copy!(partner2_info.total_earned_fee_amount_token_0, 0);
+    assert_eq_with_copy!(partner2_info.total_earned_fee_amount_token_1, 0);
+
+    // assert that the partner-fees were returned to the protocol
+    assert_eq_with_copy!(
+        pool.protocol_fees_token_0,
+        protocol_fees_0 + partner_protocol_fees_0
+    );
+    assert_eq_with_copy!(
+        pool.protocol_fees_token_1,
+        protocol_fees_1 + partner_protocol_fees_1
+    );
+
+    // assert that the amount left to be shared to partners is zero
+    assert_eq_with_copy!(
+        pool.partner_protocol_fees_token_0 - partner_infos.last_observed_fee_amount_token_0,
+        0
+    );
+    assert_eq_with_copy!(
+        pool.partner_protocol_fees_token_1 - partner_infos.last_observed_fee_amount_token_1,
+        0
+    );
+
+    let pool_state = test_env.fetch_account::<PoolState>(pool_id).await;
     // first swap sequence
     test_env
         .swap_base_input(
@@ -258,22 +325,32 @@ async fn should_track_cumulative_rates_correctly() {
         )
         .await;
 
-    let pool_state = test_env.fetch_account::<PoolState>(pool_id).await;
-    let accumulated_partner_fees_0_after_first_swap_seq = pool_state.partner_protocol_fees_token_0;
-    let accumulated_partner_fees_1_after_first_swap_seq = pool_state.partner_protocol_fees_token_1;
+    let pool_state_after = test_env.fetch_account::<PoolState>(pool_id).await;
+    let accumulated_partner_fees_0_after_first_swap_seq =
+        pool_state_after.partner_protocol_fees_token_0;
+    let accumulated_partner_fees_1_after_first_swap_seq =
+        pool_state_after.partner_protocol_fees_token_1;
+
+    let partner_fees_0_increment =
+        pool_state_after.partner_protocol_fees_token_0 - pool_state.partner_protocol_fees_token_0;
+    let partner_fees_1_increment =
+        pool_state_after.partner_protocol_fees_token_1 - pool_state.partner_protocol_fees_token_1;
+
+    let protocol_fees_0_increment =
+        pool_state_after.protocol_fees_token_0 - pool_state.protocol_fees_token_0;
+    let protocol_fees_1_increment =
+        pool_state_after.protocol_fees_token_1 - pool_state.protocol_fees_token_1;
+
+    // test that partner-fee increment is (partner-share-rate)% of protocol-fee increment
     assert_eq_with_copy!(
-        accumulated_partner_fees_0_after_first_swap_seq,
-        (partner_share_rate as u128
-            * (pool_state.protocol_fees_token_0 + accumulated_partner_fees_0_after_first_swap_seq)
-                as u128
-            / FEE_RATE_DENOMINATOR_VALUE as u128) as u64
+        pool_state_after.partner_protocol_fees_token_0 - pool_state.partner_protocol_fees_token_0,
+        partner_share_rate * (partner_fees_0_increment + protocol_fees_0_increment)
+            / FEE_RATE_DENOMINATOR_VALUE
     );
     assert_eq_with_copy!(
-        accumulated_partner_fees_1_after_first_swap_seq,
-        (partner_share_rate as u128
-            * (pool_state.protocol_fees_token_1 + accumulated_partner_fees_1_after_first_swap_seq)
-                as u128
-            / FEE_RATE_DENOMINATOR_VALUE as u128) as u64
+        pool_state_after.partner_protocol_fees_token_1 - pool_state.partner_protocol_fees_token_1,
+        partner_share_rate * (partner_fees_1_increment + protocol_fees_1_increment)
+            / FEE_RATE_DENOMINATOR_VALUE
     );
 
     // this deposit triggers a rewards update, awarding a full share of swap1's fees to partner1
@@ -317,16 +394,8 @@ async fn should_track_cumulative_rates_correctly() {
     let partner_infos = test_env
         .fetch_account::<PoolPartnerInfos>(pool_partners_key)
         .await;
-    let partner1_info = partner_infos
-        .infos
-        .iter()
-        .find(|i| i.partner == partner1)
-        .unwrap();
-    let partner2_info = partner_infos
-        .infos
-        .iter()
-        .find(|i| i.partner == partner2)
-        .unwrap();
+    let partner1_info = partner_infos.info(&partner1).unwrap();
+    let partner2_info = partner_infos.info(&partner2).unwrap();
 
     let depositor1_lp_tokens = test_env
         .fetch_account::<UserPoolLiquidity>(depositor1_user_liquidity)
@@ -345,21 +414,22 @@ async fn should_track_cumulative_rates_correctly() {
         depositor2_lp_tokens
     );
 
-    let swap_seq_1_fee_increase_token_0 = accumulated_partner_fees_0_after_first_swap_seq;
-    let swap_seq_1_fee_increase_token_1 = accumulated_partner_fees_1_after_first_swap_seq;
-
     // partner2's deposit must have triggered a rewards update, awarding a full share of swap1's fees to partner1
     assert_eq_with_copy!(
         partner1_info.total_earned_fee_amount_token_0,
-        swap_seq_1_fee_increase_token_0
+        accumulated_partner_fees_0_after_first_swap_seq
     );
     assert_eq_with_copy!(
         partner1_info.total_earned_fee_amount_token_1,
-        swap_seq_1_fee_increase_token_1
+        accumulated_partner_fees_1_after_first_swap_seq
     );
     assert_eq_with_copy!(
         partner_infos.last_observed_fee_amount_token_0,
         accumulated_partner_fees_0_after_first_swap_seq
+    );
+    assert_eq_with_copy!(
+        partner_infos.last_observed_fee_amount_token_1,
+        accumulated_partner_fees_1_after_first_swap_seq
     );
 
     // the update in partner2's deposit awards 0 to partner2, because it is done before the deposit amount is added to
@@ -390,16 +460,8 @@ async fn should_track_cumulative_rates_correctly() {
     let partner_infos = test_env
         .fetch_account::<PoolPartnerInfos>(pool_partners_key)
         .await;
-    let partner1_info = partner_infos
-        .infos
-        .iter()
-        .find(|i| i.partner == partner1)
-        .unwrap();
-    let partner2_info = partner_infos
-        .infos
-        .iter()
-        .find(|i| i.partner == partner2)
-        .unwrap();
+    let partner1_info = partner_infos.info(&partner1).unwrap();
+    let partner2_info = partner_infos.info(&partner2).unwrap();
     let total_partner_lp =
         partner1_info.lp_token_linked_with_partner + partner2_info.lp_token_linked_with_partner;
     // this is true because every lp-deposit has been through one of these two partners
@@ -436,5 +498,122 @@ async fn should_track_cumulative_rates_correctly() {
     assert_eq_with_copy!(
         partner_infos.last_observed_fee_amount_token_0,
         accumulated_partner_fees_0_after_second_swap_seq
+    );
+
+    // Withdraw all partner-linked tokens and calculate fees.
+    // Partners MUST not receive a share of accumulated protocol-fees for when total-lp-linked was zero
+    let depositor1_lp_tokens = test_env
+        .fetch_account::<UserPoolLiquidity>(depositor1_user_liquidity)
+        .await
+        .lp_tokens_owned;
+    let depositor2_lp_tokens = test_env
+        .fetch_account::<UserPoolLiquidity>(depositor2_user_liquidity)
+        .await
+        .lp_tokens_owned;
+    test_env
+        .withdraw(
+            &depositor1,
+            pool_id,
+            amm_index,
+            depositor1_lp_tokens as u64,
+            0,
+            0,
+        )
+        .await;
+    test_env
+        .withdraw(
+            &depositor2,
+            pool_id,
+            amm_index,
+            depositor2_lp_tokens as u64,
+            0,
+            0,
+        )
+        .await;
+    let partner_infos = test_env
+        .fetch_account::<PoolPartnerInfos>(pool_partners_key)
+        .await;
+    assert_eq_with_copy!(partner_infos.total_partner_linked_lp_tokens(), 0);
+
+    let pool_before_swap = test_env.fetch_account::<PoolState>(pool_id).await;
+    test_env
+        .swap_base_input(
+            &user,
+            pool_id,
+            amm_index,
+            1000000000,
+            0,
+            TradeDirection::OneForZero,
+        )
+        .await;
+    test_env
+        .swap_base_input(
+            &user,
+            pool_id,
+            amm_index,
+            10000000,
+            0,
+            TradeDirection::ZeroForOne,
+        )
+        .await;
+    let pool_after_swap = test_env.fetch_account::<PoolState>(pool_id).await;
+
+    let partner_fees_accumulated_0 = pool_after_swap.partner_protocol_fees_token_0
+        - pool_before_swap.partner_protocol_fees_token_0;
+    let partner_fees_accumulated_1 = pool_after_swap.partner_protocol_fees_token_1
+        - pool_before_swap.partner_protocol_fees_token_1;
+
+    let partner_infos = test_env
+        .fetch_account::<PoolPartnerInfos>(pool_partners_key)
+        .await;
+    let partner1_info_pre = partner_infos.info(&partner1).unwrap();
+    let partner2_info_pre = partner_infos.info(&partner2).unwrap();
+    test_env.update_partner_fees(&user, pool_id).await;
+
+    let pool_after_update = test_env.fetch_account::<PoolState>(pool_id).await;
+    let partner_infos = test_env
+        .fetch_account::<PoolPartnerInfos>(pool_partners_key)
+        .await;
+    let partner1_info_post = partner_infos.info(&partner1).unwrap();
+    let partner2_info_post = partner_infos.info(&partner2).unwrap();
+
+    // assert that partners got no share of fees
+    assert_eq_with_copy!(
+        partner1_info_pre.total_earned_fee_amount_token_0,
+        partner1_info_post.total_earned_fee_amount_token_0
+    );
+    assert_eq_with_copy!(
+        partner1_info_pre.total_earned_fee_amount_token_1,
+        partner1_info_post.total_earned_fee_amount_token_1
+    );
+    assert_eq_with_copy!(
+        partner2_info_pre.total_earned_fee_amount_token_0,
+        partner2_info_post.total_earned_fee_amount_token_0
+    );
+    assert_eq_with_copy!(
+        partner2_info_pre.total_earned_fee_amount_token_1,
+        partner2_info_post.total_earned_fee_amount_token_1
+    );
+
+    // assert that the partner-fees were returned to the protocol
+    assert_eq_with_copy!(
+        pool_after_update.protocol_fees_token_0,
+        pool_after_swap.protocol_fees_token_0 + partner_fees_accumulated_0
+    );
+    assert_eq_with_copy!(
+        pool_after_update.protocol_fees_token_1,
+        pool_after_swap.protocol_fees_token_1 + partner_fees_accumulated_1
+    );
+
+    // assert that the amount left to be shared to partners is zero
+    assert_eq_with_copy!(
+        pool_after_update.partner_protocol_fees_token_0
+            - partner_infos.last_observed_fee_amount_token_0,
+        0
+    );
+    assert_eq_with_copy!(
+        pool_after_update.partner_protocol_fees_token_1
+            - partner_infos.last_observed_fee_amount_token_1,
+        0
     );
 }

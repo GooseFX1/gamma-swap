@@ -3,6 +3,7 @@ use anchor_lang::prelude::*;
 
 #[derive(Accounts)]
 pub struct UpdatePartnerFees<'info> {
+    #[account(mut)]
     pub pool_state: AccountLoader<'info, PoolState>,
 
     #[account(
@@ -14,16 +15,8 @@ pub struct UpdatePartnerFees<'info> {
 }
 
 pub fn update_partner_fees(ctx: Context<UpdatePartnerFees>) -> Result<()> {
-    let (fees_token_0, fees_token_1) = {
-        let pool = ctx.accounts.pool_state.load()?;
-        (
-            pool.partner_protocol_fees_token_0,
-            pool.partner_protocol_fees_token_1,
-        )
-    };
-
+    let mut pool_state = ctx.accounts.pool_state.load_mut()?;
     let mut pool_partners = ctx.accounts.pool_partners.load_mut()?;
-    pool_partners.update_fee_amounts(fees_token_0, fees_token_1)?;
-
+    pool_partners.update_fee_amounts(&mut pool_state)?;
     Ok(())
 }
