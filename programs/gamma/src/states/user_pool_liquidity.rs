@@ -16,11 +16,19 @@ pub struct UserPoolLiquidity {
     pub lp_tokens_owned: u128,
     pub partner: Option<PartnerType>,
     pub first_investment_at: u64,
+    // pub partner: Option<Pubkey>,
     pub padding: [u8; 15],
 }
 
 impl UserPoolLiquidity {
-    pub const LEN: usize = 8 + 32 * 2 + 16 * 5 + 32;
+    /// Note: Current `UserPoolLiquidity` definition does not yet add up to this length
+    pub const LEN: usize = 8 + 32 * 2 + 16 * 5 + 2 * 8 + 1 + 33 + 15;
+
+    /// Asserts new size. Previous size was `184`. We add an `Option<Pubkey>`
+    const _P: () = assert!(
+        UserPoolLiquidity::LEN == 184 + 33,
+        "calculated size is inaccurate"
+    );
 
     pub fn initialize(
         &mut self,

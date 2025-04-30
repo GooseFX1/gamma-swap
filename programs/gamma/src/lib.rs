@@ -346,6 +346,14 @@ pub mod gamma {
         instructions::oracle_price_update(ctx, oracle_price_token_0_by_token_1)
     }
 
+    pub fn realloc_user_liquidity(ctx: Context<ExtendUserLiquidity>) -> Result<()> {
+        instructions::realloc_user_liquidity(ctx)
+    }
+
+    pub fn realloc_reward_info(ctx: Context<ExtendRewardInfo>) -> Result<()> {
+        instructions::realloc_reward_info(ctx)
+    }
+
     /********************* Migration Instructions *********************/
 
     /// Migrate from Meteora Dlmm to Gamma

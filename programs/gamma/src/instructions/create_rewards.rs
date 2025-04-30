@@ -31,7 +31,7 @@ pub struct CreateRewards<'info> {
     #[account(
         init,
         payer = reward_provider,
-        space = 8 + std::mem::size_of::<RewardInfo>(),
+        space = RewardInfo::LEN,
         seeds = [
             crate::REWARD_INFO_SEED.as_bytes(),
             pool_state.key().as_ref(),

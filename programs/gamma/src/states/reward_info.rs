@@ -15,6 +15,9 @@ pub struct RewardInfo {
 }
 
 impl RewardInfo {
+    // Additional 8 bytes, as we will add `amount_disbursed` in comming up PR to make sure we don't overflow distribution.
+    pub const LEN: usize = 8 + std::mem::size_of::<RewardInfo>() + 8;
+
     pub fn get_time_diff(&self) -> Result<Decimal> {
         let time_diff = self
             .end_rewards_at
