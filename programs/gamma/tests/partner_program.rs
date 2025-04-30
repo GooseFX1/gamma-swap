@@ -167,18 +167,19 @@ async fn should_track_cumulative_rates_correctly() {
     assert_eq_with_copy!(pool_state.partner_share_rate, partner_share_rate);
 
     let pool_partners_key = derive_pool_partners_pda(pool_id).0;
+    let partner1_name = "partner_1".to_string();
     let partner1 = test_env
         .initialize_partner(
             &partner_1_authority,
             pool_id,
-            "partner-1",
+            partner1_name.clone(),
             Pubkey::default(),
             partner_1_token_1_account,
         )
         .await;
     let partner_acc = test_env.fetch_account::<Partner>(partner1).await;
     assert_eq!(partner_acc.authority, partner_1_authority.pubkey());
-    assert_eq!(&bytes_to_string(&partner_acc.name).unwrap(), "partner-1");
+    assert_eq!(partner_acc.name, partner1_name);
     assert_eq!(partner_acc.pool_state, pool_id);
     assert_eq!(partner_acc.token_0_token_account, Pubkey::default());
     assert_eq!(partner_acc.token_1_token_account, partner_1_token_1_account);
@@ -195,11 +196,12 @@ async fn should_track_cumulative_rates_correctly() {
     assert_eq!(partner_acc.token_0_token_account, partner_1_token_0_account);
     assert_eq!(partner_acc.token_1_token_account, partner_1_token_1_account);
 
+    let partner2_name = "partner_2".to_string();
     let partner2 = test_env
         .initialize_partner(
             &partner_1_authority,
             pool_id,
-            "partner-2",
+            partner2_name.to_string(),
             partner_2_token_0_account,
             partner_2_token_1_account,
         )

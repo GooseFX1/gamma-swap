@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-use crate::states::{Partner, PoolState, PARTNER_INFOS_SEED};
+use crate::states::{Partner, PoolState, MAX_NAME_LEN, PARTNER_INFOS_SEED};
 
 #[derive(Accounts)]
 pub struct InitializePartner<'info> {
@@ -31,10 +31,11 @@ pub struct InitializePartner<'info> {
 
 pub fn initialize_partner(
     ctx: Context<InitializePartner>,
-    name: [u8; 32],
+    name: String,
     token_0_token_account: Pubkey,
     token_1_token_account: Pubkey,
 ) -> Result<()> {
+    require_gte!(MAX_NAME_LEN, name.len());
     ctx.accounts.partner.set_inner(Partner {
         name,
         authority: *ctx.accounts.authority.key,

@@ -1714,7 +1714,7 @@ impl TestEnv {
         &mut self,
         user: &Keypair,
         pool_id: Pubkey,
-        name: &str,
+        name: String,
         token_0_token_account: Pubkey,
         token_1_token_account: Pubkey,
     ) -> Pubkey {
@@ -1731,7 +1731,7 @@ impl TestEnv {
         };
 
         let data = gamma::instruction::InitializePartner {
-            name: string_to_bytes(name).unwrap(),
+            name,
             token_0_token_account,
             token_1_token_account,
         };
@@ -1915,21 +1915,6 @@ impl TestEnv {
             .await
             .unwrap();
     }
-}
-
-fn string_to_bytes(s: &str) -> Result<[u8; 32], &'static str> {
-    let bytes = s.as_bytes();
-    if bytes.len() > 32 {
-        return Err("String too long");
-    }
-    let mut result = [0u8; 32];
-    result[..bytes.len()].copy_from_slice(bytes);
-    Ok(result)
-}
-
-pub fn bytes_to_string(bytes: &[u8; 32]) -> Result<String, std::str::Utf8Error> {
-    let len = bytes.iter().rposition(|&b| b != 0).map_or(0, |i| i + 1);
-    std::str::from_utf8(&bytes[..len]).map(|s| s.to_string())
 }
 
 pub fn derive_pool_partners_pda(pool_id: Pubkey) -> (Pubkey, u8) {

@@ -53,4 +53,6 @@ pub enum GammaError {
     PartnerAlreadyExistsForPool,
     #[msg("Number of partners exceeded for pool")]
     ExceededMaxPartnersForPool,
+    #[msg("Partner name exceeded max size")]
+    InvalidPartnerName,
 }

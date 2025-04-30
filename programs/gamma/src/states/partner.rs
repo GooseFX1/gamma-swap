@@ -4,11 +4,13 @@ use anchor_lang::prelude::*;
 pub const PARTNER_SIZE: usize = 5;
 pub const PARTNER_INFOS_SEED: &str = "partner_infos";
 
+pub const MAX_NAME_LEN: usize = 20;
+
 #[account]
 /// Account storing information for a protocol participating in the Gamma partner program
 pub struct Partner {
     /// Protocol name
-    pub name: [u8; 32],
+    pub name: String,
     /// The authority for this account
     pub authority: Pubkey,
     /// The pool which this partner account belongs to
@@ -21,7 +23,7 @@ pub struct Partner {
 
 impl Partner {
     pub const LEN: usize = 8 + /* discriminator */
-        32 + /* name */
+        4 + 20 + /* name(max 20 bytes) */
         32 + /* authority */
         32 + /* pool_state */
         32 + /* token_0_token_account */

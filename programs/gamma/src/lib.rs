@@ -360,7 +360,7 @@ pub mod gamma {
     ///
     pub fn initialize_partner(
         ctx: Context<InitializePartner>,
-        name: [u8; 32],
+        name: String,
         token_0_token_account: Pubkey,
         token_1_token_account: Pubkey,
     ) -> Result<()> {
