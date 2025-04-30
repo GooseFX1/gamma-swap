@@ -22,7 +22,7 @@ const migrateAllRewardInfo = async () => {
   for (const rewardInfo of allRewardInfo) {
     const allUserRewardInfoForThisRewardInfo = allUserRewardInfo.filter(
       (userRewardInfo) =>
-        userRewardInfo.account.rewardInfo === rewardInfo.publicKey
+        userRewardInfo.account.rewardInfo.toString() === rewardInfo.publicKey.toString()
     );
 
     const amountDistributed = allUserRewardInfoForThisRewardInfo.reduce(
