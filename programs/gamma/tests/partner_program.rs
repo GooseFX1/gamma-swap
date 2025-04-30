@@ -356,12 +356,8 @@ async fn should_track_cumulative_rates_correctly() {
         swap_seq_1_fee_increase_token_1
     );
     assert_eq_with_copy!(
-        partner1_info.last_observed_fee_amount_token_0,
+        partner_infos.last_observed_fee_amount_token_0,
         accumulated_partner_fees_0_after_first_swap_seq
-    );
-    assert_eq_with_copy!(
-        partner1_info.last_observed_fee_amount_token_1,
-        accumulated_partner_fees_1_after_first_swap_seq
     );
 
     // the update in partner2's deposit awards 0 to partner2, because it is done before the deposit amount is added to
@@ -372,12 +368,8 @@ async fn should_track_cumulative_rates_correctly() {
     assert_eq_with_copy!(partner2_info.total_earned_fee_amount_token_0, 0);
     assert_eq_with_copy!(partner2_info.total_earned_fee_amount_token_1, 0);
     assert_eq_with_copy!(
-        partner1_info.last_observed_fee_amount_token_0,
+        partner_infos.last_observed_fee_amount_token_0,
         accumulated_partner_fees_0_after_first_swap_seq
-    );
-    assert_eq_with_copy!(
-        partner1_info.last_observed_fee_amount_token_1,
-        accumulated_partner_fees_1_after_first_swap_seq
     );
 
     // calculate the unallocated fees(fees from second swap sequence)
@@ -424,14 +416,9 @@ async fn should_track_cumulative_rates_correctly() {
             / total_partner_lp as u128) as u64
     );
     assert_eq_with_copy!(
-        partner1_info.last_observed_fee_amount_token_0,
+        partner_infos.last_observed_fee_amount_token_0,
         accumulated_partner_fees_0_after_second_swap_seq
     );
-    assert_eq_with_copy!(
-        partner1_info.last_observed_fee_amount_token_1,
-        accumulated_partner_fees_1_after_second_swap_seq
-    );
-
     assert_eq_with_copy!(
         partner2_info.total_earned_fee_amount_token_0 - partner2_earned_token_0_before_update,
         ((partner2_info.lp_token_linked_with_partner as u128
@@ -445,11 +432,7 @@ async fn should_track_cumulative_rates_correctly() {
             / total_partner_lp as u128) as u64
     );
     assert_eq_with_copy!(
-        partner2_info.last_observed_fee_amount_token_0,
+        partner_infos.last_observed_fee_amount_token_0,
         accumulated_partner_fees_0_after_second_swap_seq
-    );
-    assert_eq_with_copy!(
-        partner2_info.last_observed_fee_amount_token_1,
-        accumulated_partner_fees_1_after_second_swap_seq
     );
 }

@@ -1,4 +1,7 @@
-use crate::states::{PoolPartnerInfos, PoolState, PARTNER_INFOS_SEED};
+use crate::{
+    fees::FEE_RATE_DENOMINATOR_VALUE,
+    states::{PoolPartnerInfos, PoolState, PARTNER_INFOS_SEED},
+};
 use anchor_lang::prelude::*;
 
 #[derive(Accounts)]
@@ -26,6 +29,7 @@ pub fn initialize_pool_partners(
     partner_share_rate: u64,
 ) -> Result<()> {
     let mut pool = ctx.accounts.pool_state.load_mut()?;
+    require_gte!(FEE_RATE_DENOMINATOR_VALUE, partner_share_rate);
 
     pool.partner_share_rate = partner_share_rate;
     pool.partner_protocol_fees_token_0 = 0;

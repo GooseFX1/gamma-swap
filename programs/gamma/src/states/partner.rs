@@ -33,12 +33,18 @@ impl Partner {
 #[derive(Default, Debug)]
 /// PDA storing all the information for valid pool partners
 pub struct PoolPartnerInfos {
+    /// The observed fee-amount token0 as at the last infos update
+    pub last_observed_fee_amount_token_0: u64,
+
+    /// The observed fee-amount token1 as at the last infos update
+    pub last_observed_fee_amount_token_1: u64,
+
     /// Partner infos
     pub infos: [PartnerInfo; PARTNER_SIZE],
 }
 
 impl PoolPartnerInfos {
-    pub const LEN: usize = 8 /* discriminator */ + PARTNER_SIZE * PartnerInfo::LEN /* [PartnerInfo; PARTNER_SIZE] */ ;
+    pub const LEN: usize = 8 /* discriminator */ + 8 /* u64 */ + 8 /* u64 */ + PARTNER_SIZE * PartnerInfo::LEN /* [PartnerInfo; PARTNER_SIZE] */ ;
 
     /// Initializes the `PartnerInfo` array with default values
     pub fn initialize(&mut self) -> Result<()> {
@@ -102,13 +108,15 @@ impl PoolPartnerInfos {
             return Ok(());
         }
 
+        let last_observed_fee_amount_token_0 = self.last_observed_fee_amount_token_0;
+        let last_observed_fee_amount_token_1 = self.last_observed_fee_amount_token_1;
+
         let infos = self
             .infos
             .iter_mut()
             .filter(|i| i.partner != Pubkey::default());
+
         for info in infos {
-            let last_observed_fee_amount_token_0 = info.last_observed_fee_amount_token_0;
-            let last_observed_fee_amount_token_1 = info.last_observed_fee_amount_token_1;
             let lp_token_linked_with_partner = info.lp_token_linked_with_partner;
 
             let earnings_token_0 = (partner_protocol_fees_token_0
@@ -142,8 +150,6 @@ impl PoolPartnerInfos {
             );
             msg!("token_1 earnings={}", earnings_token_1);
 
-            info.last_observed_fee_amount_token_0 = partner_protocol_fees_token_0;
-            info.last_observed_fee_amount_token_1 = partner_protocol_fees_token_1;
             info.total_earned_fee_amount_token_0 = info
                 .total_earned_fee_amount_token_0
                 .checked_add(earnings_token_0)
@@ -153,6 +159,9 @@ impl PoolPartnerInfos {
                 .checked_add(earnings_token_1)
                 .ok_or(GammaError::MathOverflow)?;
         }
+
+        self.last_observed_fee_amount_token_0 = partner_protocol_fees_token_0;
+        self.last_observed_fee_amount_token_1 = partner_protocol_fees_token_1;
 
         Ok(())
     }
@@ -168,12 +177,6 @@ pub struct PartnerInfo {
     /// This stores the LP tokens that are linked with the partner, i.e owned by customers of the partner.
     pub lp_token_linked_with_partner: u64,
 
-    /// The observed fee-amount token0 as at the last calculation
-    pub last_observed_fee_amount_token_0: u64,
-
-    /// The observed fee-amount token1 as at the last calculation
-    pub last_observed_fee_amount_token_1: u64,
-
     /// The total fee-amount token0 claimed by the partner
     pub total_claimed_fee_amount_token_0: u64,
 
@@ -188,5 +191,5 @@ pub struct PartnerInfo {
 }
 
 impl PartnerInfo {
-    const LEN: usize = 32 + 7 * 8;
+    const LEN: usize = 32 + 5 * 8;
 }

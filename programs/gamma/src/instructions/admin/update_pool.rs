@@ -62,7 +62,7 @@ pub fn update_pool(ctx: Context<UpdatePool>, param: u32, value: u64) -> Result<(
 }
 fn update_partner_share_rate(ctx: Context<UpdatePool>, value: u64) -> Result<()> {
     let mut pool_state = ctx.accounts.pool_state.load_mut()?;
-    debug_assert!(value <= FEE_RATE_DENOMINATOR_VALUE);
+    require_gte!(FEE_RATE_DENOMINATOR_VALUE, value);
     pool_state.partner_share_rate = value;
     Ok(())
 }

@@ -188,8 +188,14 @@ pub fn oracle_based_swap_base_input<'c, 'info>(
         }
     }
 
-    let partner_protocol_fee = ((pool_state.partner_share_rate as u128 * protocol_fee as u128)
-        / FEE_RATE_DENOMINATOR_VALUE as u128) as u64;
+    let partner_protocol_fee_u128 = (pool_state.partner_share_rate as u128)
+        .checked_mul(protocol_fee as u128)
+        .ok_or(GammaError::MathOverflow)?
+        .checked_div(FEE_RATE_DENOMINATOR_VALUE as u128)
+        .ok_or(GammaError::MathOverflow)?;
+    let partner_protocol_fee =
+        u64::try_from(partner_protocol_fee_u128).map_err(|_| GammaError::MathError)?;
+
     protocol_fee = protocol_fee
         .checked_sub(partner_protocol_fee)
         .ok_or(GammaError::MathOverflow)?;

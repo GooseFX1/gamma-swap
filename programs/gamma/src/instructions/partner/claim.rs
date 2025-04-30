@@ -93,14 +93,8 @@ pub fn claim_partner_fees(ctx: Context<ClaimPartnerFees>) -> Result<()> {
         .checked_sub(partner.total_claimed_fee_amount_token_1)
         .ok_or(GammaError::MathOverflow)?;
 
-    partner.total_claimed_fee_amount_token_0 = partner
-        .total_claimed_fee_amount_token_0
-        .checked_add(amount_0)
-        .ok_or(GammaError::MathOverflow)?;
-    partner.total_claimed_fee_amount_token_1 = partner
-        .total_claimed_fee_amount_token_1
-        .checked_add(amount_1)
-        .ok_or(GammaError::MathOverflow)?;
+    partner.total_claimed_fee_amount_token_0 = partner.total_earned_fee_amount_token_0;
+    partner.total_claimed_fee_amount_token_1 = partner.total_earned_fee_amount_token_1;
 
     transfer_from_pool_vault_to_user(
         ctx.accounts.authority.to_account_info(),
