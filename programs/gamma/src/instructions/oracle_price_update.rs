@@ -19,7 +19,9 @@ pub struct OraclePriceUpdate<'info> {
 }
 
 fn check_authority(authority: Pubkey, amm_config: &AmmConfig) -> bool {
-    return authority == amm_config.secondary_admin || authority == crate::admin::id();
+    return authority == amm_config.secondary_admin
+        || authority == crate::admin::id()
+        || authority == crate::CRON_ADMIN;
 }
 
 pub fn oracle_price_update(
