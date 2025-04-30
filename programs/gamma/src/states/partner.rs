@@ -119,13 +119,6 @@ impl PoolPartnerInfos {
         for info in infos {
             let lp_token_linked_with_partner = info.lp_token_linked_with_partner;
 
-            let earnings_token_0 = (partner_protocol_fees_token_0
-                - last_observed_fee_amount_token_0) as u128
-                * lp_token_linked_with_partner as u128
-                / total_partner_linked_lp_tokens as u128;
-            let earnings_token_0 =
-                u64::try_from(earnings_token_0).map_err(|_| GammaError::MathOverflow)?;
-
             msg!(
                 "token_0: ({} - {}) * ({} / {}",
                 partner_protocol_fees_token_0,
@@ -133,14 +126,17 @@ impl PoolPartnerInfos {
                 lp_token_linked_with_partner,
                 total_partner_linked_lp_tokens
             );
+            let earnings_token_0_numerator = (partner_protocol_fees_token_0 as u128)
+                .checked_sub(last_observed_fee_amount_token_0 as u128)
+                .ok_or(GammaError::MathError)?
+                .checked_mul(lp_token_linked_with_partner as u128)
+                .ok_or(GammaError::MathError)?;
+            let earnings_token_0 = earnings_token_0_numerator
+                .checked_div(total_partner_linked_lp_tokens as u128)
+                .and_then(|r| u64::try_from(r).ok())
+                .ok_or(GammaError::MathError)?;
             msg!("token_0 earnings={}", earnings_token_0);
 
-            let earnings_token_1 = (partner_protocol_fees_token_1
-                - last_observed_fee_amount_token_1) as u128
-                * lp_token_linked_with_partner as u128
-                / total_partner_linked_lp_tokens as u128;
-            let earnings_token_1 =
-                u64::try_from(earnings_token_1).map_err(|_| GammaError::MathOverflow)?;
             msg!(
                 "token_1: ({} - {}) * ({} / {}",
                 partner_protocol_fees_token_1,
@@ -148,6 +144,15 @@ impl PoolPartnerInfos {
                 lp_token_linked_with_partner,
                 total_partner_linked_lp_tokens
             );
+            let earnings_token_1_numerator = (partner_protocol_fees_token_1 as u128)
+                .checked_sub(last_observed_fee_amount_token_1 as u128)
+                .ok_or(GammaError::MathError)?
+                .checked_mul(lp_token_linked_with_partner as u128)
+                .ok_or(GammaError::MathError)?;
+            let earnings_token_1 = earnings_token_1_numerator
+                .checked_div(total_partner_linked_lp_tokens as u128)
+                .and_then(|r| u64::try_from(r).ok())
+                .ok_or(GammaError::MathError)?;
             msg!("token_1 earnings={}", earnings_token_1);
 
             info.total_earned_fee_amount_token_0 = info
