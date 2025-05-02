@@ -1,4 +1,5 @@
 use crate::external::kamino::KaminoProgram;
+use crate::KAMINO_MARKET_AUTHORITY;
 use crate::{
     error::GammaError,
     fees::FEE_RATE_DENOMINATOR_VALUE,
@@ -56,7 +57,9 @@ pub struct Rebalance<'info> {
     pub kamino_reserve: UncheckedAccount<'info>,
 
     /// CHECK: The account address is checked in the cpi.
-    #[account(mut)]
+    #[account(mut,
+        address = KAMINO_MARKET_AUTHORITY
+    )]
     pub kamino_lending_market: UncheckedAccount<'info>,
 
     /// CHECK: The account address is checked in the cpi.

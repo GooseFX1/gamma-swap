@@ -57,7 +57,7 @@ pub struct CalculateRewards<'info> {
 
 pub fn calculate_rewards(ctx: Context<CalculateRewards>) -> Result<()> {
     #[cfg(not(feature = "test-sbf"))]
-    if ctx.accounts.signer.key() != crate::CALCULATE_REWARDS_ADMIN {
+    if ctx.accounts.signer.key() != crate::CRON_ADMIN {
         return err!(GammaError::InvalidOwner);
     }
 
