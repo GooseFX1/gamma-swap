@@ -347,12 +347,8 @@ pub mod gamma {
         instructions::oracle_price_update(ctx, oracle_price_token_0_by_token_1)
     }
 
-    pub fn realloc_user_liquidity(ctx: Context<ExtendUserLiquidity>) -> Result<()> {
-        instructions::realloc_user_liquidity(ctx)
-    }
-
-    pub fn realloc_reward_info(ctx: Context<ExtendRewardInfo>) -> Result<()> {
-        instructions::realloc_reward_info(ctx)
+    pub fn migrate_reward_info(ctx: Context<MigrateRewardInfo>, amount: u64) -> Result<()> {
+        instructions::migrate_reward_info(ctx, amount)
     }
 
     /********************* Migration Instructions *********************/

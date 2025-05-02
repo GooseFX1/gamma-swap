@@ -18,6 +18,7 @@ pub struct CalculateRewards<'info> {
     pub pool_state: AccountLoader<'info, PoolState>,
 
     #[account(
+        mut,
         seeds = [
             crate::REWARD_INFO_SEED.as_bytes(),
             pool_state.key().as_ref(),
@@ -78,7 +79,7 @@ pub fn calculate_rewards(ctx: Context<CalculateRewards>) -> Result<()> {
     user_reward_info.calculate_claimable_rewards(
         ctx.accounts.user_pool_liquidity.lp_tokens_owned as u64,
         pool_state.lp_supply as u64,
-        &ctx.accounts.reward_info,
+        &mut ctx.accounts.reward_info,
     )?;
 
     user_reward_info.reward_info = ctx.accounts.reward_info.key();

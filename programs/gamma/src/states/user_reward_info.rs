@@ -1,4 +1,5 @@
 use anchor_lang::prelude::*;
+use anchor_spl::token::TokenAccount;
 use rust_decimal::Decimal;
 
 use crate::{error::GammaError, LOCK_LP_AMOUNT};
@@ -25,7 +26,7 @@ impl UserRewardInfo {
         &mut self,
         lp_owned_by_user: u64,
         current_lp_supply: u64,
-        reward_info: &Account<'info, RewardInfo>,
+        reward_info: &mut Account<'info, RewardInfo>,
     ) -> Result<()> {
         let time_now = Clock::get()?.unix_timestamp as u64;
         if time_now < reward_info.start_at {
@@ -65,11 +66,25 @@ impl UserRewardInfo {
             .checked_mul(time_ratio)
             .ok_or(GammaError::MathOverflow)?
             .checked_mul(lp_ratio)
+            .ok_or(GammaError::MathOverflow)?
+            .to_u64()
             .ok_or(GammaError::MathOverflow)?;
+
+        let amount_left_to_disburse = reward_info
+            .total_to_disburse
+            .checked_sub(reward_info.amount_disbursed)
+            .ok_or(GammaError::MathOverflow)?;
+
+        let rewards_to_add = rewards_to_add.min(amount_left_to_disburse);
 
         self.total_rewards = self
             .total_rewards
-            .checked_add(rewards_to_add.to_u64().ok_or(GammaError::MathOverflow)?)
+            .checked_add(rewards_to_add)
+            .ok_or(GammaError::MathOverflow)?;
+
+        reward_info.amount_disbursed = reward_info
+            .amount_disbursed
+            .checked_add(rewards_to_add)
             .ok_or(GammaError::MathOverflow)?;
 
         self.rewards_last_calculated_at = end_time;
