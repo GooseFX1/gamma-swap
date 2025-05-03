@@ -7,7 +7,10 @@ use solana_sdk::{instruction::Instruction, pubkey::Pubkey, system_program, sysva
 use gamma::accounts as gamma_accounts;
 use gamma::instruction as gamma_instructions;
 use gamma::{
-    states::{AMM_CONFIG_SEED, OBSERVATION_SEED, POOL_LP_MINT_SEED, POOL_SEED, POOL_VAULT_SEED},
+    states::{
+        AMM_CONFIG_SEED, OBSERVATION_SEED, PARTNER_INFOS_SEED, POOL_LP_MINT_SEED, POOL_SEED,
+        POOL_VAULT_SEED,
+    },
     AUTH_SEED,
 };
 use std::rc::Rc;
@@ -129,6 +132,11 @@ pub fn initialize_pool_instr(
         &program.id(),
     )
     .0;
+    let pool_partners = Pubkey::find_program_address(
+        &[PARTNER_INFOS_SEED.as_bytes(), pool_account_key.as_ref()],
+        &gamma::id(),
+    )
+    .0;
 
     let instructions = program
         .request()
@@ -150,6 +158,7 @@ pub fn initialize_pool_instr(
             token_1_vault,
             create_pool_fee,
             observation_state: observation_key,
+            pool_partners,
             token_program: spl_token::id(),
             token_0_program,
             token_1_program,
@@ -230,6 +239,12 @@ pub fn deposit_instr(
         &program.id(),
     )
     .0;
+    let pool_partners = Pubkey::find_program_address(
+        &[PARTNER_INFOS_SEED.as_bytes(), pool_id.as_ref()],
+        &gamma::id(),
+    )
+    .0;
+
     let instructions = program
         .request()
         .accounts(gamma_accounts::Deposit {
@@ -246,6 +261,7 @@ pub fn deposit_instr(
             token_program_2022: spl_token_2022::id(),
             vault_0_mint: token_0_mint,
             vault_1_mint: token_1_mint,
+            pool_partners,
             // lp_mint: token_lp_mint,
         })
         .args(gamma_instructions::Deposit {
@@ -289,6 +305,12 @@ pub fn withdraw_instr(
         &program.id(),
     )
     .0;
+    let pool_partners = Pubkey::find_program_address(
+        &[PARTNER_INFOS_SEED.as_bytes(), pool_id.as_ref()],
+        &gamma::id(),
+    )
+    .0;
+
     let instructions = program
         .request()
         .accounts(gamma_accounts::Withdraw {
@@ -306,6 +328,7 @@ pub fn withdraw_instr(
             vault_0_mint: token_0_mint,
             vault_1_mint: token_1_mint,
             // lp_mint: token_lp_mint,
+            pool_partners,
             memo_program: spl_memo::id(),
             instruction_sysvar_account: sysvar::instructions::id(),
             kamino_program: config.kamino_program,
@@ -438,12 +461,19 @@ pub fn init_user_pool_liquidity_instr(
         &program.id(),
     )
     .0;
+    let pool_partners = Pubkey::find_program_address(
+        &[PARTNER_INFOS_SEED.as_bytes(), pool_id.as_ref()],
+        &gamma::id(),
+    )
+    .0;
+
     let instructions = program
         .request()
         .accounts(gamma_accounts::InitUserPoolLiquidity {
             user: user_pubkey,
             pool_state: pool_id,
             user_pool_liquidity,
+            pool_partners,
             system_program: system_program::id(),
         })
         .args(gamma_instructions::InitUserPoolLiquidity { partner: None })

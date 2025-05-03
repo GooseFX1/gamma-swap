@@ -1,7 +1,10 @@
 use crate::{
     calculate_gamma_lp_tokens,
     instructions::deposit::{deposit_to_gamma_pool, Deposit},
-    states::{MigrationEvent, PoolState, UserPoolLiquidity, USER_POOL_LIQUIDITY_SEED},
+    states::{
+        MigrationEvent, PoolPartnerInfos, PoolState, UserPoolLiquidity, PARTNER_INFOS_SEED,
+        USER_POOL_LIQUIDITY_SEED,
+    },
 };
 use anchor_lang::prelude::*;
 use anchor_spl::{
@@ -135,6 +138,13 @@ pub struct RaydiumClmmToGammaV2<'info> {
 
     /// Token program 2022
     pub token_program_2022: Program<'info, Token2022>,
+
+    #[account(
+        mut,
+        seeds = [PARTNER_INFOS_SEED.as_bytes(), gamma_pool_state.key().as_ref()],
+        bump,
+    )]
+    pub pool_partners: AccountLoader<'info, PoolPartnerInfos>,
     // remaining account
     // #[account(
     //     seeds = [
@@ -226,6 +236,7 @@ pub fn raydium_clmm_to_gamma_v2<'a, 'b, 'c, 'info>(
         token_program_2022: ctx.accounts.token_program_2022.clone(),
         vault_0_mint: ctx.accounts.gamma_vault_0_mint.clone(),
         vault_1_mint: ctx.accounts.gamma_vault_1_mint.clone(),
+        pool_partners: ctx.accounts.pool_partners.clone(),
     };
 
     deposit_to_gamma_pool(

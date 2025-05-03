@@ -45,7 +45,14 @@ pub enum GammaError {
     InvalidOpenTime,
     #[msg("Invalid lp token amount")]
     InvalidLpTokenAmount,
-
     #[msg("Invalid reward time")]
     InvalidRewardTime,
+    #[msg("Specified partner is not valid for pool")]
+    InvalidPartner,
+    #[msg("Specified partner is already present in pool")]
+    PartnerAlreadyExistsForPool,
+    #[msg("Number of partners exceeded for pool")]
+    ExceededMaxPartnersForPool,
+    #[msg("Partner name exceeded max size")]
+    InvalidPartnerName,
 }

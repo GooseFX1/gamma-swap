@@ -2,8 +2,8 @@ use crate::{
     curve::{CurveCalculator, RoundDirection},
     error::GammaError,
     states::{
-        LpChangeEvent, PartnerType, PoolState, PoolStatusBitIndex, UserPoolLiquidity,
-        USER_POOL_LIQUIDITY_SEED,
+        LpChangeEvent, PoolPartnerInfos, PoolState, PoolStatusBitIndex, UserPoolLiquidity,
+        PARTNER_INFOS_SEED, USER_POOL_LIQUIDITY_SEED,
     },
     utils::{get_transfer_inverse_fee, transfer_from_user_to_pool_vault},
 };
@@ -88,6 +88,13 @@ pub struct Deposit<'info> {
         address = token_1_vault.mint
     )]
     pub vault_1_mint: Box<InterfaceAccount<'info, Mint>>,
+
+    #[account(
+        mut,
+        seeds = [PARTNER_INFOS_SEED.as_bytes(), pool_state.key().as_ref()],
+        bump,
+    )]
+    pub pool_partners: AccountLoader<'info, PoolPartnerInfos>,
 }
 
 pub fn deposit(
@@ -111,7 +118,7 @@ pub fn deposit_to_gamma_pool(
     maximum_token_1_amount: u64,
 ) -> Result<()> {
     let pool_id = accounts.pool_state.key();
-    let pool_state = &mut accounts.pool_state.load_mut()?;
+    let mut pool_state = &mut accounts.pool_state.load_mut()?;
     if !pool_state.get_status_by_bit(PoolStatusBitIndex::Deposit) {
         return err!(GammaError::NotApproved);
     }
@@ -236,18 +243,17 @@ pub fn deposit_to_gamma_pool(
         .ok_or(GammaError::MathOverflow)?;
     pool_state.recent_epoch = Clock::get()?.epoch;
 
-    if let Some(user_pool_liquidity_partner) = user_pool_liquidity.partner {
-        let mut pool_state_partners = pool_state.partners;
-        let partner: Option<&mut crate::states::PartnerInfo> = pool_state_partners
-            .iter_mut()
-            .find(|p| PartnerType::new(p.partner_id) == user_pool_liquidity_partner);
-        if let Some(partner) = partner {
+    if let Some(user_partner) = user_pool_liquidity.partner {
+        let mut partners = accounts.pool_partners.load_mut()?;
+        // Always update claimable amounts before modifying lp-tokens-linked
+        partners.update_fee_amounts(&mut pool_state)?;
+        if let Some(partner) = partners.info_mut(&user_partner) {
             partner.lp_token_linked_with_partner = partner
                 .lp_token_linked_with_partner
                 .checked_add(lp_token_amount)
                 .ok_or(GammaError::MathOverflow)?;
         }
-        pool_state.partners = pool_state_partners;
     }
+
     Ok(())
 }

@@ -2,7 +2,10 @@ use crate::external::whirlpool::whirlpool::types::RemainingAccountsInfo;
 use crate::{
     calculate_gamma_lp_tokens,
     instructions::deposit::{deposit_to_gamma_pool, Deposit},
-    states::{MigrationEvent, PoolState, UserPoolLiquidity, USER_POOL_LIQUIDITY_SEED},
+    states::{
+        MigrationEvent, PoolPartnerInfos, PoolState, UserPoolLiquidity, PARTNER_INFOS_SEED,
+        USER_POOL_LIQUIDITY_SEED,
+    },
 };
 use anchor_lang::prelude::*;
 use anchor_spl::{
@@ -138,6 +141,13 @@ pub struct OrcaWhirlpoolToGammaV2<'info> {
         address = gamma_token_1_vault.mint
     )]
     pub gamma_vault_1_mint: Box<InterfaceAccount<'info, Mint>>,
+
+    #[account(
+        mut,
+        seeds = [PARTNER_INFOS_SEED.as_bytes(), gamma_pool_state.key().as_ref()],
+        bump,
+    )]
+    pub pool_partners: AccountLoader<'info, PoolPartnerInfos>,
     // remaining accounts
     // - accounts for transfer hook program of token_mint_a
     // - accounts for transfer hook program of token_mint_b
@@ -217,6 +227,7 @@ pub fn orca_whirlpool_to_gamma_v2<'info>(
         token_program_2022: ctx.accounts.token_program_2022.clone(),
         vault_0_mint: ctx.accounts.gamma_vault_0_mint.clone(),
         vault_1_mint: ctx.accounts.gamma_vault_1_mint.clone(),
+        pool_partners: ctx.accounts.pool_partners.clone(),
     };
 
     deposit_to_gamma_pool(

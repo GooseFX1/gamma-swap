@@ -5,8 +5,8 @@ use anchor_spl::token_interface::{Mint, Token2022, TokenAccount};
 use crate::curve::{CurveCalculator, RoundDirection};
 use crate::external::kamino::KaminoProgram;
 use crate::states::{
-    LpChangeEvent, PartnerType, PoolStatusBitIndex, UserPoolLiquidity, POOL_KAMINO_DEPOSITS_SEED,
-    USER_POOL_LIQUIDITY_SEED,
+    LpChangeEvent, PoolPartnerInfos, PoolStatusBitIndex, UserPoolLiquidity, PARTNER_INFOS_SEED,
+    POOL_KAMINO_DEPOSITS_SEED, USER_POOL_LIQUIDITY_SEED,
 };
 use crate::utils::{get_transfer_fee, transfer_from_pool_vault_to_user};
 use crate::{error::GammaError, states::PoolState};
@@ -94,6 +94,13 @@ pub struct Withdraw<'info> {
     )]
     pub vault_1_mint: Box<InterfaceAccount<'info, Mint>>,
 
+    #[account(
+        mut,
+        seeds = [PARTNER_INFOS_SEED.as_bytes(), pool_state.key().as_ref()],
+        bump,
+    )]
+    pub pool_partners: AccountLoader<'info, PoolPartnerInfos>,
+
     /// memo program
     /// CHECK:
     #[account(
@@ -119,7 +126,7 @@ where
 {
     // require_gt!(ctx.accounts.lp_mint.supply, 0);
     let pool_id = ctx.accounts.pool_state.key();
-    let pool_state = &mut ctx.accounts.pool_state.load_mut()?;
+    let mut pool_state = &mut ctx.accounts.pool_state.load_mut()?;
     if !pool_state.get_status_by_bit(PoolStatusBitIndex::Withdraw) {
         return err!(GammaError::NotApproved);
     }
@@ -215,18 +222,16 @@ where
         .checked_add(u128::from(receive_token_1_amount))
         .ok_or(GammaError::MathOverflow)?;
 
-    if let Some(user_pool_liquidity_partner) = user_pool_liquidity.partner {
-        let mut pool_state_partners = pool_state.partners;
-        let partner: Option<&mut crate::states::PartnerInfo> = pool_state_partners
-            .iter_mut()
-            .find(|p| PartnerType::new(p.partner_id) == user_pool_liquidity_partner);
-        if let Some(partner) = partner {
+    if let Some(user_partner) = user_pool_liquidity.partner {
+        let mut partners = ctx.accounts.pool_partners.load_mut()?;
+        // Always update claimable amounts before modifying lp-tokens-linked
+        partners.update_fee_amounts(&mut pool_state)?;
+        if let Some(partner) = partners.info_mut(&user_partner) {
             partner.lp_token_linked_with_partner = partner
                 .lp_token_linked_with_partner
                 .checked_sub(lp_token_amount)
                 .ok_or(GammaError::MathOverflow)?;
         }
-        pool_state.partners = pool_state_partners;
     }
 
     transfer_from_pool_vault_to_user(

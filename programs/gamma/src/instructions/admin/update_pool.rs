@@ -27,8 +27,13 @@ pub struct UpdatePool<'info> {
 fn check_authority(authority: Pubkey, amm_config: &AmmConfig, param: u32) -> bool {
     let kamino_based_params = vec![3, 4];
     let oracle_based_swap_params = vec![6, 7, 8, 9, 10];
-    let params_update_allowed_with_secondary_admin =
-        [kamino_based_params, oracle_based_swap_params].concat();
+    let partner_params = vec![11];
+    let params_update_allowed_with_secondary_admin = [
+        kamino_based_params,
+        oracle_based_swap_params,
+        partner_params,
+    ]
+    .concat();
 
     if params_update_allowed_with_secondary_admin.contains(&param) {
         return authority == amm_config.secondary_admin || authority == crate::admin::id();
@@ -51,9 +56,17 @@ pub fn update_pool(ctx: Context<UpdatePool>, param: u32, value: u64) -> Result<(
         8 => update_min_trade_rate_at_oracle_price(ctx, value),
         9 => update_price_premium_for_swap_at_oracle_price(ctx, value),
         10 => update_max_oracle_price_update_time_diff(ctx, value),
+        11 => update_partner_share_rate(ctx, value),
         _ => Err(GammaError::InvalidInput.into()),
     }
 }
+fn update_partner_share_rate(ctx: Context<UpdatePool>, value: u64) -> Result<()> {
+    let mut pool_state = ctx.accounts.pool_state.load_mut()?;
+    require_gte!(FEE_RATE_DENOMINATOR_VALUE, value);
+    pool_state.partner_share_rate = value;
+    Ok(())
+}
+
 fn update_max_oracle_price_update_time_diff(ctx: Context<UpdatePool>, value: u64) -> Result<()> {
     let mut pool_state = ctx.accounts.pool_state.load_mut()?;
     pool_state.max_oracle_price_update_time_diff = value as u32;
