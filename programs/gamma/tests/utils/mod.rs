@@ -1,5 +1,6 @@
 #![allow(dead_code)]
 pub mod jupiter;
+pub mod jupiter2;
 
 use anchor_spl::associated_token::get_associated_token_address;
 use anchor_spl::token::TokenAccount;
