@@ -350,7 +350,7 @@ pub mod gamma {
     pub fn migrate_reward_info(ctx: Context<MigrateRewardInfo>, amount: u64) -> Result<()> {
         instructions::migrate_reward_info(ctx, amount)
     }
-    
+
     /// Creates a new `Partner` account associated with a certain pool
     ///
     /// * `ctx` - The context of accounts
@@ -372,11 +372,8 @@ pub mod gamma {
     /// * `ctx` - The context of accounts
     /// * `partner_share_rate` - A fraction representing the partner's share of protocol fees
     ///
-    pub fn initialize_pool_partners(
-        ctx: Context<InitializePoolPartners>,
-        partner_share_rate: u64,
-    ) -> Result<()> {
-        instructions::initialize_pool_partners(ctx, partner_share_rate)
+    pub fn initialize_pool_partners(ctx: Context<InitializePoolPartners>) -> Result<()> {
+        instructions::initialize_pool_partners(ctx)
     }
 
     /// Updates claimable fee amounts for all `PartnerInfo`s in a `PoolPartnerInfos` account

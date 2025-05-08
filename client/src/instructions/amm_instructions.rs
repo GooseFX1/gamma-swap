@@ -138,41 +138,59 @@ pub fn initialize_pool_instr(
     )
     .0;
 
-    let instructions = program
-        .request()
-        .accounts(gamma_accounts::Initialize {
-            creator: program.payer(),
-            amm_config: amm_config_key,
-            authority,
-            pool_state: pool_account_key,
-            user_pool_liquidity,
-            token_0_mint,
-            token_1_mint,
-            creator_token_0: user_token_0_account,
-            creator_token_1: user_token_1_account,
-            // creator_lp_token: spl_associated_token_account::get_associated_token_address(
-            //     &program.payer(),
-            //     &lp_mint_key,
-            // ),
-            token_0_vault,
-            token_1_vault,
-            create_pool_fee,
-            observation_state: observation_key,
-            pool_partners,
-            token_program: spl_token::id(),
-            token_0_program,
-            token_1_program,
-            associated_token_program: spl_associated_token_account::id(),
-            system_program: system_program::id(),
-            rent: sysvar::rent::id(),
-        })
-        .args(gamma_instructions::Initialize {
+    let initialize_instruction = Instruction::new_with_bytes(
+        program.id(),
+        &anchor_lang::InstructionData::data(&gamma_instructions::Initialize {
             init_amount_0,
             init_amount_1,
             open_time,
             max_trade_fee_rate: 1000000,
             volatility_factor: 0,
-        })
+        }),
+        anchor_lang::ToAccountMetas::to_account_metas(
+            &gamma_accounts::Initialize {
+                creator: program.payer(),
+                amm_config: amm_config_key,
+                authority,
+                pool_state: pool_account_key,
+                user_pool_liquidity,
+                token_0_mint,
+                token_1_mint,
+                creator_token_0: user_token_0_account,
+                creator_token_1: user_token_1_account,
+                token_0_vault,
+                token_1_vault,
+                create_pool_fee,
+                observation_state: observation_key,
+                token_program: spl_token::id(),
+                token_0_program,
+                token_1_program,
+                associated_token_program: spl_associated_token_account::id(),
+                system_program: system_program::id(),
+                rent: sysvar::rent::id(),
+            },
+            None,
+        ),
+    );
+
+    let initialize_partner_instruction = Instruction::new_with_bytes(
+        program.id(),
+        &anchor_lang::InstructionData::data(&gamma_instructions::InitializePoolPartners),
+        anchor_lang::ToAccountMetas::to_account_metas(
+            &gamma_accounts::InitializePoolPartners {
+                payer: program.payer(),
+                pool_state: pool_account_key,
+                pool_partners,
+                system_program: system_program::id(),
+            },
+            None,
+        ),
+    );
+
+    let instructions = program
+        .request()
+        .instruction(initialize_instruction)
+        .instruction(initialize_partner_instruction)
         .instructions()?;
     Ok(instructions)
 }
