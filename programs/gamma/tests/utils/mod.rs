@@ -696,6 +696,14 @@ impl TestEnv {
         get_signed_transaction(&mut self.program_test_context, &[instruction], signers).await
     }
 
+    pub async fn encode_instructions_and_sign_transaction(
+        &mut self,
+        instructions: &[Instruction],
+        signers: &[&Keypair],
+    ) -> Transaction {
+        get_signed_transaction(&mut self.program_test_context, instructions, signers).await
+    }
+
     pub async fn create_config(
         &mut self,
         user: &Keypair,
@@ -814,7 +822,7 @@ impl TestEnv {
         )
         .0;
 
-        let accounts = gamma::accounts::Initialize {
+        let initialize_accounts = gamma::accounts::Initialize {
             creator: user.pubkey(),
             amm_config: amm_config_key,
             authority,
@@ -828,7 +836,6 @@ impl TestEnv {
             token_1_vault,
             create_pool_fee: create_pool_fee,
             observation_state: observation_key,
-            pool_partners,
             token_program: spl_token::id(),
             token_0_program: spl_token::id(),
             token_1_program: spl_token::id(),
@@ -837,7 +844,7 @@ impl TestEnv {
             rent: sysvar::rent::id(),
         };
 
-        let data = gamma::instruction::Initialize {
+        let initialize_data = gamma::instruction::Initialize {
             init_amount_0,
             init_amount_1,
             open_time,
@@ -845,8 +852,23 @@ impl TestEnv {
             volatility_factor: 0,
         };
 
+        let initialize_ix = get_instruction(initialize_data, initialize_accounts);
+
+        let initialize_partner_accounts = gamma::accounts::InitializePoolPartners {
+            payer: user.pubkey(),
+            pool_state: pool_account_key,
+            pool_partners,
+            system_program: system_program::ID,
+        };
+        let initialize_partners_data = gamma::instruction::InitializePoolPartners;
+        let initialize_partners_ix =
+            get_instruction(initialize_partners_data, initialize_partner_accounts);
+
         let transaction = self
-            .encode_instruction_and_sign_transaction(data, accounts, &[user])
+            .encode_instructions_and_sign_transaction(
+                &[initialize_ix, initialize_partners_ix],
+                &[user],
+            )
             .await;
 
         self.program_test_context
@@ -1750,12 +1772,7 @@ impl TestEnv {
         partner.pubkey()
     }
 
-    pub async fn initialize_pool_partners(
-        &mut self,
-        user: &Keypair,
-        pool_id: Pubkey,
-        partner_share_rate: u64,
-    ) {
+    pub async fn initialize_pool_partners(&mut self, user: &Keypair, pool_id: Pubkey) {
         let pool_partners = derive_pool_partners_pda(pool_id).0;
 
         let accounts = gamma::accounts::InitializePoolPartners {
@@ -1765,7 +1782,7 @@ impl TestEnv {
             system_program: system_program::ID,
         };
 
-        let data = gamma::instruction::InitializePoolPartners { partner_share_rate };
+        let data = gamma::instruction::InitializePoolPartners;
 
         let transaction = self
             .encode_instruction_and_sign_transaction(data, accounts, &[user])
