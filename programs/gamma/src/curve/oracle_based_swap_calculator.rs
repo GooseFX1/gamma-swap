@@ -246,11 +246,11 @@ impl OracleBasedSwapCalculator {
             .ok_or(GammaError::MathOverflow)?;
 
         let new_swap_source_amount = swap_source_amount
-            .checked_sub(amount_to_be_swapped_at_oracle_price)
+            .checked_add(amount_to_be_swapped_at_oracle_price)
             .ok_or(GammaError::MathOverflow)?;
 
         let new_swap_destination_amount = swap_destination_amount
-            .checked_add(output_tokens)
+            .checked_sub(output_tokens)
             .ok_or(GammaError::MathOverflow)?;
 
         let trade_fees_for_invariant_curve = ceil_div(
