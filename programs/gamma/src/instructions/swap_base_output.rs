@@ -14,6 +14,7 @@ pub fn swap_base_output<'c, 'info>(
     max_amount_in: u64,
     amount_out_less_fee: u64,
 ) -> Result<()> {
+    require_gt!(amount_out_less_fee, 0);
     let swap_remaining_accounts = SwapRemainingAccounts::new(&ctx.remaining_accounts);
     let referral_info = extract_referral_info(
         ctx.accounts.input_token_mint.key(),

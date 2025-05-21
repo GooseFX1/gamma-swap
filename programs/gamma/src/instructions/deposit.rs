@@ -117,6 +117,7 @@ pub fn deposit_to_gamma_pool(
     maximum_token_0_amount: u64,
     maximum_token_1_amount: u64,
 ) -> Result<()> {
+    require_gt!(lp_token_amount, 0);
     let pool_id = accounts.pool_state.key();
     let mut pool_state = &mut accounts.pool_state.load_mut()?;
     if !pool_state.get_status_by_bit(PoolStatusBitIndex::Deposit) {
@@ -131,6 +132,9 @@ pub fn deposit_to_gamma_pool(
         RoundDirection::Ceiling,
     )
     .ok_or(GammaError::ZeroTradingTokens)?;
+    if results.token_0_amount == 0 || results.token_1_amount == 0 {
+        return err!(GammaError::ZeroTradingTokens);
+    }
 
     let token_0_amount =
         u64::try_from(results.token_0_amount).map_err(|_| GammaError::MathOverflow)?;

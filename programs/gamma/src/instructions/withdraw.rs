@@ -124,12 +124,14 @@ pub fn withdraw<'c, 'info>(
 where
     'c: 'info,
 {
-    // require_gt!(ctx.accounts.lp_mint.supply, 0);
+    require_gt!(lp_token_amount, 0);
     let pool_id = ctx.accounts.pool_state.key();
     let mut pool_state = &mut ctx.accounts.pool_state.load_mut()?;
     if !pool_state.get_status_by_bit(PoolStatusBitIndex::Withdraw) {
         return err!(GammaError::NotApproved);
     }
+    require_gt!(pool_state.lp_supply, 0);
+
     let (total_token_0_amount, total_token_1_amount) = pool_state.vault_amount_without_fee()?;
     let results = CurveCalculator::lp_tokens_to_trading_tokens(
         u128::from(lp_token_amount),
@@ -139,6 +141,9 @@ where
         RoundDirection::Floor,
     )
     .ok_or(GammaError::ZeroTradingTokens)?;
+    if results.token_0_amount == 0 || results.token_1_amount == 0 {
+        return err!(GammaError::ZeroTradingTokens);
+    }
 
     let token_0_amount = match u64::try_from(results.token_0_amount) {
         Ok(value) => value,
