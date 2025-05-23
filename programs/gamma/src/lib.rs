@@ -259,6 +259,7 @@ pub mod gamma {
     /// * `amount_in` -  input amount to transfer, output to DESTINATION is based on the exchange rate
     /// * `minimum_amount_out` -  Minimum amount of output token, prevents excessive slippage
     ///
+    /// #[deprecated(note = "Use oracle_based_swap_base_input instead")]
     pub fn swap_base_input<'c, 'info>(
         ctx: Context<'_, '_, 'c, 'info, Swap<'info>>,
         amount_in: u64,
@@ -291,8 +292,6 @@ pub mod gamma {
     /// * `ctx`- The context of accounts
     /// * `amount_in` -  input amount to transfer, output to DESTINATION is based on the exchange rate
     /// * `minimum_amount_out` -  Minimum amount of output token, prevents excessive slippage
-    ///
-    /// #[deprecated(note = "Use oracle_based_swap_base_input instead")]
     pub fn oracle_based_swap_base_input<'c, 'info>(
         ctx: Context<'_, '_, 'c, 'info, Swap<'info>>,
         amount_in: u64,
