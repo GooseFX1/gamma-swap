@@ -14,6 +14,8 @@ use std::rc::Rc;
 
 use super::super::{read_keypair_file, ClientConfig};
 
+const KAMINO_ID: Pubkey = solana_sdk::pubkey!("KLend2g3cP87fffoy8q1mQqGKjrxjC8boSyAYavgmjD");
+
 pub fn create_config_instr(
     config: &ClientConfig,
     amm_index: u16,
@@ -307,6 +309,8 @@ pub fn withdraw_instr(
             vault_1_mint: token_1_mint,
             // lp_mint: token_lp_mint,
             memo_program: spl_memo::id(),
+            instruction_sysvar_account: sysvar::instructions::ID,
+            kamino_program: KAMINO_ID
         })
         .args(gamma_instructions::Withdraw {
             lp_token_amount,

@@ -58,7 +58,7 @@ pub struct TradingTokenResult {
 }
 
 /// Encodes all results of swapping from a source token to a destination token
-#[derive(Debug, PartialEq)]
+#[derive(AnchorDeserialize, AnchorSerialize, Debug, PartialEq)]
 pub struct SwapResult {
     /// New amount of source token
     pub new_swap_source_amount: u128,

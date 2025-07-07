@@ -8,6 +8,7 @@ pub mod states;
 pub mod utils;
 
 use anchor_lang::prelude::*;
+use curve::SwapResult;
 use instructions::*;
 use migration::*;
 
@@ -299,6 +300,14 @@ pub mod gamma {
     ) -> Result<()> {
         // This if for demo purposes, and cpi and aggregator transaction purposes only.
         Ok(())
+    }
+
+
+    pub fn quote_swap<'c, 'info>(
+        ctx: Context<'_, '_, 'c, 'info, QuoteSwap<'info>>,
+        amount_in: u64,
+    ) -> Result<SwapResult> {
+        unimplemented!("This only provides an interface for clients and CPI")
     }
 
     /// Create rewards for the pool
