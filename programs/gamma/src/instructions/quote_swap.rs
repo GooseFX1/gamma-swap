@@ -11,18 +11,22 @@ pub struct QuoteSwap<'info> {
     /// The program account of the pool in which the swap will be performed
     pub pool_state: AccountLoader<'info, PoolState>,
 
-    /// The mint of input token
-    #[account(
-        constraint = input_token_mint.key() == pool_state.load()?.token_0_mint || input_token_mint.key() == pool_state.load()?.token_1_mint,
-    )]
-    pub input_token_mint: Box<InterfaceAccount<'info, Mint>>,
+    /// The vault token account for input token
+    ///
+    /// CHECK: Unused for now. Included for forward compatibility
+    pub input_vault: UncheckedAccount<'info>,
 
-    /// The mint of output token
-    #[account(
-        constraint = output_token_mint.key() == pool_state.load()?.token_0_mint || output_token_mint.key() == pool_state.load()?.token_1_mint,
-        constraint = output_token_mint.key() != input_token_mint.key()
-    )]
-    pub output_token_mint: Box<InterfaceAccount<'info, Mint>>,
+    /// The vault token account for output token
+    ///
+    /// CHECK: Unused for now. Included for forward compatibility
+    pub output_vault: UncheckedAccount<'info>,
+
+    /// CHECK: The mint of input token
+    pub input_token_mint: UncheckedAccount<'info>,
+
+    /// CHECK: The mint of output token
+    pub output_token_mint: UncheckedAccount<'info>,
+
     /// The program account for the most recent oracle observation
     #[account(address = pool_state.load()?.observation_key)]
     pub observation_state: AccountLoader<'info, ObservationState>,
